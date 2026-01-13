@@ -1,29 +1,85 @@
 import mongoose from "mongoose";
 
-const commentarySchema = new mongoose.Schema({
-  over: Number,
-  ball: Number,
-  text: String,
-  time: { type: Date, default: Date.now },
+/* ---------- Innings Schema ---------- */
+const inningsSchema = new mongoose.Schema({
+  team: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Team",
+    required: true,
+  },
+
+  runs: {
+    type: Number,
+    default: 0,
+  },
+
+  wickets: {
+    type: Number,
+    default: 0,
+  },
+
+  overs: {
+    type: Number,
+    default: 0,
+  },
+
+  balls: {
+    type: Number,
+    default: 0, // 0–5
+  },
+
+  extras: {
+    type: Number,
+    default: 0,
+  },
+
+  status: {
+    type: String,
+    enum: ["upcoming", "live", "completed"],
+    default: "upcoming",
+  },
 });
 
+/* ---------- Match Schema ---------- */
 const matchSchema = new mongoose.Schema(
   {
-    teamA: String,
-    teamB: String,
-    venue: String,
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    venue: {
+      type: String,
+    },
+
+    startAt: {
+      type: Date,
+    },
+
+    teams: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Team",
+        required: true,
+      },
+    ],
+
+    innings: [inningsSchema],
+
     status: {
       type: String,
       enum: ["upcoming", "live", "completed"],
       default: "upcoming",
     },
-    score: {
-      runs: { type: Number, default: 0 },
-      wickets: { type: Number, default: 0 },
-      overs: { type: Number, default: 0 },
-      balls: { type: Number, default: 0 },
-    },
-    commentary: [commentarySchema],
+
+    commentary: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Commentary",
+      },
+    ],
+
     manOfMatch: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Player",

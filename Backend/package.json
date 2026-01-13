@@ -1,7 +1,7 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "Backend for BQ-PLAY (live cricket scoring + API)",
   "main": "src/index.js",
   "scripts": {
       "start": "node src/index.js",
