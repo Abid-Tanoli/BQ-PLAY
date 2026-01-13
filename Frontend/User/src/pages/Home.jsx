@@ -1,21 +1,32 @@
 import React, { useEffect, useState } from "react";
-import { api } from "../services/api";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useNavigate,
+} from "react-router-dom";
+
+import { api } from "./api";
 import {
   initAuthFromStorage,
   logout as doLogout,
   getStoredUser,
-} from "../pages/auth/auth";
-import Header from "../components/Header";
-import Login from "../components/Login";
-import Register from "../components/Register";
+} from "./auth";
 
-import Players from "../pages/Players";
-import { useNavigate } from "react-router-dom";
-import MatchList from "../components/MatchCard";
+import Header from "./components/Header";
+import MatchList from "./components/MatchList";
+import MatchView from "./components/MatchView";
+import Login from "./components/Login";
+import Register from "./components/Register";
 
+import Players from "./pages/Players";
 
-export default function Home() {
-  const [matches, setMatches] = useState([]);
+import { useDispatch, useSelector } from "react-redux";
+import { fetchMatches } from "../store/slices/matchesSlice";
+
+export function Home() {
+  const dispatch = useDispatch();
+  const matches = useSelector((state) => state.matches.list || []);
   const [selected, setSelected] = useState(null);
   const [authUser, setAuthUser] = useState(null);
   const [showLogin, setShowLogin] = useState(false);
@@ -26,37 +37,31 @@ export default function Home() {
   useEffect(() => {
     const user = initAuthFromStorage && getStoredUser();
     setAuthUser(user);
-    loadMatches();
-  }, []);
+    dispatch(fetchMatches());
+  }, [dispatch]);
 
-  const loadMatches = async () => {
-    try {
-      const res = await api.get("/matches");
-      setMatches(res.data);
-      if (!selected && res.data.length) {
-        setSelected(res.data[0]);
-      }
-    } catch (err) {
-      console.error(err);
+  useEffect(() => {
+    if (!selected && matches.length) {
+      setSelected(matches[0]);
     }
-  };
+  }, [matches, selected]);
 
   const handleLoginSuccess = (user) => {
     setAuthUser(user);
     setShowLogin(false);
-    loadMatches();
+    dispatch(fetchMatches());
   };
 
   const handleRegisterSuccess = (user) => {
     setAuthUser(user);
     setShowRegister(false);
-    loadMatches();
+    dispatch(fetchMatches());
   };
 
   const handleLogout = () => {
     doLogout();
     setAuthUser(null);
-    loadMatches();
+    dispatch(fetchMatches());
   };
 
   const handleMatchSelect = (match) => {

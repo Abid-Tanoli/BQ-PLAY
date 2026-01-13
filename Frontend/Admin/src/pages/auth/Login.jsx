@@ -1,31 +1,72 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { api } from '../api';
 
-export default function Login({ onLogin }) {
-  const [email, setEmail] = useState('admin@bqplay.local');
-  const [password, setPassword] = useState('admin123');
-  const [error, setError] = useState(null);
+const LoginSchema = z.object({
+  email: z.string().email({ message: 'Enter a valid email' }),
+  password: z.string().min(1, { message: 'Password is required' })
+});
 
-  const submit = async (e) => {
-    e.preventDefault();
+export default function Login({ onLogin }) {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting }
+  } = useForm({
+    resolver: zodResolver(LoginSchema),
+    defaultValues: {
+      email: 'admin@bqplay.local',
+      password: 'admin123'
+    }
+  });
+
+  const submit = async (data) => {
     try {
-      const res = await api.post('/users/login', { email, password });
+      const res = await api.post('/users/login', data);
       const { token, user } = res.data;
-      onLogin(token, user);
+      if (onLogin) onLogin(token, user);
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed');
+      console.error(err.response?.data || err.message || err);
     }
   };
 
   return (
-    <div className="login">
-      <h2>Admin Login</h2>
-      <form onSubmit={submit}>
-        <input value={email} onChange={e => setEmail(e.target.value)} />
-        <input type="password" value={password} onChange={e => setPassword(e.target.value)} />
-        <button type="submit">Login</button>
+    <div className="max-w-md mx-auto bg-slate-900 p-6 rounded-lg text-white">
+      <h2 className="text-xl font-semibold mb-4">Admin Login</h2>
+      <form onSubmit={handleSubmit(submit)} className="space-y-4">
+        <div>
+          <label className="block text-sm">Email</label>
+          <input
+            className="w-full p-2 rounded bg-slate-800"
+            {...register('email')}
+            aria-invalid={errors.email ? 'true' : 'false'}
+          />
+          {errors.email && <div className="mt-1 text-xs text-red-400">{errors.email.message}</div>}
+        </div>
+
+        <div>
+          <label className="block text-sm">Password</label>
+          <input
+            type="password"
+            className="w-full p-2 rounded bg-slate-800"
+            {...register('password')}
+            aria-invalid={errors.password ? 'true' : 'false'}
+          />
+          {errors.password && <div className="mt-1 text-xs text-red-400">{errors.password.message}</div>}
+        </div>
+
+        <div>
+          <button
+            type="submit"
+            className="w-full bg-emerald-500 text-black py-2 rounded font-semibold"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Signing in...' : 'Login'}
+          </button>
+        </div>
       </form>
-      {error && <div className="error">{error}</div>}
     </div>
   );
 }

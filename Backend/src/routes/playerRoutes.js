@@ -7,12 +7,16 @@ import {
   deletePlayer,
 } from "../controllers/playerController.js";
 
+import validate from "../middleware/validate.js";
+import { createPlayerSchema } from "../validators/playerValidators.js";
+
 const router = express.Router();
 
 router.get("/", getPlayers);
 router.get("/ranking", getPlayerRanking);
 
-router.post("/", createPlayer);
+// apply Zod validation to create player route
+router.post("/", validate(createPlayerSchema), createPlayer);
 router.put("/:id", updatePlayer);
 router.delete("/:id", deletePlayer);
 
