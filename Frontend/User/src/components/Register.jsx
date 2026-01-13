@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { register } from '../auth';
+import { register } from '../pages/auth/auth';
 
 export default function Register({ onSuccess, onCancel }) {
   const [name, setName] = useState('');

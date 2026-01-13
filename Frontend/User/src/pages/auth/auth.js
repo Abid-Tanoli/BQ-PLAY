@@ -1,6 +1,5 @@
-import { api, setAuthToken } from './api';
+import { api, setAuthToken } from '../../services/api';
 
-// Saves token and user to localStorage and configures api
 function persistAuth(token, user) {
   if (token) {
     localStorage.setItem('bq_token', token);
@@ -9,7 +8,6 @@ function persistAuth(token, user) {
   if (user) localStorage.setItem('bq_user', JSON.stringify(user));
 }
 
-// Removes auth from storage and axios
 function clearAuth() {
   localStorage.removeItem('bq_token');
   localStorage.removeItem('bq_user');

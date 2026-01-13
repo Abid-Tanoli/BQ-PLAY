@@ -2,38 +2,14 @@ import mongoose from "mongoose";
 
 const playerSchema = new mongoose.Schema(
   {
-    name: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-
-    role: {
-      type: String,
-    },
-
-    team: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Team",
-    },
-
-    stats: {
-      runs: {
-        type: Number,
-        default: 0,
-      },
-      wickets: {
-        type: Number,
-        default: 0,
-      },
-      strikeRate: {
-        type: Number,
-        default: 0,
-      },
-      economy: {
-        type: Number,
-        default: 0,
-      },
+    name: { type: String, required: true },
+    role: { type: String },
+    team: { type: mongoose.Schema.Types.ObjectId, ref: "Team" },
+    stats: { 
+      runs: { type: Number, default: 0 },
+      wickets: { type: Number, default: 0 },
+      strikeRate: { type: Number, default: 0 },
+      economy: { type: Number, default: 0 },
     },
   },
   { timestamps: true }

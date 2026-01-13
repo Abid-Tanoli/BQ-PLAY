@@ -1,27 +1,20 @@
 import React, { useEffect, useState } from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  useNavigate,
-} from "react-router-dom";
-
-import { api } from "./api";
+import { api } from "../services/api";
 import {
   initAuthFromStorage,
   logout as doLogout,
   getStoredUser,
-} from "./auth";
+} from "../pages/auth/auth";
+import Header from "../components/Header";
+import Login from "../components/Login";
+import Register from "../components/Register";
 
-import Header from "./components/Header";
-import MatchList from "./components/MatchList";
-import MatchView from "./components/MatchView";
-import Login from "./components/Login";
-import Register from "./components/Register";
+import Players from "../pages/Players";
+import { useNavigate } from "react-router-dom";
+import MatchList from "../components/MatchCard";
 
-import Players from "./pages/Players";
 
-export function Home() {
+export default function Home() {
   const [matches, setMatches] = useState([]);
   const [selected, setSelected] = useState(null);
   const [authUser, setAuthUser] = useState(null);

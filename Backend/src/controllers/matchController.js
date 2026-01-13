@@ -1,10 +1,7 @@
-import Match from "../models/match.js";
-import Commentary from "../models/commentary.js";
+import Match from "../models/Match.js";
+import Commentary from "../models/Commentary.js";
 import Team from "../models/Team.js";
 
-/* =========================
-   GET ALL MATCHES
-========================= */
 export const getMatches = async (req, res) => {
   const matches = await Match.find()
     .sort({ createdAt: -1 })
@@ -18,9 +15,6 @@ export const getMatches = async (req, res) => {
   res.json(matches);
 };
 
-/* =========================
-   GET SINGLE MATCH
-========================= */
 export const getMatch = async (req, res) => {
   const match = await Match.findById(req.params.id)
     .populate("teams")
@@ -37,9 +31,6 @@ export const getMatch = async (req, res) => {
   res.json(match);
 };
 
-/* =========================
-   CREATE MATCH
-========================= */
 export const createMatch = async (req, res) => {
   const { title, venue, startAt, teamIds } = req.body;
 
@@ -61,9 +52,6 @@ export const createMatch = async (req, res) => {
   res.status(201).json(match);
 };
 
-/* =========================
-   UPDATE MATCH (GENERAL)
-========================= */
 export const updateMatch = async (req, res) => {
   const match = await Match.findByIdAndUpdate(
     req.params.id,
@@ -78,17 +66,11 @@ export const updateMatch = async (req, res) => {
   res.json(match);
 };
 
-/* =========================
-   DELETE MATCH
-========================= */
 export const deleteMatch = async (req, res) => {
   await Match.findByIdAndDelete(req.params.id);
   res.json({ message: "Match deleted" });
 };
 
-/* =========================
-   SET MAN OF THE MATCH
-========================= */
 export const setMOM = async (req, res) => {
   const { playerId } = req.body;
 
@@ -105,11 +87,6 @@ export const setMOM = async (req, res) => {
   res.json(match);
 };
 
-/* =========================
-   UPDATE LIVE SCORE (Socket.IO)
-   payload:
-   { inningsIndex, runs, wickets, balls, extras, commentaryText }
-========================= */
 export const updateScore = async (io, req, res) => {
   const { id } = req.params;
   const {
@@ -146,7 +123,6 @@ export const updateScore = async (io, req, res) => {
 
   await match.save();
 
-  /* ---- Save Commentary ---- */
   if (commentaryText) {
     const commentary = await Commentary.create({
       match: match._id,
@@ -158,7 +134,6 @@ export const updateScore = async (io, req, res) => {
     await match.save();
   }
 
-  /* ---- Emit Live Update ---- */
   const populatedMatch = await Match.findById(id)
     .populate("teams")
     .populate("manOfMatch")

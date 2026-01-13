@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { login } from '../auth';
+import { login } from '../pages/auth/auth';
 
 export default function Login({ onSuccess, onCancel }) {
   const [email, setEmail] = useState('');

@@ -1,11 +1,11 @@
-const Team = require('../models/Team');
+import Team from '../models/Team.js';
 
-exports.listTeams = async (req, res) => {
+export const listTeams = async (req, res) => {
   const teams = await Team.find().populate('players');
   res.json(teams);
 };
 
-exports.createTeam = async (req, res) => {
+export const createTeam = async (req, res) => {
   const { name, shortName } = req.body;
   const team = new Team({ name, shortName });
   await team.save();

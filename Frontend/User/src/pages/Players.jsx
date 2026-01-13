@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { API } from "../services/api";
+import { api } from "../services/api";
 import PlayerCard from "../components/PlayerCard";
 
 const Players = () => {
