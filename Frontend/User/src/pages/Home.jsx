@@ -6,20 +6,20 @@ import {
   useNavigate,
 } from "react-router-dom";
 
-import { api } from "./api";
+import { api } from "../services/api";
 import {
   initAuthFromStorage,
   logout as doLogout,
   getStoredUser,
-} from "./auth";
+} from "../pages/auth/auth";
 
-import Header from "./components/Header";
-import MatchList from "./components/MatchList";
-import MatchView from "./components/MatchView";
-import Login from "./components/Login";
-import Register from "./components/Register";
+import Header from "../components/Header";
+import MatchList from "../components/MatchList";
+import MatchView from "../components/MatchView";
+import Login from "../components/Login";
+import Register from "../components/Register";
 
-import Players from "./pages/Players";
+import Players from "../pages/Players";
 
 import { useDispatch, useSelector } from "react-redux";
 import { fetchMatches } from "../store/slices/matchesSlice";
@@ -70,7 +70,7 @@ export function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
+    <div className="min-h-screen bg-white text-black">
       <Header
         user={authUser}
         onShowLogin={() => {
@@ -85,8 +85,7 @@ export function Home() {
       />
 
       <div className="flex gap-6 p-6">
-        {/* Sidebar */}
-        <aside className="w-72 bg-slate-900 rounded-xl p-4">
+       <aside className="w-72 bg-slate-900/4 text-black rounded-xl p-4">
           <MatchList
             matches={matches}
             selected={selected}
@@ -95,7 +94,7 @@ export function Home() {
         </aside>
 
         {/* Main */}
-        <main className="flex-1 min-h-[500px] bg-slate-900/40 rounded-xl p-6">
+        <main className="flex-1 min-h-[500px] bg-slate-900/4 rounded-xl p-6">
           {showLogin && (
             <Login
               onSuccess={handleLoginSuccess}

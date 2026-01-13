@@ -6,10 +6,10 @@ import {
   Link,
 } from "react-router-dom";
 
-import { api, setAuthToken } from "../api";
+import { api, setAuthToken } from "./services/api";
 
-import Login from "../shared/Login";
-import MatchEditor from "../components/MatchEditor";
+import Login from "./pages/auth/Login";
+import MatchEditor from "./components/MatchEditor";
 import PlayerList from "./components/PlayerList";
 import RankingList from "./components/RankingList";
 

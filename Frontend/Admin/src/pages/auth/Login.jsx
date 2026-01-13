@@ -2,7 +2,7 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { api } from '../api';
+import { api } from '../../services/api';
 
 const LoginSchema = z.object({
   email: z.string().email({ message: 'Enter a valid email' }),
@@ -23,14 +23,15 @@ export default function Login({ onLogin }) {
   });
 
   const submit = async (data) => {
-    try {
-      const res = await api.post('/users/login', data);
-      const { token, user } = res.data;
-      if (onLogin) onLogin(token, user);
-    } catch (err) {
-      console.error(err.response?.data || err.message || err);
-    }
-  };
+  try {
+    const res = await api.post('/users/login', data);
+    const { token, user } = res.data;
+    if (onLogin) onLogin(token, user);
+  } catch (err) {
+    console.error(err.response?.data || err.message || err);
+    alert(err.response?.data?.message || "Network error: Cannot reach backend");
+  }
+};
 
   return (
     <div className="max-w-md mx-auto bg-slate-900 p-6 rounded-lg text-white">

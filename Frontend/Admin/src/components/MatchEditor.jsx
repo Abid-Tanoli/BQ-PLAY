@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { api } from '../api';
+import { api } from '../services/api';
 
 export default function MatchEditor({ match, onUpdated }) {
   const [loading, setLoading] = useState(false);
