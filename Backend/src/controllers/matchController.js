@@ -1,13 +1,23 @@
-// Backend/src/controllers/matchController.js
 import Match from "../models/match.js";
 
-/**
- * Return a full match document (used by frontend).
- */
-export const getMatch = async (req, res, next) => {
+export const getMatches = async (req, res) => {
+  try {
+    const matches = await Match.find().lean();
+    return res.json(matches);
+  } catch (err) {
+    console.error("getMatches error:", err);
+    return res.status(500).json({ message: "Failed to fetch matches" });
+  }
+};
+
+export const getMatch = async (req, res) => {
   try {
     const match = await Match.findById(req.params.id).lean();
-    if (!match) return res.status(404).json({ message: "Match not found" });
+
+    if (!match) {
+      return res.status(404).json({ message: "Match not found" });
+    }
+
     return res.json(match);
   } catch (err) {
     console.error("getMatch error:", err);
@@ -15,35 +25,96 @@ export const getMatch = async (req, res, next) => {
   }
 };
 
-/**
- * Compute and return basic stats for a match:
- * - topScorers: highest runs in batting arrays
- * - topBowlers: highest wickets from bowling arrays
- * The implementation is defensive — if innings[].batting or innings[].bowling
- * are not present it returns empty arrays.
- */
-export const getMatchStats = async (req, res, next) => {
+export const createMatch = async (req, res) => {
+  try {
+    const match = await Match.create(req.body);
+    return res.status(201).json(match);
+  } catch (err) {
+    console.error("createMatch error:", err);
+    return res.status(400).json({ message: "Failed to create match" });
+  }
+};
+
+export const updateMatch = async (req, res) => {
+  try {
+    const match = await Match.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+
+    if (!match) {
+      return res.status(404).json({ message: "Match not found" });
+    }
+
+    return res.json(match);
+  } catch (err) {
+    console.error("updateMatch error:", err);
+    return res.status(400).json({ message: "Failed to update match" });
+  }
+};
+
+export const deleteMatch = async (req, res) => {
+  try {
+    const match = await Match.findByIdAndDelete(req.params.id);
+
+    if (!match) {
+      return res.status(404).json({ message: "Match not found" });
+    }
+
+    return res.json({ message: "Match deleted successfully" });
+  } catch (err) {
+    console.error("deleteMatch error:", err);
+    return res.status(500).json({ message: "Failed to delete match" });
+  }
+};
+
+export const setMOM = async (req, res) => {
+  try {
+    const match = await Match.findByIdAndUpdate(
+      req.params.id,
+      { manOfTheMatch: req.body.manOfTheMatch },
+      { new: true }
+    );
+
+    if (!match) {
+      return res.status(404).json({ message: "Match not found" });
+    }
+
+    return res.json(match);
+  } catch (err) {
+    console.error("setMOM error:", err);
+    return res.status(400).json({ message: "Failed to set MOM" });
+  }
+};
+
+export const getMatchStats = async (req, res) => {
   try {
     const match = await Match.findById(req.params.id).lean();
-    if (!match) return res.status(404).json({ message: "Match not found" });
 
-    // Gather batting entries across innings if present
-    const batting = (match.innings || []).flatMap((inn) => inn.batting || []);
-    const bowling = (match.innings || []).flatMap((inn) => inn.bowling || []);
+    if (!match) {
+      return res.status(404).json({ message: "Match not found" });
+    }
 
-    // topScorers by runs
+    const batting = (match.innings || []).flatMap(
+      (inn) => inn.batting || []
+    );
+
+    const bowling = (match.innings || []).flatMap(
+      (inn) => inn.bowling || []
+    );
+
     const topScorers = batting
       .map((b) => ({
         name: b.name || b.playerName || "Unknown",
         runs: Number(b.runs || 0),
-        balls: Number(b.balls || "-"),
+        balls: Number(b.balls || 0),
         fours: Number(b.fours || 0),
         sixes: Number(b.sixes || 0),
       }))
       .sort((a, b) => b.runs - a.runs)
       .slice(0, 10);
 
-    // topBowlers by wickets (then economy)
     const topBowlers = bowling
       .map((b) => ({
         name: b.name || b.playerName || "Unknown",
@@ -54,13 +125,10 @@ export const getMatchStats = async (req, res, next) => {
       .sort((a, b) => b.wickets - a.wickets || a.runs - b.runs)
       .slice(0, 10);
 
-    // Partnerships: if stored in match.partnerships or compute nothing
-    const partnerships = match.partnerships || [];
-
     return res.json({
       topScorers,
       topBowlers,
-      partnerships,
+      partnerships: match.partnerships || [],
     });
   } catch (err) {
     console.error("getMatchStats error:", err);

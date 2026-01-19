@@ -17,14 +17,14 @@ export default function Login({ onLogin }) {
   } = useForm({
     resolver: zodResolver(LoginSchema),
     defaultValues: {
-      email: 'admin@bqplay.local',
-      password: 'admin123'
+      email: 'visionaryabidi@gmail.com',
+      password: 'visionaryabidi@gmail.com'
     }
   });
 
   const submit = async (data) => {
   try {
-    const res = await api.post('/users/login', data);
+    const res = await api.post('/auth/login', data);
     const { token, user } = res.data;
     if (onLogin) onLogin(token, user);
   } catch (err) {
