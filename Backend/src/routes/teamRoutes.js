@@ -1,9 +1,9 @@
-import express from "express";
-import { listTeams, createTeam } from '../controllers/teamsController.js';
+// import express from "express";
+// import { listTeams, createTeam } from '../controllers/teamsController.js';
 
-const router = express.Router();
+// const router = express.Router();
 
-router.get('/', listTeams);
-router.post('/', createTeam);
+// router.get('/', listTeams);
+// router.post('/', createTeam);
 
-export default router;
+// export default router;

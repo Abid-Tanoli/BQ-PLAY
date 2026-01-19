@@ -12,12 +12,11 @@ import { createPlayerSchema } from "../validators/playerValidators.js";
 
 const router = express.Router();
 
-router.get("/", getPlayers);
-router.get("/ranking", getPlayerRanking);
+router.get("/allplayers", getPlayers);
+router.get("/allplayers/ranking", getPlayerRanking);
 
-// apply Zod validation to create player route
-router.post("/", validate(createPlayerSchema), createPlayer);
-router.put("/:id", updatePlayer);
-router.delete("/:id", deletePlayer);
+router.post("/player", validate(createPlayerSchema), createPlayer);
+router.put("/player/:id", updatePlayer);
+router.delete("/player/:id", deletePlayer);
 
 export default router;

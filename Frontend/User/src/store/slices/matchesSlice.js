@@ -1,36 +1,48 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import axios from "axios";
 
-// Adjust baseURL if required (e.g. process.env.API_BASE)
-const api = axios.create();
-
-export const fetchMatches = createAsyncThunk('matches/fetchMatches', async () => {
-  const res = await api.get('/matches');
-  return res.data;
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
 });
 
+// Async thunk to fetch matches
+export const fetchMatches = createAsyncThunk(
+  "matches/fetchMatches",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await api.get("/matches");
+      // Ensure the response is always an array
+      return Array.isArray(res.data) ? res.data : [];
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+);
+
 const matchesSlice = createSlice({
-  name: 'matches',
+  name: "matches",
   initialState: {
-    list: [],
-    status: 'idle',
-    error: null
+    list: [],      // default empty array
+    status: "idle",
+    error: null,
   },
   reducers: {},
   extraReducers: (builder) => {
     builder
       .addCase(fetchMatches.pending, (state) => {
-        state.status = 'loading';
+        state.status = "loading";
+        state.error = null;
       })
       .addCase(fetchMatches.fulfilled, (state, action) => {
-        state.status = 'succeeded';
-        state.list = action.payload;
+        state.status = "succeeded";
+        state.list = Array.isArray(action.payload) ? action.payload : [];
       })
       .addCase(fetchMatches.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.error.message;
+        state.status = "failed";
+        state.error = action.payload || "Failed to fetch matches";
+        state.list = [];
       });
-  }
+  },
 });
 
 export default matchesSlice.reducer;

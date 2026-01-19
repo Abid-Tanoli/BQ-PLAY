@@ -1,19 +1,23 @@
 import React from "react";
 
 export default function MatchList({ matches, selected, onSelect }) {
-  if (!matches || !Array.isArray(matches)) return null; 
+  const matchesArray = Array.isArray(matches) ? matches : [];
+
+  if (!matchesArray.length) return <div className="text-gray-500">No matches available</div>;
 
   return (
-    <ul className="space-y-2">
-      {matches.map((match) => (
+    <ul className="space-y-2 overflow-y-auto max-h-[80vh]">
+      {matchesArray.map((match) => (
         <li
           key={match._id}
           onClick={() => onSelect(match)}
-          className={`p-2 rounded cursor-pointer ${
-            selected?._id === match._id ? "bg-blue-600" : "bg-slate-800"
+          className={`p-3 rounded cursor-pointer transition-all ${
+            selected?._id === match._id
+              ? "bg-blue-600 text-white font-semibold"
+              : "bg-gray-100 hover:bg-gray-200"
           }`}
         >
-          {match.name || `Match ${match._id}`}
+          {match.name || `${match.teamA} vs ${match.teamB}`}
         </li>
       ))}
     </ul>
