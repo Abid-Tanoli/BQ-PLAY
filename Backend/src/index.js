@@ -1,4 +1,3 @@
-// server.js
 import express from "express";
 import http from "http";
 import dotenv from "dotenv";
@@ -10,6 +9,7 @@ import errorHandler from "./middleware/errorHandler.js";
 import authRoutes from "./routes/authRoutes.js";
 import palyerRoutes from "./routes/playerRoutes.js"
 import matchRoutes from "./routes/matchRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
 
 dotenv.config();
 
@@ -35,6 +35,7 @@ app.use(cors({
 app.use("/api/auth", authRoutes);
 app.use("/api/players", palyerRoutes);
 app.use("/api/matches", matchRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.use(errorHandler);
 
