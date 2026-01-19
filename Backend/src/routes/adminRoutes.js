@@ -7,8 +7,7 @@ import {
   updateAdmin,
   deleteAdmin,
 } from "../controllers/adminController.js";
-
-import auth from "../middleware/auth.js";
+import auth from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 

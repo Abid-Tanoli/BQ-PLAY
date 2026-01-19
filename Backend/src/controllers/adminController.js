@@ -14,15 +14,7 @@ export const registerAdmin = async (req, res) => {
     const admin = await Admin.create({ name, email, password });
     const token = generateToken(admin);
 
-    res.status(201).json({
-      token,
-      admin: {
-        _id: admin._id,
-        name: admin.name,
-        email: admin.email,
-        role: admin.role,
-      },
-    });
+    res.status(201).json({ token, admin: { _id: admin._id, name: admin.name, email: admin.email, role: admin.role } });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -42,20 +34,21 @@ export const loginAdmin = async (req, res) => {
 
     const token = generateToken(admin);
 
-    res.json({
-      token,
-      admin: {
-        _id: admin._id,
-        name: admin.name,
-        email: admin.email,
-        role: admin.role,
-      },
-    });
+    res.json({ token, admin: { _id: admin._id, name: admin.name, email: admin.email, role: admin.role } });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
+export const getAdminProfile = async (req, res) => {
+  try {
+    const admin = req.user;
+    if (!admin) return res.status(404).json({ message: "Admin not found" });
+    res.json(admin);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 
 export const listAdmins = async (req, res) => {
   try {
@@ -66,39 +59,20 @@ export const listAdmins = async (req, res) => {
   }
 };
 
-export const getAdminProfile = async (req, res) => {
-  try {
- 
-    const admin = req.user;
-    if (!admin) return res.status(404).json({ message: "Admin not found" });
-    res.json(admin);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
 export const updateAdmin = async (req, res) => {
   try {
     const { id } = req.params;
     const payload = req.body;
 
-    if (payload.password) {
-      const admin = await Admin.findById(id);
-      if (!admin) return res.status(404).json({ message: "Admin not found" });
-      admin.name = payload.name ?? admin.name;
-      admin.email = payload.email ?? admin.email;
-      admin.password = payload.password;
-      await admin.save();
-      const updated = await Admin.findById(id).select("-password");
-      return res.json(updated);
-    }
+    const admin = await Admin.findById(id);
+    if (!admin) return res.status(404).json({ message: "Admin not found" });
 
-    const updated = await Admin.findByIdAndUpdate(
-      id,
-      { name: payload.name, email: payload.email },
-      { new: true, runValidators: true }
-    ).select("-password");
+    admin.name = payload.name ?? admin.name;
+    admin.email = payload.email ?? admin.email;
+    if (payload.password) admin.password = payload.password;
 
+    await admin.save();
+    const updated = await Admin.findById(id).select("-password");
     res.json(updated);
   } catch (err) {
     res.status(500).json({ message: err.message });

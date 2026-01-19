@@ -7,7 +7,7 @@ import connectDB from "./utils/db.js";
 import initSocket from "./socket/socket.js";
 import errorHandler from "./middleware/errorHandler.js";
 import authRoutes from "./routes/authRoutes.js";
-import palyerRoutes from "./routes/playerRoutes.js"
+import playerRoutes from "./routes/playerRoutes.js"
 import matchRoutes from "./routes/matchRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 
@@ -28,12 +28,12 @@ app.use(cors({
     }
     return callback(null, true);
   },
-  credentials: true
+  credentials: false
 }));
 
 
 app.use("/api/auth", authRoutes);
-app.use("/api/players", palyerRoutes);
+app.use("/api/players", playerRoutes);
 app.use("/api/matches", matchRoutes);
 app.use("/api/admin", adminRoutes);
 

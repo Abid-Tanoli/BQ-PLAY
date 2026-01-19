@@ -1,36 +1,26 @@
 import jwt from "jsonwebtoken";
 import Admin from "../models/Admin.js";
-import User from "../models/User.js";
 
 export const protect = async (req, res, next) => {
   try {
-    let token;
-    if (
-      req.headers.authorization &&
-      req.headers.authorization.startsWith("Bearer")
-    ) {
-      token = req.headers.authorization.split(" ")[1];
-    }
+    const authHeader = req.headers.authorization;
 
-    if (!token) return res.status(401).json({ message: "Not authorized, no token" });
+    if (!authHeader || !authHeader.startsWith("Bearer"))
+      return res.status(401).json({ message: "Not authorized, no token" });
+
+    const token = authHeader.split(" ")[1];
 
     let decoded;
     try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET);
-    } catch (err) {
+      decoded = jwt.verify(token, process.env.JWT_SECRET || "secret123");
+    } catch {
       return res.status(401).json({ message: "Invalid or expired token" });
     }
-    const { id, role } = decoded;
-    if (role === "admin") {
-      const admin = await Admin.findById(id).select("-password");
-      if (!admin) return res.status(401).json({ message: "Not authorized" });
-      req.user = admin;
-    } else {
-      const user = await User.findById(id).select("-password");
-      if (!user) return res.status(401).json({ message: "Not authorized" });
-      req.user = user;
-    }
 
+    const admin = await Admin.findById(decoded.id).select("-password");
+    if (!admin) return res.status(401).json({ message: "Admin not found" });
+
+    req.user = admin;
     next();
   } catch (err) {
     res.status(401).json({ message: "Not authorized" });
