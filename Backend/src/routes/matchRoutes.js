@@ -1,22 +1,27 @@
-// import express from "express";
-// import {
-//   getMatches,
-//   getMatch,
-//   createMatch,
-//   updateMatch,
-//   deleteMatch,
-//   setMOM,
-// } from "../controllers/matchController.js";
+import express from "express";
+import {
+  getMatches,
+  getMatch,
+  createMatch,
+  updateMatch,
+  deleteMatch,
+  setMOM,
+} from "../controllers/matchController.js";
 
-// const router = express.Router();
+const router = express.Router();
 
-// router.get("/", getMatches);
-// router.get("/:id", getMatch);
+router.get("/", getMatches);
+router.get("/:id", getMatch);
 
-// router.post("/", createMatch);
-// router.put("/:id", updateMatch);
-// router.delete("/:id", deleteMatch);
+router.post("/", createMatch);
+router.put("/:id", updateMatch);
+router.get("/:id/stats", getMatchStats);
 
-// router.put("/mom/:id", setMOM);
+router.delete("/:id", deleteMatch);
+router.put("/mom/:id", setMOM);
 
-// export default router;
+export default router;
+
+
+router.get("/:id", getMatch);
+

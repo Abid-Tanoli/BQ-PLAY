@@ -9,6 +9,7 @@ import initSocket from "./socket/socket.js";
 import errorHandler from "./middleware/errorHandler.js";
 import authRoutes from "./routes/authRoutes.js";
 import palyerRoutes from "./routes/playerRoutes.js"
+import matchRoutes from "./routes/matchRoutes.js";
 
 dotenv.config();
 
@@ -32,7 +33,8 @@ app.use(cors({
 
 
 app.use("/api/auth", authRoutes);
-app.use("/api/players", palyerRoutes)
+app.use("/api/players", palyerRoutes);
+app.use("/api/matches", matchRoutes);
 
 app.use(errorHandler);
 
