@@ -1,57 +1,40 @@
-import React, { useEffect } from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
-
-import { setAuthToken } from "./services/api";
-
-import AdminLogin from "./pages/auth/AdminLogin";
-import AdminRegister from "./pages/auth/AdminRegister";
+import React from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
-
-
-function ProtectedRoute({ children }) {
-  const token = localStorage.getItem("bq_token");
-  return token ? children : <Navigate to="/login" replace />;
-}
+import LiveScores from "./pages/LiveScores";
+import ManageMatches from "./pages/ManageMatches";
+import ManagePlayers from "./pages/ManagePlayers";
+import ManageScore from "./pages/ManageScore";
+import TournamentTable from "./pages/TournamentTable";
+import Login from "./pages/auth/AdminLogin";
+import Layout from "./components/Layout";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 export default function App() {
-  useEffect(() => {
-    const token = localStorage.getItem("bq_token");
-    if (token) setAuthToken(token);
-  }, []);
-
   return (
-    <Router>
-      <Routes>
-        <Route
-          path="/login"
-          element={
-            <AdminLogin
-              onLogin={(token, user) => {
-                localStorage.setItem("bq_token", token);
-                localStorage.setItem("bq_user", JSON.stringify(user));
-                setAuthToken(token);
-                window.location.href = "/";
-              }}
-            />
-          }
-        />
+    <Routes>
+      <Route path="/admin/login" element={<Login />} />
 
-        <Route path="/register" element={<AdminRegister />} />
+      <Route
+        path="/admin/*"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Routes>
+                <Route path="" element={<Dashboard />} />
+                <Route path="live" element={<LiveScores />} />
+                <Route path="matches" element={<ManageMatches />} />
+                <Route path="players" element={<ManagePlayers />} />
+                <Route path="score" element={<ManageScore />} />
+                <Route path="tournament" element={<TournamentTable />} />
+                <Route path="*" element={<Navigate to="/admin" replace />} />
+              </Routes>
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
 
-        <Route
-          path="/*"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
-    </Router>
+      <Route path="*" element={<Navigate to="/admin" replace />} />
+    </Routes>
   );
 }
