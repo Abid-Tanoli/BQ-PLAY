@@ -4,16 +4,24 @@ let socket = null;
 
 export function initSocket() {
   if (socket) return socket;
-  const SERVER = process.env.REACT_APP_API_SOCKET || (window.location.origin.replace(/:\d+$/, ":5000"));
+
+  const SERVER = process.env.REACT_APP_API_SOCKET || "http://localhost:5000";
+  
   socket = clientIo(SERVER, {
-    transports: ["websocket"],
+    transports: ["websocket", "polling"],
+    reconnection: true,
+    reconnectionAttempts: 5,
+    reconnectionDelay: 1000,
   });
+
   socket.on("connect", () => {
-    console.log("Socket connected", socket.id);
+    console.log("✅ Socket connected:", socket.id);
   });
+
   socket.on("connect_error", (err) => {
-    console.warn("Socket connect_error", err.message);
+    console.warn("❌ Socket connect_error:", err.message);
   });
+
   return socket;
 }
 
@@ -27,8 +35,16 @@ export function leaveMatchRoom(matchId) {
   socket.emit("leaveMatch", matchId);
 }
 
+export function disconnectSocket() {
+  if (socket) {
+    socket.disconnect();
+    socket = null;
+  }
+}
+
 export default {
   initSocket,
   joinMatchRoom,
   leaveMatchRoom,
+  disconnectSocket,
 };

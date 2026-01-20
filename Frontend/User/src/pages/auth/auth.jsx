@@ -14,17 +14,18 @@ function clearAuth() {
   setAuthToken(null);
 }
 
+export async function register(name, email, password) {
+  const res = await api.post('/auth/register', { name, email, password });
+  return await login(email, password);
+}
+
 export async function login(email, password) {
-  const res = await api.post('/users/login', { email, password });
+  const res = await api.post('/auth/login', { email, password });
   const { token, user } = res.data;
   persistAuth(token, user);
   return user;
 }
 
-export async function register(name, email, password) {
-  const res = await api.post('/users/register', { name, email, password });
-  return await login(email, password);
-}
 
 export function logout() {
   clearAuth();
