@@ -4,6 +4,7 @@ import Dashboard from "./pages/Dashboard";
 import LiveScores from "./pages/LiveScores";
 import ManageMatches from "./pages/ManageMatches";
 import ManagePlayers from "./pages/ManagePlayers";
+import Teams from "./pages/Teams";
 import ManageScore from "./pages/ManageScore";
 import TournamentTable from "./pages/TournamentTable";
 import Login from "./pages/auth/AdminLogin";

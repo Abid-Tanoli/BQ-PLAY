@@ -14,9 +14,10 @@ export default function Navbar() {
         <nav className="hidden sm:flex gap-10 text-sm text-slate-600">
           <Link to="/admin">Dashboard</Link>
           <Link to="/admin/live">Live Scores</Link>
-          <Link to="/admin/matches">ManageMatches</Link>
-          <Link to="/admin/players">ManagePlayers</Link>
-          <Link to="/admin/score">ManageScore</Link>
+          <Link to="/admin/matches">Matches</Link>
+          <Link to="/admin/teams">Teams</Link>
+          <Link to="/admin/players">Players</Link>
+          <Link to="/admin/score">Score</Link>
           <Link to="/admin/tournament">Tournament</Link>
         </nav>
       </div>
