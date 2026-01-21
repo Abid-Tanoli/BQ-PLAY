@@ -9,7 +9,7 @@ export default function Layout({ children }) {
         <Sidebar />
       </aside>
 
-      <div className="flex flex-col min-h-screen">
+      <div className="w-full flex flex-col min-h-screen">
         <header className="bg-white border-b">
           <Navbar />
         </header>

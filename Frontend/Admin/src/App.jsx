@@ -25,6 +25,7 @@ export default function App() {
                 <Route path="live" element={<LiveScores />} />
                 <Route path="matches" element={<ManageMatches />} />
                 <Route path="players" element={<ManagePlayers />} />
+                <Route path="team" element={< Teams/>}></Route>
                 <Route path="score" element={<ManageScore />} />
                 <Route path="tournament" element={<TournamentTable />} />
                 <Route path="*" element={<Navigate to="/admin" replace />} />

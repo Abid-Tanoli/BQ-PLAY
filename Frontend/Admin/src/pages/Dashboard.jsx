@@ -10,13 +10,12 @@ export default function Dashboard() {
   }, [dispatch]);
 
   return (
-    <div className="flex flex-row space-y-4">
+    <div className="flex flex-row items-center justify-between space-y-8">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Dashboard</h2>
-        <div className="text-sm text-slate-500">Edition PK</div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-20">
         <div className="card">
           <h3 className="font-semibold">Live Matches</h3>
           <p className="text-sm text-slate-500">Live updates streaming</p>

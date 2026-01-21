@@ -8,10 +8,10 @@ export default function Navbar() {
 
   return (
     <div className="flex items-center justify-between p-10">
-      <div className="flex items-center gap-4">
-        <h1 className="text-xl font-bold">BQ-Play - Admin</h1>
+      <div className="flex flex-col items-center gap-4">
+        <h1 className="text-2xl font-bold">BQ-Play - Admin</h1>
 
-        <nav className="hidden sm:flex gap-3 text-sm text-slate-600">
+        <nav className="hidden sm:flex gap-10 text-sm text-slate-600">
           <Link to="/admin">Dashboard</Link>
           <Link to="/admin/live">Live Scores</Link>
           <Link to="/admin/matches">ManageMatches</Link>

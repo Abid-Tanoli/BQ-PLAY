@@ -9,19 +9,20 @@ const initialState = {
 
 export const fetchMatches = createAsyncThunk("matches/fetch", async (_, thunkAPI) => {
   try {
-    const res = await api.get("/matches");
+    const res = await api.get("/admin/matches");
     return res.data;
   } catch (err) {
-    return thunkAPI.rejectWithValue(err.response?.data || err.message);
+    return thunkAPI.rejectWithValue(err.response?.data || { message: err.message });
   }
 });
 
 export const createMatch = createAsyncThunk("matches/create", async (payload, thunkAPI) => {
   try {
-    const res = await api.post("/matches", payload);
-    return res.data;
+    if (!payload?.title) throw new Error("Match title is required");
+    const res = await api.post("/admin/matches", payload);
+    return res.data.match;
   } catch (err) {
-    return thunkAPI.rejectWithValue(err.response?.data || err.message);
+    return thunkAPI.rejectWithValue(err.response?.data || { message: err.message });
   }
 });
 
@@ -29,14 +30,15 @@ const matchesSlice = createSlice({
   name: "matches",
   initialState,
   reducers: {},
-  extraReducers: (b) => {
-    b.addCase(fetchMatches.pending, (s) => { s.loading = true; s.error = null; });
-    b.addCase(fetchMatches.fulfilled, (s, action) => { s.loading = false; s.matches = action.payload; });
-    b.addCase(fetchMatches.rejected, (s, action) => { s.loading = false; s.error = action.payload?.message || action.payload || "Failed"; });
+  extraReducers: builder => {
+    builder
+      .addCase(fetchMatches.pending, state => { state.loading = true; state.error = null; })
+      .addCase(fetchMatches.fulfilled, (state, action) => { state.loading = false; state.matches = action.payload; })
+      .addCase(fetchMatches.rejected, (state, action) => { state.loading = false; state.error = action.payload?.message || "Failed to fetch matches"; })
 
-    b.addCase(createMatch.fulfilled, (s, action) => {
-      s.matches.unshift(action.payload);
-    });
+      .addCase(createMatch.pending, state => { state.loading = true; state.error = null; })
+      .addCase(createMatch.fulfilled, (state, action) => { state.loading = false; state.matches.unshift(action.payload); })
+      .addCase(createMatch.rejected, (state, action) => { state.loading = false; state.error = action.payload?.message || "Failed to create match"; });
   }
 });
 

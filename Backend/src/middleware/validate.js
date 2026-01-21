@@ -3,7 +3,6 @@ import { ZodError } from 'zod';
 export default function validate(schema) {
   return (req, res, next) => {
     try {
-      // Parse and coerce body according to schema
       req.body = schema.parse(req.body);
       return next();
     } catch (err) {

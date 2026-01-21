@@ -8,6 +8,8 @@ const inningsSchema = new mongoose.Schema({
   balls: { type: Number, default: 0 },
   extras: { type: Number, default: 0 },
   status: { type: String, enum: ["upcoming", "live", "completed"], default: "upcoming" },
+  batting: [{ player: { type: mongoose.Schema.Types.ObjectId, ref: "Player" }, runs: Number, balls: Number, fours: Number, sixes: Number }],
+  bowling: [{ player: { type: mongoose.Schema.Types.ObjectId, ref: "Player" }, overs: Number, runs: Number, wickets: Number }],
 });
 
 const matchSchema = new mongoose.Schema(
