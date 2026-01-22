@@ -9,15 +9,12 @@ export default function RankingList() {
   }, []);
 
   return (
-    <div>
-      <h2 className="text-xl font-bold mb-2">Player Rankings</h2>
-      <ol className="list-decimal ml-5">
-        {players.map(p => (
-          <li key={p._id}>
-            {p.name} - Points: {p.rankingPoints.toFixed(2)}
-          </li>
-        ))}
-      </ol>
-    </div>
+    <ol className="list-decimal ml-5 mt-4">
+      {players.map(p => (
+        <li key={p._id}>
+          {p.name} — {p.rankingPoints.toFixed(1)}
+        </li>
+      ))}
+    </ol>
   );
 }

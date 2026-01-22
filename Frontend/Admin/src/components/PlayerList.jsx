@@ -1,38 +1,81 @@
 import { useEffect, useState } from "react";
-import { getPlayers, deletePlayer } from "../services/playerApi";
+import { getPlayers, updatePlayer, deletePlayer } from "../services/playerApi";
 
 export default function PlayerList() {
   const [players, setPlayers] = useState([]);
+  const [search, setSearch] = useState("");
 
-  const loadPlayers = async () => setPlayers(await getPlayers());
+  const load = async () => setPlayers(await getPlayers());
 
-  useEffect(() => { loadPlayers(); }, []);
+  useEffect(() => { load(); }, []);
+
+  const filtered = players.filter(p =>
+    p.name.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
-    <div>
-      <h2 className="text-xl font-bold mb-2">Players</h2>
-      <table className="table-auto w-full border">
-        <thead>
-          <tr className="bg-gray-200">
-            <th className="px-2 py-1">Name</th>
-            <th className="px-2 py-1">Team</th>
-            <th className="px-2 py-1">Role</th>
-            <th className="px-2 py-1">Actions</th>
+    <>
+      <input
+        className="border p-2 mb-3 w-full"
+        placeholder="Search player..."
+        onChange={e => setSearch(e.target.value)}
+      />
+
+      <table className="w-full border">
+        <thead className="bg-gray-200">
+          <tr>
+            <th>Name</th>
+            <th>Team</th>
+            <th>Runs</th>
+            <th>Wickets</th>
+            <th>Action</th>
           </tr>
         </thead>
+
         <tbody>
-          {players.map(p => (
+          {filtered.map(p => (
             <tr key={p._id} className="border-t">
-              <td className="px-2 py-1">{p.name}</td>
-              <td className="px-2 py-1">{p.team}</td>
-              <td className="px-2 py-1">{p.role}</td>
-              <td className="px-2 py-1">
-                <button onClick={() => deletePlayer(p._id).then(loadPlayers)} className="text-red-500">Delete</button>
+              <td>{p.name}</td>
+              <td>{p.team?.name || "-"}</td>
+
+              <td>
+                <input
+                  type="number"
+                  defaultValue={p.stats?.runs}
+                  className="border w-20"
+                  onBlur={e =>
+                    updatePlayer(p._id, {
+                      stats: { ...p.stats, runs: +e.target.value }
+                    })
+                  }
+                />
+              </td>
+
+              <td>
+                <input
+                  type="number"
+                  defaultValue={p.stats?.wickets}
+                  className="border w-20"
+                  onBlur={e =>
+                    updatePlayer(p._id, {
+                      stats: { ...p.stats, wickets: +e.target.value }
+                    })
+                  }
+                />
+              </td>
+
+              <td>
+                <button
+                  className="text-red-600"
+                  onClick={() => deletePlayer(p._id).then(load)}
+                >
+                  Delete
+                </button>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
-    </div>
+    </>
   );
 }
