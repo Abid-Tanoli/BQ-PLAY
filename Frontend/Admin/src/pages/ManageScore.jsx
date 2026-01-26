@@ -2,11 +2,6 @@ import React, { useEffect, useState } from "react";
 import { initSocket, getSocket } from "../store/socket";
 import api from "../services/api";
 
-/**
- * Simple scoring UI:
- * - choose match
- * - push score update to backend via API or socket
- */
 export default function ManageScore() {
   const [matches, setMatches] = useState([]);
   const [matchId, setMatchId] = useState("");
@@ -19,10 +14,6 @@ export default function ManageScore() {
 
   const submit = async () => {
     if (!matchId) return;
-    // Send via API
-    await api.post(`/matches/${matchId}/score`, { score }).catch(() => {});
-    // Also emit socket event for immediate updates
-    const socket = getSocket();
     socket?.emit("updateScore", { matchId, score });
     setScore("");
   };

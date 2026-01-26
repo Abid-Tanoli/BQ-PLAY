@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { createPlayer } from "../services/playerApi";
 import { getTeams } from "../services/teamApi";
+import { getSocket } from "../store/socket";
 
-export default function PlayerForm({ onChange }) {
+export default function PlayerForm() {
   const [teams, setTeams] = useState([]);
   const [form, setForm] = useState({
     name: "",
     role: "",
+    Campus: "",
     team: "",
   });
 
@@ -16,9 +18,11 @@ export default function PlayerForm({ onChange }) {
 
   const submit = async (e) => {
     e.preventDefault();
-    await createPlayer(form);
-    setForm({ name: "", role: "", team: "" });
-    onChange();
+    const player = await createPlayer(form);
+
+    setForm({ name: "", role: "", Campus: "", team: "" });
+
+    getSocket()?.emit("players:updated", player);
   };
 
   return (
@@ -35,6 +39,13 @@ export default function PlayerForm({ onChange }) {
         placeholder="Role"
         value={form.role}
         onChange={e => setForm({ ...form, role: e.target.value })}
+      />
+
+      <input
+        className="border p-2"
+        placeholder="Campus"
+        value={form.Campus}
+        onChange={e => setForm({ ...form, Campus: e.target.value })}
       />
 
       <select

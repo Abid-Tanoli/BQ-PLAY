@@ -4,6 +4,7 @@ const playerSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
     role: { type: String },
+    Campus: { type: String },
     team: { type: mongoose.Schema.Types.ObjectId, ref: "Team" },
     stats: { 
       runs: { type: Number, default: 0 },
