@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { addTeam } from "../store/slices/teamSlice";
 
 export default function TeamForm() {
   const [form, setForm] = useState({ name: "", logo: "" });
   const dispatch = useDispatch();
+
+  const { loading } = useSelector((state) => state.teams);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -30,7 +32,12 @@ export default function TeamForm() {
         onChange={e => setForm({ ...form, logo: e.target.value })}
       />
 
-      <button className="bg-blue-600 text-white rounded">Add Team</button>
+      <button
+        disabled={loading}
+        className="bg-blue-600 text-white rounded disabled:opacity-50"
+      >
+        {loading ? "Adding..." : "Add Team"}
+      </button>
     </form>
   );
 }

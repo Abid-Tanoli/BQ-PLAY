@@ -1,19 +1,32 @@
-import React from "react";
+import React, { useState } from "react";
 import Navbar from "./Navbar";
 import Sidebar from "./Sidebar";
 
 export default function Layout({ children }) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   return (
-    <div className="app-shell flex">
-      <aside className="hidden md:block bg-white border-r">
-        <Sidebar />
+    <div className="min-h-screen bg-slate-50">
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transform transition-transform duration-300 ease-in-out md:translate-x-0 ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <Sidebar onClose={() => setSidebarOpen(false)} />
       </aside>
 
-      <div className="w-full flex flex-col min-h-screen">
-        <header className="bg-white border-b">
-          <Navbar />
-        </header>
-
+      {/* Main content */}
+      <div className="md:pl-64">
+        <Navbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
         <main className="p-6">
           {children}
         </main>

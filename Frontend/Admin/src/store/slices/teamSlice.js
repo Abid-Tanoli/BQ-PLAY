@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { getTeams as apiGetTeams, createTeam as apiCreateTeam } from "../../services/teamApi";
+import api from "../../services/api";
 
 const initialState = {
   teams: [],
@@ -7,53 +7,119 @@ const initialState = {
   error: null,
 };
 
-export const fetchTeams = createAsyncThunk("teams/fetch", async (_, thunkAPI) => {
-  try {
-    return await apiGetTeams();
-  } catch (err) {
-    return thunkAPI.rejectWithValue(err.response?.data || err.message);
+export const fetchTeams = createAsyncThunk(
+  "teams/fetchAll",
+  async (_, thunkAPI) => {
+    try {
+      const res = await api.get("/teams");
+      return res.data;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(
+        err.response?.data?.message || "Failed to fetch teams"
+      );
+    }
   }
-});
+);
 
-export const addTeam = createAsyncThunk("teams/add", async (data, thunkAPI) => {
-  try {
-    return await apiCreateTeam(data);
-  } catch (err) {
-    return thunkAPI.rejectWithValue(err.response?.data || err.message);
+export const createTeam = createAsyncThunk(
+  "teams/create",
+  async (data, thunkAPI) => {
+    try {
+      const res = await api.post("/teams", data);
+      return res.data;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(
+        err.response?.data?.message || "Failed to create team"
+      );
+    }
   }
-});
+);
 
-const teamSlice = createSlice({
+export const updateTeam = createAsyncThunk(
+  "teams/update",
+  async ({ id, data }, thunkAPI) => {
+    try {
+      const res = await api.put(`/teams/${id}`, data);
+      return res.data;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(
+        err.response?.data?.message || "Failed to update team"
+      );
+    }
+  }
+);
+
+export const deleteTeam = createAsyncThunk(
+  "teams/delete",
+  async (id, thunkAPI) => {
+    try {
+      await api.delete(`/teams/${id}`);
+      return id;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(
+        err.response?.data?.message || "Failed to delete team"
+      );
+    }
+  }
+);
+
+const teamsSlice = createSlice({
   name: "teams",
   initialState,
-  reducers: {},
+  reducers: {
+    clearError(state) {
+      state.error = null;
+    },
+  },
   extraReducers: (builder) => {
     builder
+      // Fetch all teams
       .addCase(fetchTeams.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(fetchTeams.fulfilled, (state, action) => {
         state.loading = false;
-        state.teams = action.payload;
+        state.teams = Array.isArray(action.payload)
+          ? action.payload
+          : action.payload?.teams || [];
       })
       .addCase(fetchTeams.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || "Failed to fetch teams";
+        state.error = action.payload;
       })
-      .addCase(addTeam.pending, (state) => {
+      // Create team
+      .addCase(createTeam.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(addTeam.fulfilled, (state, action) => {
+      .addCase(createTeam.fulfilled, (state, action) => {
         state.loading = false;
-        state.teams.push(action.payload);
+        const team = action.payload?.team || action.payload;
+        if (team) {
+          state.teams.push(team);
+        }
       })
-      .addCase(addTeam.rejected, (state, action) => {
+      .addCase(createTeam.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || "Failed to add team";
+        state.error = action.payload;
+      })
+      // Update team
+      .addCase(updateTeam.fulfilled, (state, action) => {
+        const updated = action.payload?.team || action.payload;
+        if (updated) {
+          const index = state.teams.findIndex((t) => t._id === updated._id);
+          if (index !== -1) {
+            state.teams[index] = updated;
+          }
+        }
+      })
+      // Delete team
+      .addCase(deleteTeam.fulfilled, (state, action) => {
+        state.teams = state.teams.filter((t) => t._id !== action.payload);
       });
   },
 });
 
-export default teamSlice.reducer;
+export const { clearError } = teamsSlice.actions;
+export default teamsSlice.reducer;

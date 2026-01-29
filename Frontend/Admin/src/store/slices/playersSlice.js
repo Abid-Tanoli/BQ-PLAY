@@ -7,24 +7,157 @@ const initialState = {
   error: null,
 };
 
-export const fetchPlayers = createAsyncThunk("players/fetch", async (_, thunkAPI) => {
-  try {
-    const res = await api.get("/players");
-    return res.data;
-  } catch (err) {
-    return thunkAPI.rejectWithValue(err.response?.data || err.message);
+export const fetchPlayers = createAsyncThunk(
+  "players/fetchAll",
+  async (_, thunkAPI) => {
+    try {
+      const res = await api.get("/players");
+      return res.data;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(
+        err.response?.data?.message || "Failed to fetch players"
+      );
+    }
   }
-});
+);
+
+export const createPlayer = createAsyncThunk(
+  "players/create",
+  async (data, thunkAPI) => {
+    try {
+      const res = await api.post("/players", data);
+      return res.data;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(
+        err.response?.data?.message || "Failed to create player"
+      );
+    }
+  }
+);
+
+export const updatePlayer = createAsyncThunk(
+  "players/update",
+  async ({ id, data }, thunkAPI) => {
+    try {
+      const res = await api.put(`/players/${id}`, data);
+      return res.data;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(
+        err.response?.data?.message || "Failed to update player"
+      );
+    }
+  }
+);
+
+export const updatePlayerStats = createAsyncThunk(
+  "players/updateStats",
+  async ({ id, stats }, thunkAPI) => {
+    try {
+      const res = await api.put(`/players/${id}`, { stats });
+      return res.data;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(
+        err.response?.data?.message || "Failed to update stats"
+      );
+    }
+  }
+);
+
+export const deletePlayer = createAsyncThunk(
+  "players/delete",
+  async (id, thunkAPI) => {
+    try {
+      await api.delete(`/players/${id}`);
+      return id;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(
+        err.response?.data?.message || "Failed to delete player"
+      );
+    }
+  }
+);
+
+export const fetchPlayerRankings = createAsyncThunk(
+  "players/rankings",
+  async (_, thunkAPI) => {
+    try {
+      const res = await api.get("/players/rankings");
+      return res.data;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(
+        err.response?.data?.message || "Failed to fetch rankings"
+      );
+    }
+  }
+);
 
 const playersSlice = createSlice({
   name: "players",
   initialState,
-  reducers: {},
-  extraReducers: (b) => {
-    b.addCase(fetchPlayers.pending, (s) => { s.loading = true; s.error = null; });
-    b.addCase(fetchPlayers.fulfilled, (s, action) => { s.loading = false; s.players = action.payload; });
-    b.addCase(fetchPlayers.rejected, (s, action) => { s.loading = false; s.error = action.payload?.message || "Failed"; });
-  }
+  reducers: {
+    clearError(state) {
+      state.error = null;
+    },
+  },
+  extraReducers: (builder) => {
+    builder
+      // Fetch all players
+      .addCase(fetchPlayers.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchPlayers.fulfilled, (state, action) => {
+        state.loading = false;
+        state.players = Array.isArray(action.payload)
+          ? action.payload
+          : action.payload?.players || [];
+      })
+      .addCase(fetchPlayers.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Create player
+      .addCase(createPlayer.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createPlayer.fulfilled, (state, action) => {
+        state.loading = false;
+        const player = action.payload?.player || action.payload;
+        if (player) {
+          state.players.push(player);
+        }
+      })
+      .addCase(createPlayer.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Update player
+      .addCase(updatePlayer.fulfilled, (state, action) => {
+        const updated = action.payload?.player || action.payload;
+        if (updated) {
+          const index = state.players.findIndex((p) => p._id === updated._id);
+          if (index !== -1) {
+            state.players[index] = updated;
+          }
+        }
+      })
+      // Update stats
+      .addCase(updatePlayerStats.fulfilled, (state, action) => {
+        const updated = action.payload?.player || action.payload;
+        if (updated) {
+          const index = state.players.findIndex((p) => p._id === updated._id);
+          if (index !== -1) {
+            state.players[index] = updated;
+          }
+        }
+      })
+      // Delete player
+      .addCase(deletePlayer.fulfilled, (state, action) => {
+        state.players = state.players.filter((p) => p._id !== action.payload);
+      });
+  },
 });
 
+export const { clearError } = playersSlice.actions;
 export default playersSlice.reducer;

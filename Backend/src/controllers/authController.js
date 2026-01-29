@@ -33,16 +33,16 @@ export const registerUser = async (req, res) => {
   }
 };
 
-// ✅ FIXED LOGIN
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
+    console.log("Login Attempt:", email);
 
     if (!email || !password) {
+      console.log("Missing fields");   
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    // 🔥 IMPORTANT FIX
     const user = await User.findOne({ email }).select("+password");
 
     if (!user) {
@@ -51,6 +51,7 @@ export const loginUser = async (req, res) => {
 
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
+      console.log("password not matched")
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
@@ -65,13 +66,13 @@ export const loginUser = async (req, res) => {
         role: user.role,
       },
     });
+    console.log("Login Successful for:", email);
   } catch (err) {
     console.error("Login Error:", err);
     res.status(500).json({ message: "Login failed" });
   }
 };
 
-// ✅ FIXED PROFILE
 export const getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);

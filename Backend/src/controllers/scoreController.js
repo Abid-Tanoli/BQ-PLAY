@@ -1,4 +1,4 @@
-import Match from "../models/match.js";
+import Match from "../models/Match.js";
 
 /**
  * POST /api/matches/:id/score
@@ -61,7 +61,7 @@ export const updateScore = async (req, res, next) => {
     await match.save();
 
     try {
-      const io = req.app?.get("io");
+      const io = req.io;
       if (io) {
         io.to(id).emit("match:update", {
           matchId: id,
@@ -78,7 +78,7 @@ export const updateScore = async (req, res, next) => {
         }
       }
     } catch (err) {
-      console.warn("Socket emit failed (maybe not initialized):", err.message);
+      console.warn("Socket emit failed:", err.message);
     }
 
     return res.json({ message: "Score updated successfully", match });
