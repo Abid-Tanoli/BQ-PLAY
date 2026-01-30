@@ -7,7 +7,6 @@ export default function Layout({ children }) {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-40 md:hidden"
@@ -15,7 +14,6 @@ export default function Layout({ children }) {
         />
       )}
 
-      {/* Sidebar */}
       <aside
         className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transform transition-transform duration-300 ease-in-out md:translate-x-0 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -24,7 +22,6 @@ export default function Layout({ children }) {
         <Sidebar onClose={() => setSidebarOpen(false)} />
       </aside>
 
-      {/* Main content */}
       <div className="md:pl-64">
         <Navbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
         <main className="p-6">

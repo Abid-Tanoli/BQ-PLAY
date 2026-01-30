@@ -188,6 +188,20 @@ export default function MatchEditor({ matchId, onClose }) {
             1
           </button>
           <button
+            className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+            onClick={() => sendUpdate({ runs: 2, balls: 1, commentary: "2 run" })}
+            disabled={loading}
+          >
+            2
+          </button>
+          <button
+            className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+            onClick={() => sendUpdate({ runs: 3, balls: 1, commentary: "3 run" })}
+            disabled={loading}
+          >
+            3
+          </button>
+          <button
             className="px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
             onClick={() => sendUpdate({ runs: 4, balls: 1, commentary: "FOUR!" })}
             disabled={loading}
@@ -210,10 +224,17 @@ export default function MatchEditor({ matchId, onClose }) {
           </button>
           <button
             className="px-4 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-colors col-span-2 disabled:opacity-50"
-            onClick={() => sendUpdate({ extras: 1, balls: 0, commentary: "Extra (Wide/No Ball)" })}
+            onClick={() => sendUpdate({ extras: 1, balls: 0, commentary: "Extra (No Ball)" })}
             disabled={loading}
           >
-            Extra
+            No Ball
+          </button>
+          <button
+            className="px-4 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-colors col-span-2 disabled:opacity-50"
+            onClick={() => sendUpdate({ extras: 1, balls: 0, commentary: "Extra (Wide)" })}
+            disabled={loading}
+          >
+            Wide Ball
           </button>
         </div>
       </div>
