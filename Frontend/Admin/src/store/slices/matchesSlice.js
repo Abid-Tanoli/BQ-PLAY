@@ -16,7 +16,7 @@ export const fetchMatches = createAsyncThunk(
       return res.data;
     } catch (err) {
       return thunkAPI.rejectWithValue(
-        err.response?.data?.message || "Failed to fetch matches"
+        err.response?.data?.message || err.message || "Failed to fetch matches"
       );
     }
   }
@@ -30,7 +30,7 @@ export const fetchMatchById = createAsyncThunk(
       return res.data;
     } catch (err) {
       return thunkAPI.rejectWithValue(
-        err.response?.data?.message || "Failed to fetch match"
+        err.response?.data?.message || err.message || "Failed to fetch match"
       );
     }
   }
@@ -44,7 +44,7 @@ export const createMatch = createAsyncThunk(
       return res.data;
     } catch (err) {
       return thunkAPI.rejectWithValue(
-        err.response?.data?.message || "Failed to create match"
+        err.response?.data?.message || err.message || "Failed to create match"
       );
     }
   }
@@ -58,7 +58,7 @@ export const updateMatch = createAsyncThunk(
       return res.data;
     } catch (err) {
       return thunkAPI.rejectWithValue(
-        err.response?.data?.message || "Failed to update match"
+        err.response?.data?.message || err.message || "Failed to update match"
       );
     }
   }
@@ -72,7 +72,7 @@ export const deleteMatch = createAsyncThunk(
       return id;
     } catch (err) {
       return thunkAPI.rejectWithValue(
-        err.response?.data?.message || "Failed to delete match"
+        err.response?.data?.message || err.message || "Failed to delete match"
       );
     }
   }
@@ -93,7 +93,21 @@ export const updateScore = createAsyncThunk(
       return res.data;
     } catch (err) {
       return thunkAPI.rejectWithValue(
-        err.response?.data?.message || "Failed to update score"
+        err.response?.data?.message || err.message || "Failed to update score"
+      );
+    }
+  }
+);
+
+export const updateMatchStatus = createAsyncThunk(
+  "matches/updateStatus",
+  async ({ id, status }, thunkAPI) => {
+    try {
+      const res = await api.put(`/matches/${id}/status`, { status });
+      return res.data;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(
+        err.response?.data?.message || err.message || "Failed to update status"
       );
     }
   }
@@ -112,7 +126,6 @@ const matchesSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Fetch all matches
       .addCase(fetchMatches.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -127,7 +140,7 @@ const matchesSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      // Fetch single match
+      
       .addCase(fetchMatchById.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -140,7 +153,7 @@ const matchesSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      // Create match
+      
       .addCase(createMatch.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -156,29 +169,74 @@ const matchesSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      // Update match
+      
+      .addCase(updateMatch.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
       .addCase(updateMatch.fulfilled, (state, action) => {
+        state.loading = false;
         const updated = action.payload?.match || action.payload;
         if (updated) {
           const index = state.matches.findIndex((m) => m._id === updated._id);
           if (index !== -1) {
             state.matches[index] = updated;
           }
+          if (state.currentMatch?._id === updated._id) {
+            state.currentMatch = updated;
+          }
         }
       })
-      // Delete match
-      .addCase(deleteMatch.fulfilled, (state, action) => {
-        state.matches = state.matches.filter((m) => m._id !== action.payload);
+      .addCase(updateMatch.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       })
-      // Update score
+      
+      .addCase(deleteMatch.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteMatch.fulfilled, (state, action) => {
+        state.loading = false;
+        state.matches = state.matches.filter((m) => m._id !== action.payload);
+        if (state.currentMatch?._id === action.payload) {
+          state.currentMatch = null;
+        }
+      })
+      .addCase(deleteMatch.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      
+      .addCase(updateScore.pending, (state) => {
+        state.error = null;
+      })
       .addCase(updateScore.fulfilled, (state, action) => {
         const updated = action.payload?.match || action.payload;
-        if (updated && state.currentMatch?._id === updated._id) {
-          state.currentMatch = updated;
+        if (updated) {
+          if (state.currentMatch?._id === updated._id) {
+            state.currentMatch = updated;
+          }
+          const index = state.matches.findIndex((m) => m._id === updated._id);
+          if (index !== -1) {
+            state.matches[index] = updated;
+          }
         }
-        const index = state.matches.findIndex((m) => m._id === updated?._id);
-        if (index !== -1 && updated) {
-          state.matches[index] = updated;
+      })
+      .addCase(updateScore.rejected, (state, action) => {
+        state.error = action.payload;
+      })
+      
+      .addCase(updateMatchStatus.fulfilled, (state, action) => {
+        const updated = action.payload?.match || action.payload;
+        if (updated) {
+          const index = state.matches.findIndex((m) => m._id === updated._id);
+          if (index !== -1) {
+            state.matches[index] = updated;
+          }
+          if (state.currentMatch?._id === updated._id) {
+            state.currentMatch = updated;
+          }
         }
       });
   },
