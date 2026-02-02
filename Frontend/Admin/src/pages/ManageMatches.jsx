@@ -220,6 +220,9 @@ export default function ManageMatches() {
                   {...register("matchType")}
                   className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 >
+                  <option value="T10">T6 (6 overs)</option>
+                  <option value="T10">T8 (8 overs)</option>
+                  <option value="T10">T10 (10 overs)</option>
                   <option value="T20">T20 (20 overs)</option>
                   <option value="ODI">ODI (50 overs)</option>
                   <option value="Test">Test Match</option>

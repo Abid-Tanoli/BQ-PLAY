@@ -9,7 +9,7 @@ import {
   getMatchStats,
   updateMatchStatus
 } from "../controllers/matchController.js";
-import { updateScore, endInnings } from "../controllers/scoreController.js";
+import { updateScore, endInnings, startNextInnings } from "../controllers/scoreController.js";
 
 const router = express.Router();
 
@@ -20,6 +20,7 @@ router.get("/:id/stats", getMatchStats);
 router.post("/", createMatch);
 router.post("/:matchId/score", updateScore);
 router.post("/:matchId/end-innings", endInnings);
+router.post("/:matchId/start-next-innings", startNextInnings);
 
 router.put("/:id", updateMatch);
 router.put("/:id/status", updateMatchStatus);

@@ -80,15 +80,29 @@ export const deleteMatch = createAsyncThunk(
 
 export const updateScore = createAsyncThunk(
   "matches/updateScore",
-  async ({ matchId, inningsIndex, runs, wickets, balls, extras, commentaryText }, thunkAPI) => {
+  async ({ 
+    matchId, 
+    inningsIndex, 
+    runs, 
+    wickets, 
+    extraType,
+    commentaryText,
+    batsman1Id,
+    batsman2Id,
+    onStrikeBatsmanId,
+    bowlerId
+  }, thunkAPI) => {
     try {
       const res = await api.post(`/matches/${matchId}/score`, {
         inningsIndex,
         runs,
         wickets,
-        balls,
-        extras,
+        extraType,
         commentaryText,
+        batsman1Id,
+        batsman2Id,
+        onStrikeBatsmanId,
+        bowlerId
       });
       return res.data;
     } catch (err) {
