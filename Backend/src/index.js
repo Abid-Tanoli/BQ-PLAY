@@ -13,6 +13,9 @@ import matchRoutes from "./routes/matchRoutes.js";
 import teamRoutes from "./routes/teamRoutes.js";
 import liveMatchRoutes from "./routes/liveMatchRoutes.js";
 import errorHandler from "./middleware/errorHandler.js";
+import tournamentRoutes from "./routes/tournamentRoutes.js";
+import bulkImportRoutes from "./routes/bulkImportRoutes.js";
+import rankingsRoutes from "./routes/rankingsRoutes.js";
 
 dotenv.config();
 
@@ -59,6 +62,9 @@ app.use("/api/players", playerRoutes);
 app.use("/api/matches", matchRoutes);
 app.use("/api/teams", teamRoutes); 
 app.use("/api/livematch", liveMatchRoutes);
+app.use("/api/tournaments", tournamentRoutes);
+app.use("/api/bulk-import", bulkImportRoutes);
+app.use("/api/rankings", rankingsRoutes);
 
 app.get("/api/health", (req, res) => {
   res.json({ 

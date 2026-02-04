@@ -7,7 +7,10 @@ import {
   deleteMatch,
   setMOM,
   getMatchStats,
-  updateMatchStatus
+  updateMatchStatus,
+  setPlayingXI,
+  setOpeners,
+  getToss
 } from "../controllers/matchController.js";
 import { updateScore, endInnings, startNextInnings } from "../controllers/scoreController.js";
 
@@ -25,6 +28,9 @@ router.post("/:matchId/start-next-innings", startNextInnings);
 router.put("/:id", updateMatch);
 router.put("/:id/status", updateMatchStatus);
 router.put("/:id/mom", setMOM);
+router.put("/:matchId/playing-xi", setPlayingXI);
+router.put("/:matchId/openers", setOpeners);
+router.put("/:matchId/toss", getToss);
 
 router.delete("/:id", deleteMatch);
 

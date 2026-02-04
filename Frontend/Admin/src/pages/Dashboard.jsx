@@ -53,7 +53,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="card bg-gradient-to-br from-blue-500 to-blue-600 text-white">
           <div className="flex items-center justify-between">
@@ -239,33 +238,42 @@ export default function Dashboard() {
           </Link>
         </div>
         <div className="space-y-3">
-          {matches.slice(0, 5).map((match) => (
-            <div
-              key={match._id}
-              className="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors"
-            >
-              <div>
-                <p className="font-medium text-slate-800">
-                  {match.teams?.[0]?.name || "Team A"} vs{" "}
-                  {match.teams?.[1]?.name || "Team B"}
-                </p>
-                <p className="text-sm text-slate-500">
-                  {new Date(match.startAt).toLocaleDateString()}
-                </p>
-              </div>
-              <span
-                className={`px-3 py-1 rounded-full text-xs font-medium ${
-                  match.status === "live"
-                    ? "bg-green-100 text-green-700"
-                    : match.status === "upcoming"
-                    ? "bg-blue-100 text-blue-700"
-                    : "bg-slate-200 text-slate-700"
-                }`}
-              >
-                {match.status}
-              </span>
-            </div>
-          ))}
+         {matches.slice(0, 5).map((match) => (
+  <Link
+    key={match._id}
+    to={`/admin/live/${match._id}`}
+    className="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors"
+  >
+    <div>
+      <p className="font-medium text-slate-800">
+        {match.teams?.[0]?.name || "Team A"} vs{" "}
+        {match.teams?.[1]?.name || "Team B"}
+      </p>
+      <p className="text-sm text-slate-500">
+        {new Date(match.startAt).toLocaleDateString()}
+      </p>
+    </div>
+    <div className="flex items-center gap-3">
+      <div className="text-right text-sm">
+        <div className="font-semibold">
+          {match.innings?.[0]?.runs || 0}/{match.innings?.[0]?.wickets || 0}
+        </div>
+        <div className="text-xs text-slate-500">
+          {match.innings?.[1]?.runs || 0}/{match.innings?.[1]?.wickets || 0}
+        </div>
+      </div>
+      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+        match.status === "live"
+          ? "bg-green-100 text-green-700"
+          : match.status === "upcoming"
+          ? "bg-blue-100 text-blue-700"
+          : "bg-slate-200 text-slate-700"
+      }`}>
+        {match.status}
+      </span>
+    </div>
+  </Link>
+))}
           {matches.length === 0 && (
             <p className="text-center text-slate-500 py-8">No matches found</p>
           )}

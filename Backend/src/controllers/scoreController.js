@@ -19,7 +19,8 @@ export const updateScore = async (req, res) => {
       batsmanOnStrikeId,
       batsmanNonStrikeId,
       bowlerId,
-      commentaryText = ""
+      commentaryText = "",
+      customCommentary = false
     } = req.body;
 
     const match = await Match.findById(matchId)
@@ -41,12 +42,10 @@ export const updateScore = async (req, res) => {
 
     const innings = match.innings[inningsIndex];
     
-    // Initialize overs history if not exists
     if (!innings.oversHistory) {
       innings.oversHistory = [];
     }
 
-    // Get current over or create new one
     let currentOverNumber = Math.floor(innings.balls / 6);
     let currentOver = innings.oversHistory.find(o => o.overNumber === currentOverNumber);
     
@@ -63,19 +62,17 @@ export const updateScore = async (req, res) => {
       innings.oversHistory.push(currentOver);
     }
 
-    // Calculate ball number in current over
     const ballNumberInOver = (innings.balls % 6) + 1;
 
-    // Calculate actual runs (excluding wides and no balls from batsman)
     let batsmanRuns = runs;
     let extraRuns = 0;
     
     if (isWide) {
-      extraRuns = 1 + runs; // Wide + any runs
+      extraRuns = 1 + runs;
       batsmanRuns = 0;
       innings.extras.wides += 1 + runs;
     } else if (isNoBall) {
-      extraRuns = 1 + runs; // No ball + any runs
+      extraRuns = 1 + runs;
       innings.extras.noBalls += 1 + runs;
     } else if (isBye) {
       extraRuns = runs;
@@ -93,17 +90,19 @@ export const updateScore = async (req, res) => {
       innings.extras.byes + 
       innings.extras.legByes;
 
-    // Update total runs
     innings.runs += batsmanRuns + extraRuns;
     currentOver.runsScored += batsmanRuns + extraRuns;
 
-    // Update batsman stats
-    let batsmanOnStrike = innings.batting.find(
+    // Get player names for commentary
+    const batsmanOnStrike = await Player.findById(batsmanOnStrikeId);
+    const bowlerPlayer = await Player.findById(bowlerId);
+
+    let batsmanOnStrikeStats = innings.batting.find(
       b => b.player.toString() === batsmanOnStrikeId
     );
 
-    if (!batsmanOnStrike) {
-      batsmanOnStrike = {
+    if (!batsmanOnStrikeStats) {
+      batsmanOnStrikeStats = {
         player: batsmanOnStrikeId,
         runs: 0,
         balls: 0,
@@ -112,30 +111,28 @@ export const updateScore = async (req, res) => {
         strikeRate: 0,
         isOut: false
       };
-      innings.batting.push(batsmanOnStrike);
+      innings.batting.push(batsmanOnStrikeStats);
     }
 
-    // Only count balls for batsman if not wide
     if (!isWide) {
-      batsmanOnStrike.balls += 1;
-      batsmanOnStrike.runs += batsmanRuns;
+      batsmanOnStrikeStats.balls += 1;
+      batsmanOnStrikeStats.runs += batsmanRuns;
       
-      if (batsmanRuns === 4) batsmanOnStrike.fours += 1;
-      if (batsmanRuns === 6) batsmanOnStrike.sixes += 1;
+      if (batsmanRuns === 4) batsmanOnStrikeStats.fours += 1;
+      if (batsmanRuns === 6) batsmanOnStrikeStats.sixes += 1;
       
-      batsmanOnStrike.strikeRate = 
-        batsmanOnStrike.balls > 0 
-          ? ((batsmanOnStrike.runs / batsmanOnStrike.balls) * 100).toFixed(2)
+      batsmanOnStrikeStats.strikeRate = 
+        batsmanOnStrikeStats.balls > 0 
+          ? ((batsmanOnStrikeStats.runs / batsmanOnStrikeStats.balls) * 100).toFixed(2)
           : 0;
     }
 
-    // Update bowler stats
-    let bowler = innings.bowling.find(
+    let bowlerStats = innings.bowling.find(
       b => b.player.toString() === bowlerId
     );
 
-    if (!bowler) {
-      bowler = {
+    if (!bowlerStats) {
+      bowlerStats = {
         player: bowlerId,
         overs: 0,
         balls: 0,
@@ -146,40 +143,35 @@ export const updateScore = async (req, res) => {
         noBalls: 0,
         economy: 0
       };
-      innings.bowling.push(bowler);
+      innings.bowling.push(bowlerStats);
     }
 
-    bowler.runs += batsmanRuns + extraRuns;
-    if (isWide) bowler.wides += 1;
-    if (isNoBall) bowler.noBalls += 1;
+    bowlerStats.runs += batsmanRuns + extraRuns;
+    if (isWide) bowlerStats.wides += 1;
+    if (isNoBall) bowlerStats.noBalls += 1;
 
-    // Only increment ball count if not wide or no-ball
     if (!isWide && !isNoBall) {
-      bowler.balls += 1;
+      bowlerStats.balls += 1;
       innings.balls += 1;
       
-      // Check if over is complete
       if (innings.balls % 6 === 0) {
         innings.overs += 1;
-        bowler.overs = Math.floor(bowler.balls / 6);
+        bowlerStats.overs = Math.floor(bowlerStats.balls / 6);
         
-        // Check for maiden over
         if (currentOver.runsScored === 0) {
           currentOver.maidenOver = true;
-          bowler.maidens += 1;
+          bowlerStats.maidens += 1;
         }
       }
     }
 
-    // Calculate economy
-    const bowlerOvers = bowler.balls / 6;
-    bowler.economy = bowlerOvers > 0 ? (bowler.runs / bowlerOvers).toFixed(2) : 0;
+    const bowlerOvers = bowlerStats.balls / 6;
+    bowlerStats.economy = bowlerOvers > 0 ? (bowlerStats.runs / bowlerOvers).toFixed(2) : 0;
 
-    // Handle wicket
     if (isWicket) {
       innings.wickets += 1;
       currentOver.wickets += 1;
-      bowler.wickets += 1;
+      bowlerStats.wickets += 1;
 
       if (dismissedPlayerId) {
         const dismissedBatsman = innings.batting.find(
@@ -192,7 +184,6 @@ export const updateScore = async (req, res) => {
           if (fielderId) dismissedBatsman.fielder = fielderId;
         }
 
-        // Add to fall of wickets
         innings.fallOfWickets.push({
           runs: innings.runs,
           wickets: innings.wickets,
@@ -202,10 +193,10 @@ export const updateScore = async (req, res) => {
       }
     }
 
-    // Generate commentary if not provided
+    // Generate detailed commentary
     let commentary = commentaryText;
-    if (!commentary) {
-      commentary = generateCommentary({
+    if (!customCommentary || !commentary) {
+      commentary = generateDetailedCommentary({
         runs: batsmanRuns,
         isWide,
         isNoBall,
@@ -213,12 +204,15 @@ export const updateScore = async (req, res) => {
         isLegBye,
         isWicket,
         wicketType,
-        batsmanOnStrike,
-        bowler
+        batsmanName: batsmanOnStrike?.name || "Batsman",
+        bowlerName: bowlerPlayer?.name || "Bowler",
+        currentScore: innings.runs,
+        currentWickets: innings.wickets,
+        overNumber: currentOverNumber,
+        ballNumber: ballNumberInOver
       });
     }
 
-    // Create ball record
     const ball = {
       ballNumber: ballNumberInOver,
       batsmanOnStrike: batsmanOnStrikeId,
@@ -239,12 +233,10 @@ export const updateScore = async (req, res) => {
 
     currentOver.balls.push(ball);
 
-    // Update current batsmen
     innings.currentBatsman1 = batsmanOnStrikeId;
     innings.currentBatsman2 = batsmanNonStrikeId;
     innings.currentBowler = bowlerId;
 
-    // Swap strike on odd runs (1, 3, 5) or end of over
     if ((batsmanRuns % 2 !== 0 || innings.balls % 6 === 0) && !isWicket) {
       innings.onStrikeBatsman = innings.onStrikeBatsman?.toString() === batsmanOnStrikeId
         ? batsmanNonStrikeId
@@ -253,11 +245,9 @@ export const updateScore = async (req, res) => {
       innings.onStrikeBatsman = batsmanOnStrikeId;
     }
 
-    // Calculate run rates
     const totalOvers = innings.overs + (innings.balls % 6) / 6;
     innings.runRate = totalOvers > 0 ? (innings.runs / totalOvers).toFixed(2) : 0;
 
-    // Calculate required run rate for second innings
     if (inningsIndex === 1 && match.innings[0]) {
       const target = match.innings[0].runs + 1;
       innings.target = target;
@@ -268,7 +258,6 @@ export const updateScore = async (req, res) => {
         : 0;
     }
 
-    // Update match and innings status
     if (innings.status === "upcoming") {
       innings.status = "live";
     }
@@ -277,23 +266,19 @@ export const updateScore = async (req, res) => {
       match.status = "live";
     }
 
-    // Check if over is complete
     const isOverComplete = innings.balls % 6 === 0 && !isWide && !isNoBall;
 
     if (isOverComplete) {
-      // Generate over summary
       currentOver.summary = generateOverSummary(currentOver);
     }
 
-    // Check if innings should end
     const shouldEndInnings = 
       innings.wickets >= 10 || 
       innings.overs >= match.totalOvers ||
-      (inningsIndex === 1 && innings.runs > innings.target);
+      (inningsIndex === 1 && innings.runs >= innings.target);
 
     await match.save();
 
-    // Populate all references before sending
     await match.populate([
       { path: "innings.batting.player", select: "name role" },
       { path: "innings.bowling.player", select: "name role" },
@@ -309,7 +294,6 @@ export const updateScore = async (req, res) => {
     try {
       const io = getIO();
       
-      // Emit ball update
       io.to(matchId).emit("match:ballUpdate", {
         matchId,
         inningsIndex,
@@ -319,7 +303,6 @@ export const updateScore = async (req, res) => {
         isOverComplete
       });
 
-      // Emit score update
       io.to(matchId).emit("match:scoreUpdate", {
         matchId,
         runs: innings.runs,
@@ -330,7 +313,6 @@ export const updateScore = async (req, res) => {
         requiredRunRate: innings.requiredRunRate
       });
 
-      // Emit over complete if applicable
       if (isOverComplete) {
         io.to(matchId).emit("match:overComplete", {
           matchId,
@@ -339,11 +321,9 @@ export const updateScore = async (req, res) => {
         });
       }
 
-      // Emit match update
       io.emit("match:updated", match);
       io.emit("match:updateList");
 
-      // Check for innings end
       if (shouldEndInnings) {
         io.to(matchId).emit("match:inningsEnd", {
           matchId,
@@ -409,28 +389,24 @@ export const endInnings = async (req, res) => {
         match.result = {
           winner: inn1.team,
           margin: `${runMargin} runs`,
-          description: `${inn1.team.name} won by ${runMargin} runs`
+          description: `${inn1.team.name} won by ${runMargin} runs`,
+          resultType: "normal"
         };
       } else if (inn2.runs > inn1.runs) {
         const wicketsLeft = 10 - inn2.wickets;
         const ballsLeft = (match.totalOvers * 6) - ((inn2.overs * 6) + inn2.balls);
-        const oversLeft = Math.floor(ballsLeft / 6);
-        const ballsRemaining = ballsLeft % 6;
-        
-        let marginText = `${wicketsLeft} wickets`;
-        if (ballsLeft > 0) {
-          marginText += ` (${ballsLeft} balls remaining)`;
-        }
         
         match.result = {
           winner: inn2.team,
-          margin: marginText,
-          description: `${inn2.team.name} won by ${wicketsLeft} wickets`
+          margin: `${wicketsLeft} wickets`,
+          description: `${inn2.team.name} won by ${wicketsLeft} wickets (${ballsLeft} balls remaining)`,
+          resultType: "normal"
         };
       } else {
         match.result = {
           margin: "Match tied",
-          description: "Match ended in a tie"
+          description: "Match ended in a tie",
+          resultType: "tie"
         };
       }
     }
@@ -521,42 +497,136 @@ export const startNextInnings = async (req, res) => {
   }
 };
 
-function generateCommentary({ runs, isWide, isNoBall, isBye, isLegBye, isWicket, wicketType }) {
+function generateDetailedCommentary({ 
+  runs, 
+  isWide, 
+  isNoBall, 
+  isBye, 
+  isLegBye, 
+  isWicket, 
+  wicketType,
+  batsmanName,
+  bowlerName,
+  currentScore,
+  currentWickets,
+  overNumber,
+  ballNumber
+}) {
+  const prefix = `${overNumber}.${ballNumber}`;
+  
   if (isWicket) {
-    switch(wicketType) {
-      case "bowled": return `OUT! Bowled! The stumps are shattered!`;
-      case "caught": return `OUT! Caught! Great catch!`;
-      case "lbw": return `OUT! LBW! Finger goes up!`;
-      case "run out": return `OUT! Run out! Direct hit!`;
-      case "stumped": return `OUT! Stumped! Lightning quick work!`;
-      default: return `OUT! Wicket!`;
-    }
+    const wicketCommentaries = {
+      "bowled": [
+        `BOWLED! What a delivery from ${bowlerName}! The stumps are shattered! ${batsmanName} departs.`,
+        `OUT! Timber! ${bowlerName} gets through the defense of ${batsmanName}. The off stump goes cartwheeling.`,
+        `BOWLED! Cleaned him up! ${batsmanName} has no answer to that one from ${bowlerName}.`
+      ],
+      "caught": [
+        `OUT! Caught! ${batsmanName} holes out. Great catch! ${bowlerName} gets the breakthrough.`,
+        `CAUGHT! In the air... and taken! ${batsmanName} can't believe it. ${bowlerName} strikes!`,
+        `OUT! Wonderful catch! ${batsmanName} goes for the big shot but finds the fielder. ${bowlerName} is delighted.`
+      ],
+      "lbw": [
+        `OUT! LBW! The finger goes up! ${batsmanName} has to go. ${bowlerName} gets the wicket.`,
+        `PLUMB! That looked out and the umpire agrees. ${batsmanName} is gone lbw to ${bowlerName}.`,
+        `OUT! Dead in front! ${batsmanName} caught plumb in front. ${bowlerName} celebrates.`
+      ],
+      "run out": [
+        `RUN OUT! Direct hit! ${batsmanName} is well short of the crease! What a throw!`,
+        `OUT! Run out! Terrible mix-up and ${batsmanName} has to walk back.`,
+        `RUN OUT! Lightning quick throw and ${batsmanName} is gone! Brilliant fielding!`
+      ],
+      "stumped": [
+        `STUMPED! Quick as a flash! ${batsmanName} is out of his crease and the keeper whips off the bails!`,
+        `OUT! Stumped! Beaten by the turn and the keeper does the rest. ${batsmanName} departs.`,
+        `STUMPED! Superb glovework! ${batsmanName} is caught short. ${bowlerName} gets his man.`
+      ]
+    };
+    
+    const comments = wicketCommentaries[wicketType] || [
+      `OUT! ${batsmanName} has to go! ${bowlerName} strikes!`
+    ];
+    return `${prefix}\n${comments[Math.floor(Math.random() * comments.length)]}`;
   }
 
-  if (isWide) return `Wide ball! Extra runs for the batting team`;
-  if (isNoBall) return `No ball! Free hit coming up`;
-  if (isBye) return `${runs} byes! Keeper couldn't collect`;
-  if (isLegBye) return `${runs} leg byes! Off the pads`;
-
-  switch(runs) {
-    case 0: return `Dot ball. Good bowling`;
-    case 1: return `Single taken. Rotates strike`;
-    case 2: return `Two runs! Good running between the wickets`;
-    case 3: return `Three runs! Excellent running`;
-    case 4: return `FOUR! Boundary! Beautiful shot!`;
-    case 6: return `SIX! Maximum! That's huge!`;
-    default: return `${runs} runs scored`;
+  if (isWide) {
+    const wideComments = [
+      `Wide! ${bowlerName} strays down the leg side. Extra run for the batting team.`,
+      `WIDE! That's way outside the tramline. Free run.`,
+      `Wide ball! ${bowlerName} loses his line. Pressure showing.`
+    ];
+    return `${prefix}\n${wideComments[Math.floor(Math.random() * wideComments.length)]}`;
   }
+
+  if (isNoBall) {
+    const noballs = [
+      `No ball! ${bowlerName} oversteps. Free hit coming up!`,
+      `NO BALL! That's a big overstep from ${bowlerName}. Free hit next ball.`,
+      `No ball! ${bowlerName} will have to bowl that again.`
+    ];
+    return `${prefix}\n${noballs[Math.floor(Math.random() * noballs.length)]}`;
+  }
+
+  if (isBye) {
+    return `${prefix}\n${runs} ${runs === 1 ? 'bye' : 'byes'}! The keeper couldn't collect. ${bowlerName} won't be happy.`;
+  }
+
+  if (isLegBye) {
+    return `${prefix}\n${runs} leg ${runs === 1 ? 'bye' : 'byes'}! Off the pads and away.`;
+  }
+
+  const runCommentaries = {
+    0: [
+      `Dot ball. Solid defense from ${batsmanName}.`,
+      `No run. Good bowling from ${bowlerName}, ${batsmanName} respects it.`,
+      `DOT! ${bowlerName} beats ${batsmanName} outside off. Good ball.`,
+      `Defended solidly by ${batsmanName}. No run.`
+    ],
+    1: [
+      `Single taken. ${batsmanName} rotates the strike nicely.`,
+      `One run. Good running between the wickets.`,
+      `They take a quick single. Alert running from ${batsmanName}.`,
+      `Pushed into the gap for a single.`
+    ],
+    2: [
+      `Two runs! Good running between the wickets from ${batsmanName}.`,
+      `They scamper back for the second. Excellent running.`,
+      `TWO! ${batsmanName} places it well and comes back for two.`,
+      `A couple of runs. Well run.`
+    ],
+    3: [
+      `THREE RUNS! Excellent running from the batsmen!`,
+      `They run three! ${batsmanName} pushes for the third and makes it.`,
+      `Three runs! Superb fitness on display.`
+    ],
+    4: [
+      `FOUR! Beautiful shot from ${batsmanName}! That raced away to the boundary!`,
+      `BOUNDARY! ${batsmanName} finds the gap perfectly! Four runs!`,
+      `FOUR! What a stroke! ${batsmanName} is in fine form!`,
+      `FOUR! Cracking shot from ${batsmanName}! ${bowlerName} under pressure now.`,
+      `BOUNDARY! ${batsmanName} leans into it and sends it racing past the fielder!`
+    ],
+    6: [
+      `SIX! MASSIVE! ${batsmanName} launches it into the stands! What a shot!`,
+      `MAXIMUM! ${batsmanName} goes big and clears the boundary with ease!`,
+      `SIX! That's huge! ${batsmanName} is taking on ${bowlerName} here!`,
+      `BANG! SIX! ${batsmanName} smashes it out of the park!`,
+      `SIX! Clean strike from ${batsmanName}! That went a long way!`
+    ]
+  };
+
+  const comments = runCommentaries[runs] || [`${runs} runs scored.`];
+  return `${prefix}\n${bowlerName} to ${batsmanName}, ${comments[Math.floor(Math.random() * comments.length)]}`;
 }
 
 function generateOverSummary(over) {
   const runs = over.runsScored;
   const wickets = over.wickets;
   
-  let summary = `${runs} run${runs !== 1 ? 's' : ''}`;
+  let summary = `${runs} ${runs === 1 ? 'run' : 'runs'}`;
   
   if (wickets > 0) {
-    summary += `, ${wickets} wicket${wickets !== 1 ? 's' : ''}`;
+    summary += `, ${wickets} ${wickets === 1 ? 'wicket' : 'wickets'}`;
   }
   
   if (over.maidenOver) {

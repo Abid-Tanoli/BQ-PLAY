@@ -3,6 +3,7 @@ import authReducer from "./slices/authSlice";
 import matchesReducer from "./slices/matchesSlice";
 import playersReducer from "./slices/playersSlice";
 import teamsReducer from "./slices/teamSlice";
+import tournamentsReducer from "./slices/tournamentsSlice"
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     matches: matchesReducer,
     players: playersReducer,
     teams: teamsReducer,
+    tournaments: tournamentsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

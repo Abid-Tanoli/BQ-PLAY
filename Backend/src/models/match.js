@@ -41,7 +41,8 @@ const batsmanStatsSchema = new mongoose.Schema({
   isOut: { type: Boolean, default: false },
   dismissalType: { type: String, default: "" },
   dismissedBy: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
-  fielder: { type: mongoose.Schema.Types.ObjectId, ref: "Player" }
+  fielder: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
+  position: { type: Number, default: 0 }
 });
 
 const bowlerStatsSchema = new mongoose.Schema({
@@ -56,6 +57,14 @@ const bowlerStatsSchema = new mongoose.Schema({
   economy: { type: Number, default: 0 }
 });
 
+const partnershipSchema = new mongoose.Schema({
+  batsman1: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
+  batsman2: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
+  runs: { type: Number, default: 0 },
+  balls: { type: Number, default: 0 },
+  wicket: { type: Number }
+});
+
 const inningsSchema = new mongoose.Schema({
   team: { type: mongoose.Schema.Types.ObjectId, ref: "Team", required: true },
   battingOrder: [{ type: mongoose.Schema.Types.ObjectId, ref: "Player" }],
@@ -68,6 +77,7 @@ const inningsSchema = new mongoose.Schema({
     noBalls: { type: Number, default: 0 },
     byes: { type: Number, default: 0 },
     legByes: { type: Number, default: 0 },
+    penalties: { type: Number, default: 0 },
     total: { type: Number, default: 0 }
   },
   currentBatsman1: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
@@ -88,9 +98,12 @@ const inningsSchema = new mongoose.Schema({
     player: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
     overs: { type: Number }
   }],
+  partnerships: [partnershipSchema],
   runRate: { type: Number, default: 0 },
   requiredRunRate: { type: Number, default: 0 },
-  target: { type: Number, default: 0 }
+  target: { type: Number, default: 0 },
+  powerplayOvers: { type: Number, default: 0 },
+  declared: { type: Boolean, default: false }
 });
 
 const matchSchema = new mongoose.Schema(
@@ -100,6 +113,9 @@ const matchSchema = new mongoose.Schema(
       required: true, 
       trim: true 
     },
+    matchNumber: {
+      type: Number
+    },
     venue: { 
       type: String,
       default: "" 
@@ -108,6 +124,10 @@ const matchSchema = new mongoose.Schema(
       type: String,
       enum: ["6 Overs", "8 Overs", "T10", "T20", "ODI", "Test"],
       default: "T20"
+    },
+    tournament: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Tournament"
     },
     totalOvers: {
       type: Number,
@@ -129,23 +149,43 @@ const matchSchema = new mongoose.Schema(
     },
     status: { 
       type: String, 
-      enum: ["upcoming", "live", "innings-break", "completed"], 
+      enum: ["upcoming", "live", "innings-break", "completed", "abandoned"], 
       default: "upcoming" 
     },
     result: {
       winner: { type: mongoose.Schema.Types.ObjectId, ref: "Team" },
       margin: { type: String },
-      description: { type: String }
+      description: { type: String },
+      resultType: { 
+        type: String,
+        enum: ["normal", "tie", "no result", "abandoned"]
+      }
     },
     tossWinner: { type: mongoose.Schema.Types.ObjectId, ref: "Team" },
     tossDecision: { type: String, enum: ["bat", "bowl"] },
     manOfMatch: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
+    umpires: [{
+      name: String,
+      role: { type: String, enum: ["field", "third", "reserve"] }
+    }],
     highlights: [{
       type: { type: String },
       description: { type: String },
       over: { type: Number },
       timestamp: { type: Date, default: Date.now }
-    }]
+    }],
+    weather: {
+      condition: String,
+      temperature: Number
+    },
+    playingXI: [{
+      team: { type: mongoose.Schema.Types.ObjectId, ref: "Team" },
+      players: [{ type: mongoose.Schema.Types.ObjectId, ref: "Player" }]
+    }],
+    seriesStanding: {
+      matchesPlayed: { type: Number, default: 0 },
+      position: { type: Number }
+    }
   },
   { 
     timestamps: true,
@@ -156,6 +196,7 @@ const matchSchema = new mongoose.Schema(
 
 matchSchema.index({ status: 1, startAt: -1 });
 matchSchema.index({ teams: 1 });
+matchSchema.index({ tournament: 1 });
 
 matchSchema.pre('save', function(next) {
   if (this.isModified('matchType')) {

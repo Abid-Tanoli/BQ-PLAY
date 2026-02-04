@@ -45,6 +45,20 @@ const menuItems = [
     ),
   },
   {
+    to: "/admin/tournaments",
+    label: "Manage Tournaments",
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M9 6h6M7 6v4a5 5 0 0010 0V6M5 6h14M12 15v4M8 21h8"
+        />
+      </svg>
+    ),
+  },
+  {
     to: "/admin/teams",
     label: "Manage Teams",
     icon: (
@@ -68,6 +82,20 @@ const menuItems = [
           strokeLinejoin="round"
           strokeWidth={2}
           d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+        />
+      </svg>
+    ),
+  },
+  {
+    to: "/admin/bulk-import",
+    label: "Bulk Import",
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M4 7h16M4 12h16M4 17h16"
         />
       </svg>
     ),
@@ -111,7 +139,10 @@ export default function Sidebar({ onClose }) {
             <h2 className="text-xl font-bold text-slate-800">BQ-PLAY</h2>
             <p className="text-xs text-slate-500">Admin Panel</p>
           </div>
-          <button onClick={onClose} className="md:hidden p-1 hover:bg-slate-100 rounded">
+          <button
+            onClick={onClose}
+            className="md:hidden p-1 hover:bg-slate-100 rounded"
+          >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"

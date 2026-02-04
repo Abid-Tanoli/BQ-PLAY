@@ -12,6 +12,9 @@ import AdminLogin from "./pages/auth/AdminLogin";
 import AdminRegister from "./pages/auth/AdminRegister";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
+import LiveMatchView from "./pages/Livematchview";
+import TournamentManagement from "./pages/Tournamentmanagement";
+import BulkImport from "./pages/BulkImport";
 
 export default function App() {
   const { token } = useSelector((state) => state.auth);
@@ -27,25 +30,24 @@ export default function App() {
         element={token ? <Navigate to="/admin" replace /> : <AdminRegister />}
       />
 
-      <Route
-        path="/admin/*"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Routes>
-                <Route path="" element={<Dashboard />} />
-                <Route path="live" element={<LiveScores />} />
-                <Route path="matches" element={<ManageMatches />} />
-                <Route path="players" element={<ManagePlayers />} />
-                <Route path="teams" element={<Teams />} />
-                <Route path="score" element={<ManageScore />} />
-                <Route path="tournament" element={<TournamentTable />} />
-                <Route path="*" element={<Navigate to="/admin" replace />} />
-              </Routes>
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/admin/*" element={
+        <ProtectedRoute>
+          <Layout>
+            <Routes>
+              <Route path="" element={<Dashboard />} />
+              <Route path="live/:matchId" element={<LiveMatchView />} />
+              <Route path="matches" element={<ManageMatches />} />
+              <Route path="tournaments" element={<TournamentManagement />} />
+              <Route path="players" element={<ManagePlayers />} />
+              <Route path="teams" element={<Teams />} />
+              <Route path="bulk-import" element={<BulkImport />} />
+              <Route path="score/:matchId?" element={<ManageScore />} />
+              <Route path="tournament" element={<TournamentTable />} />
+              <Route path="*" element={<Navigate to="/admin" replace />} />
+            </Routes>
+          </Layout>
+        </ProtectedRoute>
+      } />
 
       <Route path="*" element={<Navigate to="/admin" replace />} />
     </Routes>
