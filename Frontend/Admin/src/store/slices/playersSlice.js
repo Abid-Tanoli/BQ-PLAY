@@ -3,15 +3,24 @@ import api from "../../services/api";
 
 const initialState = {
   players: [],
+  pagination: {
+    totalPlayers: 0,
+    totalPages: 0,
+    currentPage: 1,
+  },
   loading: false,
   error: null,
 };
 
 export const fetchPlayers = createAsyncThunk(
   "players/fetchAll",
-  async (_, thunkAPI) => {
+  async (params = {}, thunkAPI) => {
     try {
-      const res = await api.get("/players");
+      const { page = 1, limit = 10, search = "", team = "", Campus = "" } = params;
+      let url = `/players?page=${page}&limit=${limit}&search=${search}`;
+      if (team) url += `&team=${team}`;
+      if (Campus) url += `&Campus=${Campus}`;
+      const res = await api.get(url);
       return res.data;
     } catch (err) {
       return thunkAPI.rejectWithValue(
@@ -108,9 +117,16 @@ const playersSlice = createSlice({
       })
       .addCase(fetchPlayers.fulfilled, (state, action) => {
         state.loading = false;
-        state.players = Array.isArray(action.payload)
-          ? action.payload
-          : action.payload?.players || [];
+        if (action.payload?.players) {
+          state.players = action.payload.players;
+          state.pagination = {
+            totalPlayers: action.payload.totalPlayers,
+            totalPages: action.payload.totalPages,
+            currentPage: action.payload.currentPage,
+          };
+        } else {
+          state.players = Array.isArray(action.payload) ? action.payload : [];
+        }
       })
       .addCase(fetchPlayers.rejected, (state, action) => {
         state.loading = false;

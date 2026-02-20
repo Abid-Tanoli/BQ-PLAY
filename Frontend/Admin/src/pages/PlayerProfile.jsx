@@ -11,10 +11,8 @@ export default function PlayerProfile() {
     useEffect(() => {
         const fetchPlayer = async () => {
             try {
-                const res = await api.get(`/players`);
-                // Find the specific player since there might not be a single player endpoint
-                const found = res.data.find(p => p._id === id);
-                setPlayer(found);
+                const res = await api.get(`/players/${id}`);
+                setPlayer(res.data);
             } catch (err) {
                 console.error(err);
             } finally {

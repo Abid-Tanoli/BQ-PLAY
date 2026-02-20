@@ -3,6 +3,7 @@ import {
   getPlayers,
   createPlayer,
   getPlayerRanking,
+  getPlayer,
   updatePlayer,
   deletePlayer,
 } from "../controllers/playerController.js";
@@ -13,6 +14,7 @@ const router = express.Router();
 
 router.get("/", getPlayers);
 router.get("/ranking", getPlayerRanking);
+router.get("/:id", getPlayer);
 
 router.post("/", validate(createPlayerSchema), createPlayer);
 router.put("/:id", updatePlayer);

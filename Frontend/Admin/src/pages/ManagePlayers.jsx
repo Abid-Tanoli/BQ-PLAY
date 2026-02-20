@@ -7,14 +7,29 @@ import { Link } from "react-router-dom";
 
 export default function ManagePlayers() {
   const dispatch = useDispatch();
-  const { players, loading } = useSelector((state) => state.players);
+  const { players, loading, pagination } = useSelector((state) => state.players);
   const { teams } = useSelector((state) => state.teams);
   const [search, setSearch] = useState("");
+  const [filterTeam, setFilterTeam] = useState("");
+  const [filterCampus, setFilterCampus] = useState("");
+  const [page, setPage] = useState(1);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [editingId, setEditingId] = useState(null);
   const { register, handleSubmit, reset, setValue } = useForm();
 
   useEffect(() => {
-    dispatch(fetchPlayers());
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    dispatch(fetchPlayers({ page, search: debouncedSearch, team: filterTeam, Campus: filterCampus }));
+  }, [dispatch, page, debouncedSearch, filterTeam, filterCampus]);
+
+  useEffect(() => {
     dispatch(fetchTeams());
   }, [dispatch]);
 
@@ -53,7 +68,7 @@ export default function ManagePlayers() {
     }
   };
 
-  const filtered = players.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()));
+  // Removed filtered constant as filtering is now done on the backend
 
   return (
     <div className="space-y-6">
@@ -101,15 +116,37 @@ export default function ManagePlayers() {
       </div>
 
       <div className="card">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">All Players</h3>
-          <input
-            type="text"
-            placeholder="Search players..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="px-3 py-2 border rounded-lg w-64"
-          />
+        <div className="flex flex-wrap items-center gap-4 mb-4">
+          <h3 className="text-lg font-semibold flex-grow">All Players</h3>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <select
+              value={filterTeam}
+              onChange={(e) => { setFilterTeam(e.target.value); setPage(1); }}
+              className="px-3 py-2 border rounded-lg text-sm bg-white min-w-[150px]"
+            >
+              <option value="">All Teams</option>
+              {teams.map(t => (
+                <option key={t._id} value={t._id}>{t.name}</option>
+              ))}
+            </select>
+
+            <input
+              type="text"
+              placeholder="Filter by Campus..."
+              value={filterCampus}
+              onChange={(e) => { setFilterCampus(e.target.value); setPage(1); }}
+              className="px-3 py-2 border rounded-lg text-sm w-48"
+            />
+
+            <input
+              type="text"
+              placeholder="Search by name..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="px-3 py-2 border rounded-lg text-sm w-48"
+            />
+          </div>
         </div>
 
         {loading && <div className="text-center py-8">Loading...</div>}
@@ -128,7 +165,7 @@ export default function ManagePlayers() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((p) => (
+              {players.map((p) => (
                 <tr key={p._id} className="border-t hover:bg-slate-50 transition-colors">
                   <td className="p-3">
                     <Link to={`/admin/players/${p._id}`} className="flex items-center gap-3 group">
@@ -185,8 +222,33 @@ export default function ManagePlayers() {
               ))}
             </tbody>
           </table>
-          {filtered.length === 0 && <div className="text-center py-8 text-slate-500">No players found</div>}
+          {players.length === 0 && <div className="text-center py-8 text-slate-500">No players found</div>}
         </div>
+
+        {/* Pagination Controls */}
+        {pagination.totalPages > 1 && (
+          <div className="flex items-center justify-between mt-6 pt-4 border-t">
+            <p className="text-sm text-slate-500">
+              Showing page <span className="font-semibold text-slate-700">{pagination.currentPage}</span> of <span className="font-semibold text-slate-700">{pagination.totalPages}</span> ({pagination.totalPlayers} total players)
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPage(prev => Math.max(prev - 1, 1))}
+                disabled={page === 1}
+                className="px-3 py-1 border rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => setPage(prev => Math.min(prev + 1, pagination.totalPages))}
+                disabled={page === pagination.totalPages}
+                className="px-3 py-1 border rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
