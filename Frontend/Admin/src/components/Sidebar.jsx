@@ -128,6 +128,20 @@ const menuItems = [
       </svg>
     ),
   },
+  {
+    to: "/admin/rankings",
+    label: "Rankings",
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+        />
+      </svg>
+    ),
+  },
 ];
 
 export default function Sidebar({ onClose }) {
@@ -163,10 +177,9 @@ export default function Sidebar({ onClose }) {
             end={item.to === "/admin"}
             onClick={onClose}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                isActive
-                  ? "bg-blue-50 text-blue-700"
-                  : "text-slate-700 hover:bg-slate-100"
+              `flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${isActive
+                ? "bg-blue-50 text-blue-700"
+                : "text-slate-700 hover:bg-slate-100"
               }`
             }
           >

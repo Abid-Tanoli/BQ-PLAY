@@ -7,7 +7,6 @@ import ManageMatches from "./pages/ManageMatches";
 import ManagePlayers from "./pages/ManagePlayers";
 import Teams from "./pages/Teams";
 import ManageScore from "./pages/ManageScore";
-import TournamentTable from "./pages/TournamentTable";
 import AdminLogin from "./pages/auth/AdminLogin";
 import AdminRegister from "./pages/auth/AdminRegister";
 import Layout from "./components/Layout";
@@ -15,6 +14,8 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import LiveMatchView from "./pages/Livematchview";
 import TournamentManagement from "./pages/Tournamentmanagement";
 import BulkImport from "./pages/BulkImport";
+import Rankings from "./pages/Rankings";
+import PlayerProfile from "./pages/PlayerProfile";
 
 export default function App() {
   const { token } = useSelector((state) => state.auth);
@@ -39,10 +40,11 @@ export default function App() {
               <Route path="matches" element={<ManageMatches />} />
               <Route path="tournaments" element={<TournamentManagement />} />
               <Route path="players" element={<ManagePlayers />} />
+              <Route path="players/:id" element={<PlayerProfile />} />
               <Route path="teams" element={<Teams />} />
               <Route path="bulk-import" element={<BulkImport />} />
               <Route path="score/:matchId?" element={<ManageScore />} />
-              <Route path="tournament" element={<TournamentTable />} />
+              <Route path="rankings" element={<Rankings />} />
               <Route path="*" element={<Navigate to="/admin" replace />} />
             </Routes>
           </Layout>

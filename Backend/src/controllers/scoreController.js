@@ -5,7 +5,7 @@ import { getIO } from "../socket/socket.js";
 export const updateScore = async (req, res) => {
   try {
     const { matchId } = req.params;
-    const { 
+    const {
       inningsIndex,
       runs = 0,
       isWide = false,
@@ -41,14 +41,14 @@ export const updateScore = async (req, res) => {
     }
 
     const innings = match.innings[inningsIndex];
-    
+
     if (!innings.oversHistory) {
       innings.oversHistory = [];
     }
 
     let currentOverNumber = Math.floor(innings.balls / 6);
     let currentOver = innings.oversHistory.find(o => o.overNumber === currentOverNumber);
-    
+
     if (!currentOver) {
       currentOver = {
         overNumber: currentOverNumber,
@@ -66,7 +66,7 @@ export const updateScore = async (req, res) => {
 
     let batsmanRuns = runs;
     let extraRuns = 0;
-    
+
     if (isWide) {
       extraRuns = 1 + runs;
       batsmanRuns = 0;
@@ -84,10 +84,10 @@ export const updateScore = async (req, res) => {
       innings.extras.legByes += runs;
     }
 
-    innings.extras.total = 
-      innings.extras.wides + 
-      innings.extras.noBalls + 
-      innings.extras.byes + 
+    innings.extras.total =
+      innings.extras.wides +
+      innings.extras.noBalls +
+      innings.extras.byes +
       innings.extras.legByes;
 
     innings.runs += batsmanRuns + extraRuns;
@@ -117,12 +117,12 @@ export const updateScore = async (req, res) => {
     if (!isWide) {
       batsmanOnStrikeStats.balls += 1;
       batsmanOnStrikeStats.runs += batsmanRuns;
-      
+
       if (batsmanRuns === 4) batsmanOnStrikeStats.fours += 1;
       if (batsmanRuns === 6) batsmanOnStrikeStats.sixes += 1;
-      
-      batsmanOnStrikeStats.strikeRate = 
-        batsmanOnStrikeStats.balls > 0 
+
+      batsmanOnStrikeStats.strikeRate =
+        batsmanOnStrikeStats.balls > 0
           ? ((batsmanOnStrikeStats.runs / batsmanOnStrikeStats.balls) * 100).toFixed(2)
           : 0;
     }
@@ -153,11 +153,11 @@ export const updateScore = async (req, res) => {
     if (!isWide && !isNoBall) {
       bowlerStats.balls += 1;
       innings.balls += 1;
-      
+
       if (innings.balls % 6 === 0) {
         innings.overs += 1;
         bowlerStats.overs = Math.floor(bowlerStats.balls / 6);
-        
+
         if (currentOver.runsScored === 0) {
           currentOver.maidenOver = true;
           bowlerStats.maidens += 1;
@@ -253,8 +253,8 @@ export const updateScore = async (req, res) => {
       innings.target = target;
       const remainingRuns = target - innings.runs;
       const remainingOvers = match.totalOvers - totalOvers;
-      innings.requiredRunRate = remainingOvers > 0 
-        ? (remainingRuns / remainingOvers).toFixed(2) 
+      innings.requiredRunRate = remainingOvers > 0
+        ? (remainingRuns / remainingOvers).toFixed(2)
         : 0;
     }
 
@@ -272,10 +272,14 @@ export const updateScore = async (req, res) => {
       currentOver.summary = generateOverSummary(currentOver);
     }
 
-    const shouldEndInnings = 
-      innings.wickets >= 10 || 
+    const isSuperOver = match.result.resultType === "super_over";
+    const wicketLimit = isSuperOver ? 2 : 10;
+
+    const shouldEndInnings =
+      innings.wickets >= wicketLimit ||
       innings.overs >= match.totalOvers ||
-      (inningsIndex === 1 && innings.runs >= innings.target);
+      (inningsIndex === 1 && match.innings.length === 2 && innings.runs >= innings.target) ||
+      (inningsIndex === 3 && innings.runs >= innings.target);
 
     await match.save();
 
@@ -293,7 +297,7 @@ export const updateScore = async (req, res) => {
 
     try {
       const io = getIO();
-      
+
       io.to(matchId).emit("match:ballUpdate", {
         matchId,
         inningsIndex,
@@ -335,20 +339,20 @@ export const updateScore = async (req, res) => {
       console.log("Socket not available:", socketError.message);
     }
 
-    res.status(200).json({ 
+    res.status(200).json({
       match,
       innings: match.innings[inningsIndex],
       currentOver,
       ball,
       isOverComplete,
       shouldEndInnings,
-      message: "Score updated successfully" 
+      message: "Score updated successfully"
     });
   } catch (error) {
     console.error("Error updating score:", error);
-    res.status(400).json({ 
-      message: "Failed to update score", 
-      error: error.message 
+    res.status(400).json({
+      message: "Failed to update score",
+      error: error.message
     });
   }
 };
@@ -378,12 +382,36 @@ export const endInnings = async (req, res) => {
       match.innings[inningsIndex + 1].target = currentInnings.runs + 1;
       match.status = "innings-break";
       match.currentInnings = inningsIndex + 1;
+    } else if (match.result.resultType === "super_over") {
+      // Handle Super Over phased endings
+      if (inningsIndex === 2) {
+        // First innings of Super Over ended
+        match.status = "pending_tie_resolution";
+        match.result.description = "Super Over: First innings complete";
+      } else if (inningsIndex === 3) {
+        // Second innings of Super Over ended
+        match.status = "completed";
+        const innSO1 = match.innings[2];
+        const innSO2 = match.innings[3];
+
+        if (innSO1.runs > innSO2.runs) {
+          match.result.winner = innSO1.team;
+          match.result.description = `${innSO1.team.name} won the Super Over`;
+        } else if (innSO2.runs > innSO1.runs) {
+          match.result.winner = innSO2.team;
+          match.result.description = `${innSO2.team.name} won the Super Over`;
+        } else {
+          // Double Super Over? For now, just declared tie or user can start another?
+          // Cricket rules usually say most boundaries, but let's keep it simple.
+          match.result.description = "Super Over ended in a tie";
+        }
+      }
     } else {
       match.status = "completed";
-      
+
       const inn1 = match.innings[0];
       const inn2 = match.innings[1];
-      
+
       if (inn1.runs > inn2.runs) {
         const runMargin = inn1.runs - inn2.runs;
         match.result = {
@@ -395,7 +423,7 @@ export const endInnings = async (req, res) => {
       } else if (inn2.runs > inn1.runs) {
         const wicketsLeft = 10 - inn2.wickets;
         const ballsLeft = (match.totalOvers * 6) - ((inn2.overs * 6) + inn2.balls);
-        
+
         match.result = {
           winner: inn2.team,
           margin: `${wicketsLeft} wickets`,
@@ -403,9 +431,11 @@ export const endInnings = async (req, res) => {
           resultType: "normal"
         };
       } else {
+        match.status = "pending_tie_resolution";
+        match.tieResolution = "pending";
         match.result = {
           margin: "Match tied",
-          description: "Match ended in a tie",
+          description: "Match ended in a tie - Resolution pending",
           resultType: "tie"
         };
       }
@@ -421,31 +451,96 @@ export const endInnings = async (req, res) => {
 
     try {
       const io = getIO();
-      
+
       io.to(matchId).emit("innings:ended", {
         matchId,
         inningsIndex,
         matchStatus: match.status,
         nextInnings: inningsIndex + 1 < match.innings.length
       });
-      
+
       io.emit("match:updated", match);
       io.emit("match:updateList");
     } catch (socketError) {
       console.log("Socket not available:", socketError.message);
     }
 
-    res.status(200).json({ 
+    res.status(200).json({
       match,
-      message: match.status === "completed" 
+      message: match.status === "completed"
         ? "Match completed successfully"
-        : "Innings ended successfully" 
+        : "Innings ended successfully"
     });
   } catch (error) {
     console.error("Error ending innings:", error);
-    res.status(400).json({ 
-      message: "Failed to end innings", 
-      error: error.message 
+    res.status(400).json({
+      message: "Failed to end innings",
+      error: error.message
+    });
+  }
+};
+
+export const reduceOvers = async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    const { newTotalOvers } = req.body;
+
+    const match = await Match.findById(matchId);
+    if (!match) {
+      return res.status(404).json({ message: "Match not found" });
+    }
+
+    if (newTotalOvers >= match.totalOvers) {
+      return res.status(400).json({
+        message: "New overs must be less than current total overs"
+      });
+    }
+
+    const oldTotalOvers = match.totalOvers;
+    match.totalOvers = newTotalOvers;
+
+    // If we are in the 2nd innings, we need to recalculate the target
+    // Using a simplified DRS-like logic: Target = (Team1Runs * NewTotalOvers / OldTotalOvers) + 1
+    if (match.currentInnings === 1 && match.innings[0] && match.innings[1]) {
+      const inn1 = match.innings[0];
+      const inn2 = match.innings[1];
+
+      // Simplified DLS formula
+      const newTarget = Math.floor((inn1.runs * newTotalOvers / oldTotalOvers)) + 1;
+      inn2.target = newTarget;
+
+      const totalOversFaced = inn2.overs + (inn2.balls % 6) / 6;
+      const remainingOvers = newTotalOvers - totalOversFaced;
+      const remainingRuns = newTarget - inn2.runs;
+
+      inn2.requiredRunRate = remainingOvers > 0
+        ? (remainingRuns / remainingOvers).toFixed(2)
+        : 0;
+    }
+
+    await match.save();
+
+    try {
+      const io = getIO();
+      io.to(matchId).emit("match:oversReduced", {
+        matchId,
+        newTotalOvers,
+        newTarget: match.innings[1]?.target
+      });
+      io.emit("match:updated", match);
+    } catch (socketError) {
+      console.log("Socket not available:", socketError.message);
+    }
+
+    res.status(200).json({
+      match,
+      message: `Match overs reduced to ${newTotalOvers}`
+    });
+  } catch (error) {
+    console.error("Error reducing overs:", error);
+    res.status(400).json({
+      message: "Failed to reduce overs",
+      error: error.message
     });
   }
 };
@@ -467,7 +562,7 @@ export const startNextInnings = async (req, res) => {
     if (nextInnings) {
       nextInnings.status = "live";
       match.status = "live";
-      
+
       await match.save();
 
       try {
@@ -481,29 +576,29 @@ export const startNextInnings = async (req, res) => {
         console.log("Socket not available:", socketError.message);
       }
 
-      res.status(200).json({ 
+      res.status(200).json({
         match,
-        message: "Next innings started successfully" 
+        message: "Next innings started successfully"
       });
     } else {
       res.status(400).json({ message: "No next innings found" });
     }
   } catch (error) {
     console.error("Error starting next innings:", error);
-    res.status(400).json({ 
-      message: "Failed to start next innings", 
-      error: error.message 
+    res.status(400).json({
+      message: "Failed to start next innings",
+      error: error.message
     });
   }
 };
 
-function generateDetailedCommentary({ 
-  runs, 
-  isWide, 
-  isNoBall, 
-  isBye, 
-  isLegBye, 
-  isWicket, 
+function generateDetailedCommentary({
+  runs,
+  isWide,
+  isNoBall,
+  isBye,
+  isLegBye,
+  isWicket,
   wicketType,
   batsmanName,
   bowlerName,
@@ -513,7 +608,7 @@ function generateDetailedCommentary({
   ballNumber
 }) {
   const prefix = `${overNumber}.${ballNumber}`;
-  
+
   if (isWicket) {
     const wicketCommentaries = {
       "bowled": [
@@ -542,7 +637,7 @@ function generateDetailedCommentary({
         `STUMPED! Superb glovework! ${batsmanName} is caught short. ${bowlerName} gets his man.`
       ]
     };
-    
+
     const comments = wicketCommentaries[wicketType] || [
       `OUT! ${batsmanName} has to go! ${bowlerName} strikes!`
     ];
@@ -622,13 +717,13 @@ function generateDetailedCommentary({
 function generateOverSummary(over) {
   const runs = over.runsScored;
   const wickets = over.wickets;
-  
+
   let summary = `${runs} ${runs === 1 ? 'run' : 'runs'}`;
-  
+
   if (wickets > 0) {
     summary += `, ${wickets} ${wickets === 1 ? 'wicket' : 'wickets'}`;
   }
-  
+
   if (over.maidenOver) {
     summary = `Maiden over!`;
   }
@@ -642,3 +737,118 @@ function generateOverSummary(over) {
 
   return `${summary} (${ballsStr})`;
 }
+
+export const resolveTie = async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    const { resolution } = req.body; // "declared_tie" or "super_over"
+
+    const match = await Match.findById(matchId);
+    if (!match) return res.status(404).json({ message: "Match not found" });
+
+    if (match.status !== "pending_tie_resolution") {
+      return res.status(400).json({ message: "Match is not pending tie resolution" });
+    }
+
+    if (resolution === "declared_tie") {
+      match.status = "completed";
+      match.tieResolution = "declared_tie";
+      match.result.description = "Match ended in a tie";
+      await match.save();
+    } else if (resolution === "super_over") {
+      match.tieResolution = "super_over";
+      // We don't change match status yet, it stays pending until players are selected or startSuperOver is called
+      await match.save();
+    } else {
+      return res.status(400).json({ message: "Invalid resolution type" });
+    }
+
+    try {
+      const io = getIO();
+      io.to(matchId).emit("match:tieResolved", { matchId, resolution });
+      io.emit("match:updated", match);
+    } catch (err) { }
+
+    res.status(200).json({ match, message: `Tie resolved as ${resolution}` });
+  } catch (error) {
+    res.status(400).json({ message: "Failed to resolve tie", error: error.message });
+  }
+};
+
+export const startSuperOverInnings = async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    const { batsmenIds, bowlerId } = req.body;
+
+    const match = await Match.findById(matchId);
+    if (!match) return res.status(404).json({ message: "Match not found" });
+
+    if (match.status !== "pending_tie_resolution" || match.tieResolution !== "super_over") {
+      return res.status(400).json({ message: "Match is not ready for Super Over selection" });
+    }
+
+    // Determine which SO innings this is (1st or 2nd)
+    const isFirstSO = match.innings.length === 2;
+    const isSecondSO = match.innings.length === 3;
+
+    if (!isFirstSO && !isSecondSO) {
+      return res.status(400).json({ message: "Invalid state for starting Super Over innings" });
+    }
+
+    let battingTeamId, bowlingTeamId;
+
+    if (isFirstSO) {
+      // 2nd innings team from full match bats first in SO
+      battingTeamId = match.innings[1].team;
+      bowlingTeamId = match.innings[0].team;
+    } else {
+      // 1st innings team from full match bats second in SO
+      battingTeamId = match.innings[0].team;
+      bowlingTeamId = match.innings[1].team;
+    }
+
+    // Initialize the new SO innings
+    const newInnings = {
+      team: battingTeamId,
+      battingOrder: batsmenIds,
+      status: "live",
+      runs: 0,
+      wickets: 0,
+      overs: 0,
+      balls: 0,
+      currentBatsman1: batsmenIds[0],
+      currentBatsman2: batsmenIds[1],
+      onStrikeBatsman: batsmenIds[0],
+      currentBowler: bowlerId,
+      extras: { wides: 0, noBalls: 0, byes: 0, legByes: 0, penalties: 0, total: 0 },
+      batting: batsmenIds.map(id => ({ player: id, runs: 0, balls: 0, fours: 0, sixes: 0, strikeRate: 0, isOut: false })),
+      bowling: [{ player: bowlerId, overs: 0, balls: 0, maidens: 0, runs: 0, wickets: 0, wides: 0, noBalls: 0, economy: 0 }]
+    };
+
+    match.innings.push(newInnings);
+    match.status = "live";
+    match.currentInnings = match.innings.length - 1;
+    match.totalOvers = 1;
+    match.result.resultType = "super_over";
+
+    if (isFirstSO) {
+      match.result.description = "Super Over: 1st Innings in progress";
+    } else {
+      match.result.description = "Super Over: 2nd Innings in progress";
+      // Set target for 2nd SO innings
+      match.innings[match.currentInnings].target = match.innings[2].runs + 1;
+    }
+
+    await match.save();
+
+    try {
+      const io = getIO();
+      io.to(matchId).emit("match:superOverStarted", { matchId, inningsIndex: match.currentInnings });
+      io.emit("match:updated", match);
+    } catch (err) { }
+
+    res.status(200).json({ match, message: `Super Over Innings ${isFirstSO ? 1 : 2} started` });
+  } catch (error) {
+    res.status(400).json({ message: "Failed to start Super Over innings", error: error.message });
+  }
+};

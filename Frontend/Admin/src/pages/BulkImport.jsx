@@ -1,12 +1,18 @@
-// src/pages/BulkImport.jsx
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import api from "../services/api";
 
 export default function BulkImport() {
-  const [activeTab, setActiveTab] = useState("players");
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useState(location.state?.tab || "players");
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState(null);
+
+  useEffect(() => {
+    if (location.state?.tab) {
+      setActiveTab(location.state.tab);
+    }
+  }, [location.state]);
 
   const handleFileUpload = async (file, endpoint) => {
     if (!file) {
@@ -31,7 +37,7 @@ export default function BulkImport() {
           'Content-Type': 'multipart/form-data'
         }
       });
-      
+
       setResult({
         success: true,
         ...res.data
@@ -50,10 +56,10 @@ export default function BulkImport() {
 
   const downloadTemplate = async (type) => {
     try {
-      const endpoint = type === 'players' 
-        ? '/bulk-import/players/template' 
+      const endpoint = type === 'players'
+        ? '/bulk-import/players/template'
         : '/bulk-import/teams/template';
-      
+
       const res = await api.get(endpoint, {
         responseType: 'blob'
       });
@@ -87,11 +93,10 @@ export default function BulkImport() {
             setActiveTab("players");
             setResult(null);
           }}
-          className={`px-4 py-2 font-medium ${
-            activeTab === "players"
-              ? "text-blue-600 border-b-2 border-blue-600"
-              : "text-slate-600 hover:text-slate-800"
-          }`}
+          className={`px-4 py-2 font-medium ${activeTab === "players"
+            ? "text-blue-600 border-b-2 border-blue-600"
+            : "text-slate-600 hover:text-slate-800"
+            }`}
         >
           Import Players
         </button>
@@ -100,11 +105,10 @@ export default function BulkImport() {
             setActiveTab("teams");
             setResult(null);
           }}
-          className={`px-4 py-2 font-medium ${
-            activeTab === "teams"
-              ? "text-blue-600 border-b-2 border-blue-600"
-              : "text-slate-600 hover:text-slate-800"
-          }`}
+          className={`px-4 py-2 font-medium ${activeTab === "teams"
+            ? "text-blue-600 border-b-2 border-blue-600"
+            : "text-slate-600 hover:text-slate-800"
+            }`}
         >
           Import Teams
         </button>
@@ -248,7 +252,7 @@ function PlayersImport({ onUpload, onDownloadTemplate, uploading, result }) {
           <p className={`text-sm mb-3 ${result.success ? "text-green-800" : "text-red-800"}`}>
             {result.message}
           </p>
-          
+
           {result.imported > 0 && (
             <p className="text-sm text-green-800 font-medium">
               ✓ {result.imported} players imported successfully
@@ -302,6 +306,11 @@ function PlayersImport({ onUpload, onDownloadTemplate, uploading, result }) {
                 <td className="p-2 font-medium">Team</td>
                 <td className="p-2">No</td>
                 <td className="p-2">Team Eagles (must match existing team)</td>
+              </tr>
+              <tr className="border-t">
+                <td className="p-2 font-medium">ImageUrl</td>
+                <td className="p-2">No</td>
+                <td className="p-2">https://example.com/photo.jpg</td>
               </tr>
             </tbody>
           </table>
@@ -424,7 +433,7 @@ function TeamsImport({ onUpload, onDownloadTemplate, uploading, result }) {
           <p className={`text-sm mb-3 ${result.success ? "text-green-800" : "text-red-800"}`}>
             {result.message}
           </p>
-          
+
           {result.imported > 0 && (
             <p className="text-sm text-green-800 font-medium">
               ✓ {result.imported} teams imported successfully

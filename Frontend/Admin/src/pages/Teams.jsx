@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchTeams, createTeam, updateTeam, deleteTeam, addPlayersToTeam } from "../store/slices/teamSlice";
 import { fetchPlayers } from "../store/slices/playersSlice";
 import { useForm } from "react-hook-form";
+import { Link } from "react-router-dom";
 import { initSocket } from "../store/socket";
 
 export default function Teams() {
@@ -19,7 +20,7 @@ export default function Teams() {
     dispatch(fetchPlayers());
 
     const socket = initSocket();
-    
+
     socket.emit("join-teams");
 
     socket.on("team:created", () => {
@@ -80,7 +81,7 @@ export default function Teams() {
   };
 
   const togglePlayer = (playerId) => {
-    setSelectedPlayers(prev => 
+    setSelectedPlayers(prev =>
       prev.includes(playerId)
         ? prev.filter(id => id !== playerId)
         : [...prev, playerId]
@@ -91,11 +92,11 @@ export default function Teams() {
     if (!showPlayerModal) return;
 
     try {
-      await dispatch(addPlayersToTeam({ 
-        id: showPlayerModal._id, 
-        playerIds: selectedPlayers 
+      await dispatch(addPlayersToTeam({
+        id: showPlayerModal._id,
+        playerIds: selectedPlayers
       })).unwrap();
-      
+
       setShowPlayerModal(null);
       setSelectedPlayers([]);
       dispatch(fetchTeams());
@@ -106,16 +107,28 @@ export default function Teams() {
 
   const getAvailablePlayers = () => {
     if (!showPlayerModal) return [];
-    return players.filter(p => 
-      !p.team || 
-      p.team._id === showPlayerModal._id || 
+    return players.filter(p =>
+      !p.team ||
+      p.team._id === showPlayerModal._id ||
       p.team === showPlayerModal._id
     );
   };
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-slate-800">Manage Teams</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-slate-800">Manage Teams</h2>
+        <Link
+          to="/admin/bulk-import"
+          state={{ tab: "teams" }}
+          className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors font-medium shadow-sm"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+          </svg>
+          Bulk Import
+        </Link>
+      </div>
 
       <div className="card">
         <h3 className="text-lg font-semibold mb-4">
@@ -127,23 +140,23 @@ export default function Teams() {
             placeholder="Team Name *"
             className="p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
           />
-          <input 
-            {...register("shortName")} 
+          <input
+            {...register("shortName")}
             placeholder="Short Name (e.g., ABC)"
             className="p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
           />
-          <input 
-            {...register("ownername")} 
-            placeholder="Owner Name" 
+          <input
+            {...register("ownername")}
+            placeholder="Owner Name"
             className="p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
           />
-          <input 
-            {...register("logo")} 
-            placeholder="Logo URL" 
+          <input
+            {...register("logo")}
+            placeholder="Logo URL"
             className="p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
           />
           <div className="flex gap-2">
-            <button 
+            <button
               type="submit"
               disabled={loading}
               className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium py-2 transition-colors disabled:opacity-50"
@@ -169,7 +182,7 @@ export default function Teams() {
       <div className="card">
         <h3 className="text-lg font-semibold mb-4">All Teams</h3>
         {loading && <div className="text-center py-8">Loading...</div>}
-        
+
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-slate-50">
@@ -190,9 +203,9 @@ export default function Teams() {
                   <td className="p-3">{team.ownername || "-"}</td>
                   <td className="p-3">
                     {team.logo ? (
-                      <img 
-                        src={team.logo} 
-                        alt={team.name} 
+                      <img
+                        src={team.logo}
+                        alt={team.name}
                         className="w-10 h-10 object-contain rounded"
                         onError={(e) => { e.target.style.display = 'none' }}
                       />
@@ -230,20 +243,20 @@ export default function Teams() {
               ))}
             </tbody>
           </table>
-          
+
           {teams.length === 0 && !loading && (
             <div className="text-center py-12">
-              <svg 
-                className="w-16 h-16 text-slate-300 mx-auto mb-4" 
-                fill="none" 
-                stroke="currentColor" 
+              <svg
+                className="w-16 h-16 text-slate-300 mx-auto mb-4"
+                fill="none"
+                stroke="currentColor"
                 viewBox="0 0 24 24"
               >
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth={2} 
-                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" 
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
                 />
               </svg>
               <p className="text-slate-500">No teams found. Create your first team!</p>

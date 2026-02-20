@@ -14,9 +14,9 @@ export const getTournaments = async (req, res) => {
     res.status(200).json(tournaments);
   } catch (error) {
     console.error("Error fetching tournaments:", error);
-    res.status(500).json({ 
-      message: "Failed to fetch tournaments", 
-      error: error.message 
+    res.status(500).json({
+      message: "Failed to fetch tournaments",
+      error: error.message
     });
   }
 };
@@ -37,9 +37,9 @@ export const getTournament = async (req, res) => {
     res.status(200).json(tournament);
   } catch (error) {
     console.error("Error fetching tournament:", error);
-    res.status(500).json({ 
-      message: "Failed to fetch tournament", 
-      error: error.message 
+    res.status(500).json({
+      message: "Failed to fetch tournament",
+      error: error.message
     });
   }
 };
@@ -49,8 +49,8 @@ export const createTournament = async (req, res) => {
     const { name, shortName, type, startDate, endDate, teams, venue, format } = req.body;
 
     if (!teams || teams.length < 2) {
-      return res.status(400).json({ 
-        message: "At least 2 teams are required" 
+      return res.status(400).json({
+        message: "At least 2 teams are required"
       });
     }
 
@@ -65,7 +65,10 @@ export const createTournament = async (req, res) => {
       points: 0,
       netRunRate: 0,
       for: 0,
-      against: 0
+      against: 0,
+      wicketsFor: 0,
+      wicketsAgainst: 0,
+      seriesForm: []
     }));
 
     const tournament = new Tournament({
@@ -91,15 +94,15 @@ export const createTournament = async (req, res) => {
       console.log("Socket not available:", socketError.message);
     }
 
-    res.status(201).json({ 
-      tournament, 
-      message: "Tournament created successfully" 
+    res.status(201).json({
+      tournament,
+      message: "Tournament created successfully"
     });
   } catch (error) {
     console.error("Error creating tournament:", error);
-    res.status(400).json({ 
-      message: "Failed to create tournament", 
-      error: error.message 
+    res.status(400).json({
+      message: "Failed to create tournament",
+      error: error.message
     });
   }
 };
@@ -107,7 +110,7 @@ export const createTournament = async (req, res) => {
 export const updateTournament = async (req, res) => {
   try {
     const tournament = await Tournament.findById(req.params.id);
-    
+
     if (!tournament) {
       return res.status(404).json({ message: "Tournament not found" });
     }
@@ -123,15 +126,15 @@ export const updateTournament = async (req, res) => {
       console.log("Socket not available:", socketError.message);
     }
 
-    res.status(200).json({ 
-      tournament, 
-      message: "Tournament updated successfully" 
+    res.status(200).json({
+      tournament,
+      message: "Tournament updated successfully"
     });
   } catch (error) {
     console.error("Error updating tournament:", error);
-    res.status(400).json({ 
-      message: "Failed to update tournament", 
-      error: error.message 
+    res.status(400).json({
+      message: "Failed to update tournament",
+      error: error.message
     });
   }
 };
@@ -161,9 +164,9 @@ export const deleteTournament = async (req, res) => {
     res.status(200).json({ message: "Tournament deleted successfully" });
   } catch (error) {
     console.error("Error deleting tournament:", error);
-    res.status(500).json({ 
-      message: "Failed to delete tournament", 
-      error: error.message 
+    res.status(500).json({
+      message: "Failed to delete tournament",
+      error: error.message
     });
   }
 };
@@ -186,9 +189,9 @@ export const getTournamentPointsTable = async (req, res) => {
     res.status(200).json(sortedTable);
   } catch (error) {
     console.error("Error fetching points table:", error);
-    res.status(500).json({ 
-      message: "Failed to fetch points table", 
-      error: error.message 
+    res.status(500).json({
+      message: "Failed to fetch points table",
+      error: error.message
     });
   }
 };
@@ -211,7 +214,7 @@ export const updatePointsTable = async (req, res) => {
     // Update points table based on match result
     const team1 = match.teams[0];
     const team2 = match.teams[1];
-    
+
     const team1Entry = tournament.pointsTable.find(
       entry => entry.team.toString() === team1.toString()
     );
@@ -230,16 +233,23 @@ export const updatePointsTable = async (req, res) => {
     const innings1 = match.innings[0];
     const innings2 = match.innings[1];
 
+    // Update runs and wickets
     team1Entry.for += innings1.runs;
     team1Entry.against += innings2.runs;
+    team1Entry.wicketsFor += innings2.wickets;
+    team1Entry.wicketsAgainst += innings1.wickets;
+
     team2Entry.for += innings2.runs;
     team2Entry.against += innings1.runs;
+    team2Entry.wicketsFor += innings1.wickets;
+    team2Entry.wicketsAgainst += innings2.wickets;
 
-    // Calculate net run rate
-    const calculateNRR = (entry) => {
-      const runRate = entry.for / (entry.matchesPlayed * tournament.totalOvers || 20);
-      const runsConceded = entry.against / (entry.matchesPlayed * tournament.totalOvers || 20);
-      return runRate - runsConceded;
+    // Helper to update series form
+    const updateForm = (entry, result) => {
+      entry.seriesForm.push(result);
+      if (entry.seriesForm.length > 5) {
+        entry.seriesForm.shift();
+      }
     };
 
     if (match.result.resultType === "tie") {
@@ -247,22 +257,46 @@ export const updatePointsTable = async (req, res) => {
       team2Entry.tied += 1;
       team1Entry.points += 1;
       team2Entry.points += 1;
+      updateForm(team1Entry, "T");
+      updateForm(team2Entry, "T");
     } else if (match.result.resultType === "no result") {
       team1Entry.noResult += 1;
       team2Entry.noResult += 1;
       team1Entry.points += 1;
       team2Entry.points += 1;
+      updateForm(team1Entry, "NR");
+      updateForm(team2Entry, "NR");
     } else if (match.result.winner) {
       if (match.result.winner.toString() === team1.toString()) {
         team1Entry.won += 1;
         team1Entry.points += 2;
         team2Entry.lost += 1;
+        updateForm(team1Entry, "W");
+        updateForm(team2Entry, "L");
       } else {
         team2Entry.won += 1;
         team2Entry.points += 2;
         team1Entry.lost += 1;
+        updateForm(team2Entry, "W");
+        updateForm(team1Entry, "L");
       }
     }
+
+    // Improved Net Run Rate calculation
+    const calculateNRR = (entry) => {
+      // If team is all out, we use full quota of overs
+      // For simplicity, we use match matchType to determine overs per match
+      // In a real scenario, this would be match.totalOvers
+      const totalOversPerMatch = match.totalOvers || 20;
+
+      const oversFaced = entry.matchesPlayed * totalOversPerMatch;
+      const oversBowled = entry.matchesPlayed * totalOversPerMatch;
+
+      const runRateFor = entry.for / oversFaced;
+      const runRateAgainst = entry.against / oversBowled;
+
+      return runRateFor - runRateAgainst;
+    };
 
     team1Entry.netRunRate = calculateNRR(team1Entry);
     team2Entry.netRunRate = calculateNRR(team2Entry);
@@ -276,15 +310,15 @@ export const updatePointsTable = async (req, res) => {
       console.log("Socket not available:", socketError.message);
     }
 
-    res.status(200).json({ 
-      tournament, 
-      message: "Points table updated successfully" 
+    res.status(200).json({
+      tournament,
+      message: "Points table updated successfully"
     });
   } catch (error) {
     console.error("Error updating points table:", error);
-    res.status(400).json({ 
-      message: "Failed to update points table", 
-      error: error.message 
+    res.status(400).json({
+      message: "Failed to update points table",
+      error: error.message
     });
   }
 };
@@ -292,7 +326,7 @@ export const updatePointsTable = async (req, res) => {
 export const getTournamentFixtures = async (req, res) => {
   try {
     const tournament = await Tournament.findById(req.params.id);
-    
+
     if (!tournament) {
       return res.status(404).json({ message: "Tournament not found" });
     }
@@ -305,9 +339,9 @@ export const getTournamentFixtures = async (req, res) => {
     res.status(200).json(matches);
   } catch (error) {
     console.error("Error fetching fixtures:", error);
-    res.status(500).json({ 
-      message: "Failed to fetch fixtures", 
-      error: error.message 
+    res.status(500).json({
+      message: "Failed to fetch fixtures",
+      error: error.message
     });
   }
 };

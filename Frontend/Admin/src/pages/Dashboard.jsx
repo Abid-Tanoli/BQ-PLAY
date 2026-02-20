@@ -27,7 +27,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (matches.length > 0) {
-      const live = matches.filter((m) => m.status === "live").length;
+      const live = matches.filter((m) => m.status === "live" || m.status === "pending_tie_resolution").length;
       const upcoming = matches.filter((m) => m.status === "upcoming").length;
       const completed = matches.filter((m) => m.status === "completed").length;
 
@@ -238,42 +238,43 @@ export default function Dashboard() {
           </Link>
         </div>
         <div className="space-y-3">
-         {matches.slice(0, 5).map((match) => (
-  <Link
-    key={match._id}
-    to={`/admin/live/${match._id}`}
-    className="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors"
-  >
-    <div>
-      <p className="font-medium text-slate-800">
-        {match.teams?.[0]?.name || "Team A"} vs{" "}
-        {match.teams?.[1]?.name || "Team B"}
-      </p>
-      <p className="text-sm text-slate-500">
-        {new Date(match.startAt).toLocaleDateString()}
-      </p>
-    </div>
-    <div className="flex items-center gap-3">
-      <div className="text-right text-sm">
-        <div className="font-semibold">
-          {match.innings?.[0]?.runs || 0}/{match.innings?.[0]?.wickets || 0}
-        </div>
-        <div className="text-xs text-slate-500">
-          {match.innings?.[1]?.runs || 0}/{match.innings?.[1]?.wickets || 0}
-        </div>
-      </div>
-      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-        match.status === "live"
-          ? "bg-green-100 text-green-700"
-          : match.status === "upcoming"
-          ? "bg-blue-100 text-blue-700"
-          : "bg-slate-200 text-slate-700"
-      }`}>
-        {match.status}
-      </span>
-    </div>
-  </Link>
-))}
+          {matches.slice(0, 5).map((match) => (
+            <Link
+              key={match._id}
+              to={`/admin/live/${match._id}`}
+              className="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors"
+            >
+              <div>
+                <p className="font-medium text-slate-800">
+                  {match.teams?.[0]?.name || "Team A"} vs{" "}
+                  {match.teams?.[1]?.name || "Team B"}
+                </p>
+                <p className="text-sm text-slate-500">
+                  {new Date(match.startAt).toLocaleDateString()}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="text-right text-sm">
+                  <div className="font-semibold">
+                    {match.innings?.[0]?.runs || 0}/{match.innings?.[0]?.wickets || 0}
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    {match.innings?.[1]?.runs || 0}/{match.innings?.[1]?.wickets || 0}
+                  </div>
+                </div>
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${match.status === "live"
+                  ? "bg-green-100 text-green-700"
+                  : match.status === "pending_tie_resolution"
+                    ? "bg-orange-100 text-orange-700"
+                    : match.status === "upcoming"
+                      ? "bg-blue-100 text-blue-700"
+                      : "bg-slate-200 text-slate-700"
+                  }`}>
+                  {match.status.replace(/_/g, " ")}
+                </span>
+              </div>
+            </Link>
+          ))}
           {matches.length === 0 && (
             <p className="text-center text-slate-500 py-8">No matches found</p>
           )}

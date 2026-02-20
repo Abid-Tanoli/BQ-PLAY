@@ -33,8 +33,8 @@ export default function ManageScore() {
     }
   };
 
-  const activeMatches = matches.filter((m) => 
-    m.status === "live" || m.status === "upcoming" || m.status === "innings-break"
+  const activeMatches = matches.filter((m) =>
+    m.status === "live" || m.status === "upcoming" || m.status === "innings-break" || m.status === "pending_tie_resolution"
   );
 
   return (
@@ -60,7 +60,7 @@ export default function ManageScore() {
           <option value="">Choose a match to update...</option>
           {activeMatches.map((m) => (
             <option key={m._id} value={m._id}>
-              {m.teams?.[0]?.name || "Team A"} vs {m.teams?.[1]?.name || "Team B"} 
+              {m.teams?.[0]?.name || "Team A"} vs {m.teams?.[1]?.name || "Team B"}
               {" - "}
               {m.status === "live" && "● LIVE"}
               {m.status === "upcoming" && "Upcoming"}

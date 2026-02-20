@@ -55,7 +55,10 @@ const tournamentSchema = new mongoose.Schema(
       points: { type: Number, default: 0 },
       netRunRate: { type: Number, default: 0 },
       for: { type: Number, default: 0 },
-      against: { type: Number, default: 0 }
+      against: { type: Number, default: 0 },
+      wicketsFor: { type: Number, default: 0 },
+      wicketsAgainst: { type: Number, default: 0 },
+      seriesForm: [{ type: String, enum: ["W", "L", "T", "NR"] }]
     }],
     groups: [{
       name: String,

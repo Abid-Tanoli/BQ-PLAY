@@ -8,8 +8,9 @@ export const getPlayers = async (req, res) => {
 
 export const createPlayer = async (req, res) => {
   const player = await Player.create(req.body);
+  const populated = await Player.findById(player._id).populate("team", "name");
   getIO()?.emit("players:updated");
-  res.status(201).json(player);
+  res.status(201).json(populated);
 };
 
 export const updatePlayer = async (req, res) => {
@@ -17,7 +18,7 @@ export const updatePlayer = async (req, res) => {
     req.params.id,
     req.body,
     { new: true }
-  );
+  ).populate("team", "name");
   getIO()?.emit("players:updated");
   res.json(player);
 };

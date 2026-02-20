@@ -11,9 +11,9 @@ const ballSchema = new mongoose.Schema({
   isBye: { type: Boolean, default: false },
   isLegBye: { type: Boolean, default: false },
   isWicket: { type: Boolean, default: false },
-  wicketType: { 
-    type: String, 
-    enum: ["bowled", "caught", "lbw", "run out", "stumped", "hit wicket", ""] 
+  wicketType: {
+    type: String,
+    enum: ["bowled", "caught", "lbw", "run out", "stumped", "hit wicket", ""]
   },
   dismissedPlayer: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
   fielder: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
@@ -84,10 +84,10 @@ const inningsSchema = new mongoose.Schema({
   currentBatsman2: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
   onStrikeBatsman: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
   currentBowler: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
-  status: { 
-    type: String, 
-    enum: ["upcoming", "live", "completed", "innings-break"], 
-    default: "upcoming" 
+  status: {
+    type: String,
+    enum: ["upcoming", "live", "completed", "innings-break"],
+    default: "upcoming"
   },
   oversHistory: [overSchema],
   batting: [batsmanStatsSchema],
@@ -108,17 +108,17 @@ const inningsSchema = new mongoose.Schema({
 
 const matchSchema = new mongoose.Schema(
   {
-    title: { 
-      type: String, 
-      required: true, 
-      trim: true 
+    title: {
+      type: String,
+      required: true,
+      trim: true
     },
     matchNumber: {
       type: Number
     },
-    venue: { 
+    venue: {
       type: String,
-      default: "" 
+      default: ""
     },
     matchType: {
       type: String,
@@ -133,33 +133,38 @@ const matchSchema = new mongoose.Schema(
       type: Number,
       default: 20
     },
-    startAt: { 
+    startAt: {
       type: Date,
-      required: true 
+      required: true
     },
-    teams: [{ 
-      type: mongoose.Schema.Types.ObjectId, 
-      ref: "Team", 
-      required: true 
+    teams: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Team",
+      required: true
     }],
     innings: [inningsSchema],
     currentInnings: {
       type: Number,
       default: 0
     },
-    status: { 
-      type: String, 
-      enum: ["upcoming", "live", "innings-break", "completed", "abandoned"], 
-      default: "upcoming" 
+    status: {
+      type: String,
+      enum: ["upcoming", "live", "innings-break", "completed", "abandoned", "pending_tie_resolution"],
+      default: "upcoming"
     },
     result: {
       winner: { type: mongoose.Schema.Types.ObjectId, ref: "Team" },
       margin: { type: String },
       description: { type: String },
-      resultType: { 
+      resultType: {
         type: String,
-        enum: ["normal", "tie", "no result", "abandoned"]
+        enum: ["normal", "tie", "no result", "abandoned", "super_over"]
       }
+    },
+    tieResolution: {
+      type: String,
+      enum: ["pending", "declared_tie", "super_over"],
+      default: null
     },
     tossWinner: { type: mongoose.Schema.Types.ObjectId, ref: "Team" },
     tossDecision: { type: String, enum: ["bat", "bowl"] },
@@ -187,7 +192,7 @@ const matchSchema = new mongoose.Schema(
       position: { type: Number }
     }
   },
-  { 
+  {
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true }
@@ -198,9 +203,9 @@ matchSchema.index({ status: 1, startAt: -1 });
 matchSchema.index({ teams: 1 });
 matchSchema.index({ tournament: 1 });
 
-matchSchema.pre('save', function(next) {
+matchSchema.pre('save', function () {
   if (this.isModified('matchType')) {
-    switch(this.matchType) {
+    switch (this.matchType) {
       case '6 Overs': this.totalOvers = 6; break;
       case '8 Overs': this.totalOvers = 8; break;
       case 'T10': this.totalOvers = 10; break;
@@ -210,7 +215,6 @@ matchSchema.pre('save', function(next) {
       default: this.totalOvers = 20;
     }
   }
-  next();
 });
 
 const Match = mongoose.models.Match || mongoose.model("Match", matchSchema);

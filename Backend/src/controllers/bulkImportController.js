@@ -19,7 +19,7 @@ export const bulkImportPlayers = async (req, res) => {
 
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
-      
+
       try {
         // Validate required fields
         if (!row.Name || !row.name) {
@@ -31,25 +31,26 @@ export const bulkImportPlayers = async (req, res) => {
           name: row.Name || row.name,
           role: row.Role || row.role || '',
           Campus: row.Campus || row.campus || '',
+          imageUrl: row.ImageUrl || row.imageurl || row.imageUrl || row.Image || row.image || '',
         };
 
         // Handle team assignment
         if (row.Team || row.team) {
           const teamName = row.Team || row.team;
           let team = await Team.findOne({ name: new RegExp(`^${teamName}$`, 'i') });
-          
+
           if (team) {
             playerData.team = team._id;
           } else {
-            errors.push({ 
-              row: i + 2, 
-              error: `Team "${teamName}" not found` 
+            errors.push({
+              row: i + 2,
+              error: `Team "${teamName}" not found`
             });
           }
         }
 
         const player = await Player.create(playerData);
-        
+
         // Add player to team if team exists
         if (playerData.team) {
           await Team.findByIdAndUpdate(
@@ -60,9 +61,9 @@ export const bulkImportPlayers = async (req, res) => {
 
         players.push(player);
       } catch (error) {
-        errors.push({ 
-          row: i + 2, 
-          error: error.message 
+        errors.push({
+          row: i + 2,
+          error: error.message
         });
       }
     }
@@ -82,9 +83,9 @@ export const bulkImportPlayers = async (req, res) => {
     });
   } catch (error) {
     console.error('Bulk import error:', error);
-    res.status(500).json({ 
-      message: 'Failed to import players', 
-      error: error.message 
+    res.status(500).json({
+      message: 'Failed to import players',
+      error: error.message
     });
   }
 };
@@ -105,7 +106,7 @@ export const bulkImportTeams = async (req, res) => {
 
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
-      
+
       try {
         if (!row.Name || !row.name) {
           errors.push({ row: i + 2, error: 'Team name is required' });
@@ -113,14 +114,14 @@ export const bulkImportTeams = async (req, res) => {
         }
 
         // Check if team already exists
-        const existingTeam = await Team.findOne({ 
-          name: new RegExp(`^${row.Name || row.name}$`, 'i') 
+        const existingTeam = await Team.findOne({
+          name: new RegExp(`^${row.Name || row.name}$`, 'i')
         });
 
         if (existingTeam) {
-          errors.push({ 
-            row: i + 2, 
-            error: `Team "${row.Name || row.name}" already exists` 
+          errors.push({
+            row: i + 2,
+            error: `Team "${row.Name || row.name}" already exists`
           });
           continue;
         }
@@ -135,9 +136,9 @@ export const bulkImportTeams = async (req, res) => {
         const team = await Team.create(teamData);
         teams.push(team);
       } catch (error) {
-        errors.push({ 
-          row: i + 2, 
-          error: error.message 
+        errors.push({
+          row: i + 2,
+          error: error.message
         });
       }
     }
@@ -157,9 +158,9 @@ export const bulkImportTeams = async (req, res) => {
     });
   } catch (error) {
     console.error('Bulk import error:', error);
-    res.status(500).json({ 
-      message: 'Failed to import teams', 
-      error: error.message 
+    res.status(500).json({
+      message: 'Failed to import teams',
+      error: error.message
     });
   }
 };
@@ -167,16 +168,16 @@ export const bulkImportTeams = async (req, res) => {
 export const downloadPlayerTemplate = (req, res) => {
   const wb = xlsx.utils.book_new();
   const ws_data = [
-    ['Name', 'Role', 'Campus', 'Team'],
-    ['John Doe', 'Batsman', 'Campus A', 'Team Eagles'],
-    ['Jane Smith', 'Bowler', 'Campus B', 'Team Lions'],
-    ['Mike Johnson', 'All-rounder', 'Campus C', 'Team Tigers']
+    ['Name', 'Role', 'Campus', 'Team', 'ImageUrl'],
+    ['John Doe', 'Batsman', 'Campus A', 'Team Eagles', 'https://example.com/player1.png'],
+    ['Jane Smith', 'Bowler', 'Campus B', 'Team Lions', 'https://example.com/player2.png'],
+    ['Mike Johnson', 'All-rounder', 'Campus C', 'Team Tigers', 'https://example.com/player3.png']
   ];
   const ws = xlsx.utils.aoa_to_sheet(ws_data);
   xlsx.utils.book_append_sheet(wb, ws, 'Players');
-  
+
   const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
-  
+
   res.setHeader('Content-Disposition', 'attachment; filename=player_template.xlsx');
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
   res.send(buffer);
@@ -192,9 +193,9 @@ export const downloadTeamTemplate = (req, res) => {
   ];
   const ws = xlsx.utils.aoa_to_sheet(ws_data);
   xlsx.utils.book_append_sheet(wb, ws, 'Teams');
-  
+
   const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
-  
+
   res.setHeader('Content-Disposition', 'attachment; filename=team_template.xlsx');
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
   res.send(buffer);

@@ -9,7 +9,7 @@ export default function MatchEditor({ matchId, onClose }) {
   const [match, setMatch] = useState(null);
   const [loading, setLoading] = useState(false);
   const [currentInnings, setCurrentInnings] = useState(0);
-  
+
   // Scoring state
   const [runs, setRuns] = useState(0);
   const [isWide, setIsWide] = useState(false);
@@ -21,7 +21,7 @@ export default function MatchEditor({ matchId, onClose }) {
   const [dismissedPlayerId, setDismissedPlayerId] = useState("");
   const [fielderId, setFielderId] = useState("");
   const [commentaryText, setCommentaryText] = useState("");
-  
+
   // Players state
   const [batsman1, setBatsman1] = useState("");
   const [batsman2, setBatsman2] = useState("");
@@ -81,12 +81,12 @@ export default function MatchEditor({ matchId, onClose }) {
     try {
       const res = await api.get(`/matches/${matchId}`);
       setMatch(res.data);
-      
+
       // Set current innings based on match data
       if (res.data.currentInnings !== undefined) {
         setCurrentInnings(res.data.currentInnings);
       }
-      
+
       // Auto-select current players if available
       const innings = res.data.innings?.[currentInnings];
       if (innings) {
@@ -105,11 +105,11 @@ export default function MatchEditor({ matchId, onClose }) {
     try {
       const res = await api.get(`/matches/${matchId}`);
       const match = res.data;
-      
+
       if (match.teams && match.teams.length === 2) {
         // Batting team is the current innings team
         const battingTeamId = match.innings[currentInnings]?.team?._id;
-        const bowlingTeamId = match.teams.find(t => 
+        const bowlingTeamId = match.teams.find(t =>
           (t._id || t) !== battingTeamId
         );
 
@@ -133,7 +133,7 @@ export default function MatchEditor({ matchId, onClose }) {
     }
 
     setLoading(true);
-    
+
     try {
       await dispatch(
         updateScore({
@@ -154,10 +154,10 @@ export default function MatchEditor({ matchId, onClose }) {
           commentaryText
         })
       ).unwrap();
-      
+
       // Reset form
       resetScoringForm();
-      
+
     } catch (err) {
       console.error(err);
       alert(err || "Error sending update");
@@ -205,6 +205,28 @@ export default function MatchEditor({ matchId, onClose }) {
     }
   };
 
+  const handleReduceOvers = async () => {
+    const newOvers = prompt("Enter new total overs for the match:", match.totalOvers);
+    if (newOvers === null || isNaN(newOvers)) return;
+
+    const oversNum = parseInt(newOvers);
+    if (oversNum >= match.totalOvers) {
+      alert("New overs must be less than current total overs");
+      return;
+    }
+
+    try {
+      await api.post(`/matches/${matchId}/reduce-overs`, {
+        newTotalOvers: oversNum
+      });
+      fetchMatch();
+      alert(`Match reduced to ${oversNum} overs. Target updated if in 2nd innings.`);
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || "Failed to reduce overs");
+    }
+  };
+
   if (!match) {
     return (
       <div className="text-center py-8">
@@ -245,15 +267,20 @@ export default function MatchEditor({ matchId, onClose }) {
           <span className="px-2 py-1 bg-white/20 rounded-full text-xs font-medium">
             {match.matchType || "T20"}
           </span>
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-            match.status === "live" 
-              ? "bg-green-500 animate-pulse" 
-              : match.status === "innings-break"
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${match.status === "live"
+            ? "bg-green-500 animate-pulse"
+            : match.status === "innings-break"
               ? "bg-yellow-500"
               : "bg-white/20"
-          }`}>
+            }`}>
             {match.status?.toUpperCase().replace("-", " ")}
           </span>
+          <button
+            onClick={handleReduceOvers}
+            className="px-2 py-1 bg-white/20 hover:bg-white/30 rounded-full text-xs font-bold transition-colors border border-white/30"
+          >
+            REDUCE OVERS
+          </button>
         </div>
       </div>
 
@@ -268,13 +295,12 @@ export default function MatchEditor({ matchId, onClose }) {
                 loadTeamPlayers();
               }}
               disabled={inn.status === "upcoming"}
-              className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
-                currentInnings === idx
-                  ? "bg-blue-600 text-white"
-                  : inn.status === "upcoming"
+              className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${currentInnings === idx
+                ? "bg-blue-600 text-white"
+                : inn.status === "upcoming"
                   ? "bg-slate-100 text-slate-400 cursor-not-allowed"
                   : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }`}
+                }`}
             >
               {getTeamName(inn.team)} Innings
               {inn.status === "completed" && " ✓"}
@@ -304,9 +330,8 @@ export default function MatchEditor({ matchId, onClose }) {
       {/* Scorecard */}
       <div className="grid grid-cols-2 gap-4">
         {match.innings.map((inn, idx) => (
-          <div key={idx} className={`p-4 rounded-lg border-2 ${
-            currentInnings === idx ? "border-blue-500 bg-blue-50" : "border-slate-200 bg-slate-50"
-          }`}>
+          <div key={idx} className={`p-4 rounded-lg border-2 ${currentInnings === idx ? "border-blue-500 bg-blue-50" : "border-slate-200 bg-slate-50"
+            }`}>
             <p className="text-sm text-slate-600 mb-1">{getTeamName(inn.team)}</p>
             <div className="text-3xl font-bold text-slate-800">
               {inn.runs}/{inn.wickets}
@@ -332,18 +357,17 @@ export default function MatchEditor({ matchId, onClose }) {
           </p>
           <div className="flex gap-2 flex-wrap">
             {ballsInCurrentOver.map((ball, idx) => (
-              <div key={idx} className={`w-10 h-10 flex items-center justify-center rounded-full font-bold text-sm ${
-                ball.isWicket ? "bg-red-500 text-white" :
+              <div key={idx} className={`w-10 h-10 flex items-center justify-center rounded-full font-bold text-sm ${ball.isWicket ? "bg-red-500 text-white" :
                 ball.runs === 6 ? "bg-purple-500 text-white" :
-                ball.runs === 4 ? "bg-green-500 text-white" :
-                ball.isWide || ball.isNoBall ? "bg-orange-500 text-white" :
-                ball.runs === 0 ? "bg-slate-300 text-slate-700" :
-                "bg-blue-500 text-white"
-              }`}>
+                  ball.runs === 4 ? "bg-green-500 text-white" :
+                    ball.isWide || ball.isNoBall ? "bg-orange-500 text-white" :
+                      ball.runs === 0 ? "bg-slate-300 text-slate-700" :
+                        "bg-blue-500 text-white"
+                }`}>
                 {ball.isWicket ? "W" :
-                 ball.isWide ? "Wd" :
-                 ball.isNoBall ? "Nb" :
-                 ball.runs}
+                  ball.isWide ? "Wd" :
+                    ball.isNoBall ? "Nb" :
+                      ball.runs}
               </div>
             ))}
           </div>
@@ -435,14 +459,13 @@ export default function MatchEditor({ matchId, onClose }) {
               <button
                 key={r}
                 onClick={() => setRuns(r)}
-                className={`px-4 py-3 rounded-lg font-bold transition-colors ${
-                  runs === r
-                    ? r === 0 ? "bg-slate-700 text-white"
+                className={`px-4 py-3 rounded-lg font-bold transition-colors ${runs === r
+                  ? r === 0 ? "bg-slate-700 text-white"
                     : r === 4 ? "bg-green-600 text-white"
-                    : r === 6 ? "bg-purple-600 text-white"
-                    : "bg-blue-600 text-white"
-                    : "bg-slate-200 text-slate-700 hover:bg-slate-300"
-                }`}
+                      : r === 6 ? "bg-purple-600 text-white"
+                        : "bg-blue-600 text-white"
+                  : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+                  }`}
               >
                 {r}
               </button>
@@ -504,7 +527,7 @@ export default function MatchEditor({ matchId, onClose }) {
               />
               <span className="font-medium">Wicket</span>
             </label>
-            
+
             {isWicket && (
               <>
                 <select
@@ -575,7 +598,7 @@ export default function MatchEditor({ matchId, onClose }) {
           >
             {loading ? "Recording..." : "Record Ball"}
           </button>
-          
+
           <button
             onClick={handleEndInnings}
             className="px-6 bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-medium transition-colors"
@@ -597,16 +620,15 @@ export default function MatchEditor({ matchId, onClose }) {
                   <span className="font-bold text-blue-600">
                     {currentOver.overNumber}.{ball.ballNumber}
                   </span>
-                  <span className={`px-2 py-1 rounded text-xs font-bold ${
-                    ball.isWicket ? "bg-red-100 text-red-700" :
+                  <span className={`px-2 py-1 rounded text-xs font-bold ${ball.isWicket ? "bg-red-100 text-red-700" :
                     ball.runs === 6 ? "bg-purple-100 text-purple-700" :
-                    ball.runs === 4 ? "bg-green-100 text-green-700" :
-                    "bg-slate-100 text-slate-700"
-                  }`}>
+                      ball.runs === 4 ? "bg-green-100 text-green-700" :
+                        "bg-slate-100 text-slate-700"
+                    }`}>
                     {ball.isWicket ? "WICKET" :
-                     ball.isWide ? "WIDE" :
-                     ball.isNoBall ? "NO BALL" :
-                     `${ball.runs} ${ball.runs === 1 ? "run" : "runs"}`}
+                      ball.isWide ? "WIDE" :
+                        ball.isNoBall ? "NO BALL" :
+                          `${ball.runs} ${ball.runs === 1 ? "run" : "runs"}`}
                   </span>
                 </div>
                 <p className="text-sm text-slate-700">{ball.commentary}</p>

@@ -14,9 +14,9 @@ export const getMatches = async (req, res) => {
     res.status(200).json(matches);
   } catch (error) {
     console.error("Error fetching matches:", error);
-    res.status(500).json({ 
-      message: "Failed to fetch matches", 
-      error: error.message 
+    res.status(500).json({
+      message: "Failed to fetch matches",
+      error: error.message
     });
   }
 };
@@ -39,9 +39,9 @@ export const getMatch = async (req, res) => {
     res.status(200).json(match);
   } catch (error) {
     console.error("Error fetching match:", error);
-    res.status(500).json({ 
-      message: "Failed to fetch match", 
-      error: error.message 
+    res.status(500).json({
+      message: "Failed to fetch match",
+      error: error.message
     });
   }
 };
@@ -51,14 +51,14 @@ export const createMatch = async (req, res) => {
     const { title, venue, matchType, startAt, teams } = req.body;
 
     if (!teams || teams.length !== 2) {
-      return res.status(400).json({ 
-        message: "Exactly 2 teams are required" 
+      return res.status(400).json({
+        message: "Exactly 2 teams are required"
       });
     }
 
     if (teams[0] === teams[1]) {
-      return res.status(400).json({ 
-        message: "Teams must be different" 
+      return res.status(400).json({
+        message: "Teams must be different"
       });
     }
 
@@ -66,8 +66,8 @@ export const createMatch = async (req, res) => {
     const team2 = await Team.findById(teams[1]);
 
     if (!team1 || !team2) {
-      return res.status(404).json({ 
-        message: "One or both teams not found" 
+      return res.status(404).json({
+        message: "One or both teams not found"
       });
     }
 
@@ -102,6 +102,7 @@ export const createMatch = async (req, res) => {
       title: title || `${team1.name} vs ${team2.name}`,
       venue: venue || "",
       matchType: matchType || "T20",
+      tournament: req.body.tournamentId || null,
       startAt,
       teams,
       innings,
@@ -109,6 +110,14 @@ export const createMatch = async (req, res) => {
     });
 
     await match.save();
+
+    // Link match to tournament if provided
+    if (req.body.tournamentId) {
+      const Tournament = (await import("../models/Tournament.js")).default;
+      await Tournament.findByIdAndUpdate(req.body.tournamentId, {
+        $push: { matches: match._id }
+      });
+    }
 
     await match.populate("teams", "name shortName logo");
     await match.populate("innings.team", "name shortName");
@@ -121,15 +130,15 @@ export const createMatch = async (req, res) => {
       console.log("Socket not available:", socketError.message);
     }
 
-    res.status(201).json({ 
-      match, 
-      message: "Match created successfully" 
+    res.status(201).json({
+      match,
+      message: "Match created successfully"
     });
   } catch (error) {
-    console.error("Error creating match:", error);
-    res.status(400).json({ 
-      message: "Failed to create match", 
-      error: error.message 
+    console.error("Error creating match details:", error);
+    res.status(400).json({
+      message: error.message || "Failed to create match",
+      error: error.message
     });
   }
 };
@@ -145,8 +154,8 @@ export const updateMatch = async (req, res) => {
 
     if (teams && teams.length === 2) {
       if (teams[0] === teams[1]) {
-        return res.status(400).json({ 
-          message: "Teams must be different" 
+        return res.status(400).json({
+          message: "Teams must be different"
         });
       }
 
@@ -154,8 +163,8 @@ export const updateMatch = async (req, res) => {
       const team2 = await Team.findById(teams[1]);
 
       if (!team1 || !team2) {
-        return res.status(404).json({ 
-          message: "One or both teams not found" 
+        return res.status(404).json({
+          message: "One or both teams not found"
         });
       }
 
@@ -187,15 +196,15 @@ export const updateMatch = async (req, res) => {
       console.log("Socket not available:", socketError.message);
     }
 
-    res.status(200).json({ 
-      match, 
-      message: "Match updated successfully" 
+    res.status(200).json({
+      match,
+      message: "Match updated successfully"
     });
   } catch (error) {
     console.error("Error updating match:", error);
-    res.status(400).json({ 
-      message: "Failed to update match", 
-      error: error.message 
+    res.status(400).json({
+      message: "Failed to update match",
+      error: error.message
     });
   }
 };
@@ -221,9 +230,9 @@ export const deleteMatch = async (req, res) => {
     res.status(200).json({ message: "Match deleted successfully" });
   } catch (error) {
     console.error("Error deleting match:", error);
-    res.status(500).json({ 
-      message: "Failed to delete match", 
-      error: error.message 
+    res.status(500).json({
+      message: "Failed to delete match",
+      error: error.message
     });
   }
 };
@@ -250,15 +259,15 @@ export const setMOM = async (req, res) => {
       console.log("Socket not available:", socketError.message);
     }
 
-    res.status(200).json({ 
-      match, 
-      message: "Man of the Match set successfully" 
+    res.status(200).json({
+      match,
+      message: "Man of the Match set successfully"
     });
   } catch (error) {
     console.error("Error setting MOM:", error);
-    res.status(400).json({ 
-      message: "Failed to set Man of the Match", 
-      error: error.message 
+    res.status(400).json({
+      message: "Failed to set Man of the Match",
+      error: error.message
     });
   }
 };
@@ -312,9 +321,9 @@ export const getMatchStats = async (req, res) => {
     res.status(200).json(stats);
   } catch (error) {
     console.error("Error fetching match stats:", error);
-    res.status(500).json({ 
-      message: "Failed to fetch match statistics", 
-      error: error.message 
+    res.status(500).json({
+      message: "Failed to fetch match statistics",
+      error: error.message
     });
   }
 };
@@ -324,8 +333,8 @@ export const updateMatchStatus = async (req, res) => {
     const { status } = req.body;
 
     if (!["upcoming", "live", "completed"].includes(status)) {
-      return res.status(400).json({ 
-        message: "Invalid status. Must be: upcoming, live, or completed" 
+      return res.status(400).json({
+        message: "Invalid status. Must be: upcoming, live, or completed"
       });
     }
 
@@ -348,15 +357,15 @@ export const updateMatchStatus = async (req, res) => {
       console.log("Socket not available:", socketError.message);
     }
 
-    res.status(200).json({ 
-      match, 
-      message: `Match status updated to ${status}` 
+    res.status(200).json({
+      match,
+      message: `Match status updated to ${status}`
     });
   } catch (error) {
     console.error("Error updating match status:", error);
-    res.status(400).json({ 
-      message: "Failed to update match status", 
-      error: error.message 
+    res.status(400).json({
+      message: "Failed to update match status",
+      error: error.message
     });
   }
 };
@@ -367,8 +376,8 @@ export const setPlayingXI = async (req, res) => {
     const { teamId, players } = req.body;
 
     if (!players || players.length !== 11) {
-      return res.status(400).json({ 
-        message: "Exactly 11 players required for Playing XI" 
+      return res.status(400).json({
+        message: "Exactly 11 players required for Playing XI"
       });
     }
 
@@ -383,8 +392,8 @@ export const setPlayingXI = async (req, res) => {
     );
 
     if (!isTeamInMatch) {
-      return res.status(400).json({ 
-        message: "Team is not part of this match" 
+      return res.status(400).json({
+        message: "Team is not part of this match"
       });
     }
 
@@ -410,15 +419,15 @@ export const setPlayingXI = async (req, res) => {
       console.log("Socket not available:", socketError.message);
     }
 
-    res.status(200).json({ 
-      match, 
-      message: "Playing XI set successfully" 
+    res.status(200).json({
+      match,
+      message: "Playing XI set successfully"
     });
   } catch (error) {
     console.error("Error setting Playing XI:", error);
-    res.status(400).json({ 
-      message: "Failed to set Playing XI", 
-      error: error.message 
+    res.status(400).json({
+      message: "Failed to set Playing XI",
+      error: error.message
     });
   }
 };
@@ -461,15 +470,15 @@ export const setOpeners = async (req, res) => {
       console.log("Socket not available:", socketError.message);
     }
 
-    res.status(200).json({ 
-      match, 
-      message: "Openers set successfully" 
+    res.status(200).json({
+      match,
+      message: "Openers set successfully"
     });
   } catch (error) {
     console.error("Error setting openers:", error);
-    res.status(400).json({ 
-      message: "Failed to set openers", 
-      error: error.message 
+    res.status(400).json({
+      message: "Failed to set openers",
+      error: error.message
     });
   }
 };
@@ -497,15 +506,15 @@ export const getToss = async (req, res) => {
       console.log("Socket not available:", socketError.message);
     }
 
-    res.status(200).json({ 
-      match, 
-      message: "Toss updated successfully" 
+    res.status(200).json({
+      match,
+      message: "Toss updated successfully"
     });
   } catch (error) {
     console.error("Error updating toss:", error);
-    res.status(400).json({ 
-      message: "Failed to update toss", 
-      error: error.message 
+    res.status(400).json({
+      message: "Failed to update toss",
+      error: error.message
     });
   }
 };

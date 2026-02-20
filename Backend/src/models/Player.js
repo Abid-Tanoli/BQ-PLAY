@@ -5,8 +5,9 @@ const playerSchema = new mongoose.Schema(
     name: { type: String, required: true },
     role: { type: String },
     Campus: { type: String },
+    imageUrl: { type: String, default: "" },
     team: { type: mongoose.Schema.Types.ObjectId, ref: "Team" },
-    stats: { 
+    stats: {
       runs: { type: Number, default: 0 },
       wickets: { type: Number, default: 0 },
       strikeRate: { type: Number, default: 0 },
