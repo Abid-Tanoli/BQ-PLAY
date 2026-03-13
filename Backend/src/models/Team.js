@@ -22,6 +22,13 @@ const teamSchema = new mongoose.Schema(
       trim: true,
       default: ""
     },
+    media: [
+      {
+        url: String,
+        caption: String,
+        addedAt: Date
+      }
+    ],
     players: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: "Player"

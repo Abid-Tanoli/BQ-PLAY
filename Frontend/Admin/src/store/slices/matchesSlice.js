@@ -80,11 +80,11 @@ export const deleteMatch = createAsyncThunk(
 
 export const updateScore = createAsyncThunk(
   "matches/updateScore",
-  async ({ 
-    matchId, 
-    inningsIndex, 
-    runs, 
-    wickets, 
+  async ({
+    matchId,
+    inningsIndex,
+    runs,
+    wickets,
     extraType,
     commentaryText,
     batsman1Id,
@@ -127,6 +127,52 @@ export const updateMatchStatus = createAsyncThunk(
   }
 );
 
+export const updateToss = createAsyncThunk(
+  "matches/updateToss",
+  async ({ matchId, tossWinnerId, decision }, thunkAPI) => {
+    try {
+      const res = await api.put(`/matches/${matchId}/toss`, { tossWinnerId, decision });
+      return res.data;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(
+        err.response?.data?.message || err.message || "Failed to update toss"
+      );
+    }
+  }
+);
+
+export const setPlayingXI = createAsyncThunk(
+  "matches/setPlayingXI",
+  async ({ matchId, teamId, players }, thunkAPI) => {
+    try {
+      const res = await api.put(`/matches/${matchId}/playing-xi`, { teamId, players });
+      return res.data;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(
+        err.response?.data?.message || err.message || "Failed to set Playing XI"
+      );
+    }
+  }
+);
+
+export const setOpeners = createAsyncThunk(
+  "matches/setOpeners",
+  async ({ matchId, inningsIndex, batsman1Id, batsman2Id }, thunkAPI) => {
+    try {
+      const res = await api.put(`/matches/${matchId}/openers`, {
+        inningsIndex,
+        batsman1Id,
+        batsman2Id
+      });
+      return res.data;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(
+        err.response?.data?.message || err.message || "Failed to set openers"
+      );
+    }
+  }
+);
+
 const matchesSlice = createSlice({
   name: "matches",
   initialState,
@@ -154,7 +200,7 @@ const matchesSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
+
       .addCase(fetchMatchById.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -167,7 +213,7 @@ const matchesSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
+
       .addCase(createMatch.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -183,7 +229,7 @@ const matchesSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
+
       .addCase(updateMatch.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -205,7 +251,7 @@ const matchesSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
+
       .addCase(deleteMatch.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -221,7 +267,7 @@ const matchesSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
+
       .addCase(updateScore.pending, (state) => {
         state.error = null;
       })
@@ -240,8 +286,47 @@ const matchesSlice = createSlice({
       .addCase(updateScore.rejected, (state, action) => {
         state.error = action.payload;
       })
-      
+
       .addCase(updateMatchStatus.fulfilled, (state, action) => {
+        const updated = action.payload?.match || action.payload;
+        if (updated) {
+          const index = state.matches.findIndex((m) => m._id === updated._id);
+          if (index !== -1) {
+            state.matches[index] = updated;
+          }
+          if (state.currentMatch?._id === updated._id) {
+            state.currentMatch = updated;
+          }
+        }
+      })
+
+      .addCase(updateToss.fulfilled, (state, action) => {
+        const updated = action.payload?.match || action.payload;
+        if (updated) {
+          const index = state.matches.findIndex((m) => m._id === updated._id);
+          if (index !== -1) {
+            state.matches[index] = updated;
+          }
+          if (state.currentMatch?._id === updated._id) {
+            state.currentMatch = updated;
+          }
+        }
+      })
+
+      .addCase(setPlayingXI.fulfilled, (state, action) => {
+        const updated = action.payload?.match || action.payload;
+        if (updated) {
+          const index = state.matches.findIndex((m) => m._id === updated._id);
+          if (index !== -1) {
+            state.matches[index] = updated;
+          }
+          if (state.currentMatch?._id === updated._id) {
+            state.currentMatch = updated;
+          }
+        }
+      })
+
+      .addCase(setOpeners.fulfilled, (state, action) => {
         const updated = action.payload?.match || action.payload;
         if (updated) {
           const index = state.matches.findIndex((m) => m._id === updated._id);

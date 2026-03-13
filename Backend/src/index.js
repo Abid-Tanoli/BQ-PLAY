@@ -16,6 +16,7 @@ import errorHandler from "./middleware/errorHandler.js";
 import tournamentRoutes from "./routes/tournamentRoutes.js";
 import bulkImportRoutes from "./routes/bulkImportRoutes.js";
 import rankingsRoutes from "./routes/rankingsRoutes.js";
+import blogRoutes from "./routes/blogRoutes.js";
 
 dotenv.config();
 
@@ -65,6 +66,7 @@ app.use("/api/livematch", liveMatchRoutes);
 app.use("/api/tournaments", tournamentRoutes);
 app.use("/api/bulk-import", bulkImportRoutes);
 app.use("/api/rankings", rankingsRoutes);
+app.use("/api/blogs", blogRoutes);
 
 app.get("/api/health", (req, res) => {
   res.json({ 

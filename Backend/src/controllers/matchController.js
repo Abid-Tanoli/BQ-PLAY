@@ -483,7 +483,7 @@ export const setOpeners = async (req, res) => {
   }
 };
 
-export const getToss = async (req, res) => {
+export const updateToss = async (req, res) => {
   try {
     const { matchId } = req.params;
     const { tossWinnerId, decision } = req.body;

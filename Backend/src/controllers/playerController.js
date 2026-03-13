@@ -1,4 +1,5 @@
 import Player from "../models/Player.js";
+import Team from "../models/Team.js";
 import { getIO } from "../socket/socket.js";
 
 export const getPlayers = async (req, res) => {
@@ -42,26 +43,82 @@ export const getPlayer = async (req, res) => {
 };
 
 export const createPlayer = async (req, res) => {
-  const player = await Player.create(req.body);
-  const populated = await Player.findById(player._id).populate("team", "name");
-  getIO()?.emit("players:updated");
-  res.status(201).json(populated);
+  try {
+    const player = await Player.create(req.body);
+    const populated = await Player.findById(player._id).populate("team", "name");
+
+    // If a team was assigned, add this player to the team's players array
+    if (player.team) {
+      await Team.findByIdAndUpdate(
+        player.team,
+        { $addToSet: { players: player._id } }
+      );
+    }
+
+    getIO()?.emit("players:updated");
+    res.status(201).json(populated);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error creating player" });
+  }
 };
 
 export const updatePlayer = async (req, res) => {
-  const player = await Player.findByIdAndUpdate(
-    req.params.id,
-    req.body,
-    { new: true }
-  ).populate("team", "name");
-  getIO()?.emit("players:updated");
-  res.json(player);
+  try {
+    const existing = await Player.findById(req.params.id);
+    if (!existing) return res.status(404).json({ message: "Player not found" });
+
+    const oldTeamId = existing.team?.toString();
+    const newTeamId = req.body.team?.toString();
+
+    const player = await Player.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    ).populate("team", "name");
+
+    // If team changed, update the teams' players arrays
+    if (oldTeamId !== newTeamId) {
+      // Remove from old team
+      if (oldTeamId) {
+        await Team.findByIdAndUpdate(
+          oldTeamId,
+          { $pull: { players: player._id } }
+        );
+      }
+      // Add to new team
+      if (newTeamId) {
+        await Team.findByIdAndUpdate(
+          newTeamId,
+          { $addToSet: { players: player._id } }
+        );
+      }
+    }
+
+    getIO()?.emit("players:updated");
+    res.json(player);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error updating player" });
+  }
 };
 
 export const deletePlayer = async (req, res) => {
-  await Player.findByIdAndDelete(req.params.id);
-  getIO()?.emit("players:updated");
-  res.json({ message: "Deleted" });
+  try {
+    const player = await Player.findById(req.params.id);
+    if (player?.team) {
+      await Team.findByIdAndUpdate(
+        player.team,
+        { $pull: { players: player._id } }
+      );
+    }
+    await Player.findByIdAndDelete(req.params.id);
+    getIO()?.emit("players:updated");
+    res.json({ message: "Deleted" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error deleting player" });
+  }
 };
 
 export const getPlayerRanking = async (req, res) => {

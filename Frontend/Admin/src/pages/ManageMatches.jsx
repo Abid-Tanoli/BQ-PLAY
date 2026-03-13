@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchMatches, createMatch, updateMatch, deleteMatch } from "../store/slices/matchesSlice";
+import { fetchMatches, createMatch, updateMatch, deleteMatch, setPlayingXI } from "../store/slices/matchesSlice";
 import { fetchTeams } from "../store/slices/teamSlice";
 import { useForm } from "react-hook-form";
 import { initSocket } from "../store/socket";
+import api from "../services/api";
 
 export default function ManageMatches() {
   const dispatch = useDispatch();
@@ -11,6 +12,14 @@ export default function ManageMatches() {
   const { teams } = useSelector((state) => state.teams);
   const [editingMatchId, setEditingMatchId] = useState(null);
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm();
+
+  // Playing XI Selector State
+  const [showPlayingXIModal, setShowPlayingXIModal] = useState(false);
+  const [selectedMatchForXI, setSelectedMatchForXI] = useState(null);
+  const [selectedTeamForXI, setSelectedTeamForXI] = useState(null);
+  const [tempXI, setTempXI] = useState([]);
+  const [teamPlayers, setTeamPlayers] = useState([]);
+  const [xiLoading, setXiLoading] = useState(false);
 
   const teamAValue = watch("teamA");
   const teamBValue = watch("teamB");
@@ -20,7 +29,7 @@ export default function ManageMatches() {
     dispatch(fetchTeams());
 
     const socket = initSocket();
-    
+
     socket.on("match:created", () => {
       dispatch(fetchMatches());
     });
@@ -84,10 +93,10 @@ export default function ManageMatches() {
 
   const onEdit = (match) => {
     setEditingMatchId(match._id);
-    
+
     const teamAId = match.teams?.[0]?._id || match.teams?.[0];
     const teamBId = match.teams?.[1]?._id || match.teams?.[1];
-    
+
     setValue("teamA", teamAId);
     setValue("teamB", teamBId);
     setValue("startTime", new Date(match.startAt).toISOString().slice(0, 16));
@@ -97,7 +106,7 @@ export default function ManageMatches() {
 
   const onDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this match?")) return;
-    
+
     try {
       await dispatch(deleteMatch(id)).unwrap();
     } catch (err) {
@@ -109,6 +118,63 @@ export default function ManageMatches() {
   const cancelEdit = () => {
     setEditingMatchId(null);
     reset();
+  };
+
+  const openXISelector = async (match, teamId) => {
+    setSelectedMatchForXI(match);
+    setSelectedTeamForXI(teamId);
+    setXiLoading(true);
+    setShowPlayingXIModal(true);
+
+    try {
+      // Fetch full team data to get all players
+      const res = await api.get(`/teams/${teamId}`);
+      setTeamPlayers(res.data.players || res.data.playerList || []);
+
+      // Load existing XI if any
+      const existingXI = match.playingXI?.find(xi => (xi.team?._id || xi.team) === teamId);
+      setTempXI(existingXI ? existingXI.players.map(p => p._id || p) : []);
+    } catch (err) {
+      console.error("Error loading team players:", err);
+      alert("Failed to load team players");
+    } finally {
+      setXiLoading(false);
+    }
+  };
+
+  const togglePlayerSelection = (playerId) => {
+    if (tempXI.includes(playerId)) {
+      setTempXI(tempXI.filter(id => id !== playerId));
+    } else if (tempXI.length < 11) {
+      setTempXI([...tempXI, playerId]);
+    } else {
+      alert("You can only select 11 players");
+    }
+  };
+
+  const savePlayingXI = async () => {
+    if (tempXI.length !== 11) {
+      alert("Please select exactly 11 players");
+      return;
+    }
+
+    setXiLoading(true);
+    try {
+      await dispatch(setPlayingXI({
+        matchId: selectedMatchForXI._id,
+        teamId: selectedTeamForXI,
+        players: tempXI
+      })).unwrap();
+
+      alert("Playing XI updated successfully");
+      setShowPlayingXIModal(false);
+      dispatch(fetchMatches());
+    } catch (err) {
+      console.error("Error saving Playing XI:", err);
+      alert(err || "Failed to save Playing XI");
+    } finally {
+      setXiLoading(false);
+    }
   };
 
   const getTeamName = (team) => {
@@ -157,7 +223,7 @@ export default function ManageMatches() {
             <h3 className="text-lg font-semibold text-slate-800 mb-4">
               {editingMatchId ? "Edit Match" : "Create New Match"}
             </h3>
-            
+
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -169,8 +235,8 @@ export default function ManageMatches() {
                 >
                   <option value="">Select Team A</option>
                   {teams.map((t) => (
-                    <option 
-                      key={t._id} 
+                    <option
+                      key={t._id}
                       value={t._id}
                       disabled={t._id === teamBValue}
                     >
@@ -193,8 +259,8 @@ export default function ManageMatches() {
                 >
                   <option value="">Select Team B</option>
                   {teams.map((t) => (
-                    <option 
-                      key={t._id} 
+                    <option
+                      key={t._id}
                       value={t._id}
                       disabled={t._id === teamAValue}
                     >
@@ -280,13 +346,13 @@ export default function ManageMatches() {
         <div className="lg:col-span-2">
           <div className="card">
             <h3 className="text-lg font-semibold text-slate-800 mb-4">All Matches</h3>
-            
+
             {loading && matches.length === 0 && (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
               </div>
             )}
-            
+
             <div className="space-y-3 max-h-[600px] overflow-y-auto">
               {matches.map((match) => (
                 <div
@@ -299,13 +365,12 @@ export default function ManageMatches() {
                         {getTeamName(match.teams?.[0])} vs {getTeamName(match.teams?.[1])}
                       </h4>
                       <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          match.status === "live"
-                            ? "bg-green-100 text-green-700 animate-pulse"
-                            : match.status === "upcoming"
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${match.status === "live"
+                          ? "bg-green-100 text-green-700 animate-pulse"
+                          : match.status === "upcoming"
                             ? "bg-blue-100 text-blue-700"
                             : "bg-slate-200 text-slate-700"
-                        }`}
+                          }`}
                       >
                         {match.status?.toUpperCase()}
                       </span>
@@ -313,7 +378,7 @@ export default function ManageMatches() {
                         {match.matchType || "T20"}
                       </span>
                     </div>
-                    
+
                     <div className="flex items-center gap-4 text-sm text-slate-600">
                       <span className="flex items-center gap-1">
                         <svg
@@ -357,26 +422,46 @@ export default function ManageMatches() {
                       )}
                     </div>
                   </div>
-                  
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => onEdit(match)}
-                      className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
-                      title="Edit match"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => onDelete(match._id)}
-                      className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors"
-                      title="Delete match"
-                    >
-                      Delete
-                    </button>
+
+                  <div className="flex flex-col gap-2">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => onEdit(match)}
+                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                        title="Edit match"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => onDelete(match._id)}
+                        className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors"
+                        title="Delete match"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                    <div className="flex gap-1">
+                      {match.teams?.map((teamId) => {
+                        const team = teams.find(t => t._id === (teamId._id || teamId));
+                        const isSet = match.playingXI?.find(xi => (xi.team?._id || xi.team) === (teamId._id || teamId))?.players?.length === 11;
+                        return (
+                          <button
+                            key={team?._id || Math.random()}
+                            onClick={() => openXISelector(match, team?._id)}
+                            className={`px-2 py-1 rounded text-[10px] font-bold uppercase transition-colors border ${isSet
+                                ? "bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                                : "bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200"
+                              }`}
+                          >
+                            Set {team?.name?.split(' ')[0] || "Team"} XI {isSet && "✓"}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               ))}
-              
+
               {matches.length === 0 && !loading && (
                 <div className="text-center py-12">
                   <svg
@@ -400,6 +485,101 @@ export default function ManageMatches() {
           </div>
         </div>
       </div>
+
+      {/* Playing XI Modal */}
+      {showPlayingXIModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col border border-slate-200">
+            <div className="p-5 border-b flex items-center justify-between bg-slate-50/50">
+              <div>
+                <h3 className="font-bold text-slate-800 text-lg">
+                  Select Playing XI
+                </h3>
+                <p className="text-sm text-slate-500">
+                  {getTeamName(selectedTeamForXI)} - {selectedMatchForXI?.title}
+                </p>
+              </div>
+              <div className={`px-3 py-1 rounded-full text-xs font-bold ${tempXI.length === 11 ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"
+                }`}>
+                {tempXI.length} / 11 Selected
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-5">
+              {xiLoading ? (
+                <div className="flex flex-col items-center justify-center py-20 gap-3">
+                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+                  <p className="text-slate-500 text-sm animate-pulse">Loading squad players...</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {teamPlayers.length > 0 ? (
+                    teamPlayers.map((player) => (
+                      <button
+                        key={player._id}
+                        onClick={() => togglePlayerSelection(player._id)}
+                        className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all duration-200 group ${tempXI.includes(player._id)
+                            ? "bg-blue-50 border-blue-500 shadow-sm"
+                            : "bg-white border-slate-100 hover:border-blue-200 hover:bg-slate-50/50"
+                          }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center transition-colors ${tempXI.includes(player._id)
+                              ? "bg-blue-500 border-blue-500"
+                              : "border-slate-200 group-hover:border-blue-300"
+                            }`}>
+                            {tempXI.includes(player._id) && (
+                              <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </div>
+                          <div className="text-left">
+                            <p className={`font-semibold text-sm transition-colors ${tempXI.includes(player._id) ? "text-blue-900" : "text-slate-700"
+                              }`}>
+                              {player.name}
+                            </p>
+                            <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">{player.role}</p>
+                          </div>
+                        </div>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="col-span-2 text-center py-10">
+                      <p className="text-slate-500 italic">No players found in this team's squad.</p>
+                      <p className="text-xs text-slate-400 mt-1">Please add players to the team first.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="p-5 border-t bg-slate-50/80 backdrop-blur-md flex gap-4">
+              <button
+                onClick={() => setShowPlayingXIModal(false)}
+                className="flex-1 bg-white hover:bg-slate-100 text-slate-600 py-2.5 rounded-xl font-bold transition-all border border-slate-200 shadow-sm"
+                disabled={xiLoading}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={savePlayingXI}
+                disabled={xiLoading || tempXI.length !== 11}
+                className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-blue-200 disabled:opacity-50 disabled:shadow-none"
+              >
+                {xiLoading ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <span>Saving...</span>
+                  </div>
+                ) : (
+                  `Confirm Playing XI (${tempXI.length}/11)`
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

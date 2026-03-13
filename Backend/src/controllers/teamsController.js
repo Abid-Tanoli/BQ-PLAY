@@ -122,6 +122,7 @@ export const updateTeam = async (req, res) => {
     if (logo !== undefined) updateData.logo = logo;
     if (shortName !== undefined) updateData.shortName = shortName;
     if (players !== undefined) updateData.players = players;
+    if (req.body.media !== undefined) updateData.media = req.body.media;
 
     const updatedTeam = await Team.findByIdAndUpdate(
       req.params.id,

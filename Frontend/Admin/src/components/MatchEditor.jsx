@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
-import { updateScore } from "../store/slices/matchesSlice";
+import { updateScore, updateToss, setPlayingXI, setOpeners } from "../store/slices/matchesSlice";
 import api from "../services/api";
 import { getSocket } from "../store/socket";
 
@@ -10,7 +10,7 @@ export default function MatchEditor({ matchId, onClose }) {
   const [loading, setLoading] = useState(false);
   const [currentInnings, setCurrentInnings] = useState(0);
 
-  // Scoring state
+
   const [runs, setRuns] = useState(0);
   const [isWide, setIsWide] = useState(false);
   const [isNoBall, setIsNoBall] = useState(false);
@@ -21,8 +21,13 @@ export default function MatchEditor({ matchId, onClose }) {
   const [dismissedPlayerId, setDismissedPlayerId] = useState("");
   const [fielderId, setFielderId] = useState("");
   const [commentaryText, setCommentaryText] = useState("");
+  const [tossWinnerId, setTossWinnerId] = useState("");
+  const [tossDecision, setTossDecision] = useState("");
+  const [showPlayingXISelector, setShowPlayingXISelector] = useState(false);
+  const [selectedTeamForXI, setSelectedTeamForXI] = useState("");
+  const [tempXI, setTempXI] = useState([]);
 
-  // Players state
+
   const [batsman1, setBatsman1] = useState("");
   const [batsman2, setBatsman2] = useState("");
   const [onStrikeBatsman, setOnStrikeBatsman] = useState("");
@@ -31,7 +36,6 @@ export default function MatchEditor({ matchId, onClose }) {
 
   useEffect(() => {
     fetchMatch();
-    loadTeamPlayers();
 
     const socket = getSocket();
     if (socket) {
@@ -77,6 +81,13 @@ export default function MatchEditor({ matchId, onClose }) {
     };
   }, [matchId]);
 
+  // Load team players whenever match or innings changes
+  useEffect(() => {
+    if (match) {
+      loadTeamPlayers();
+    }
+  }, [match?._id, match?.status, currentInnings]);
+
   const fetchMatch = async () => {
     try {
       const res = await api.get(`/matches/${matchId}`);
@@ -103,24 +114,42 @@ export default function MatchEditor({ matchId, onClose }) {
 
   const loadTeamPlayers = async () => {
     try {
-      const res = await api.get(`/matches/${matchId}`);
-      const match = res.data;
+      if (!match || !match.teams || match.teams.length < 2) return;
 
-      if (match.teams && match.teams.length === 2) {
-        // Batting team is the current innings team
-        const battingTeamId = match.innings[currentInnings]?.team?._id;
-        const bowlingTeamId = match.teams.find(t =>
-          (t._id || t) !== battingTeamId
-        );
+      const battingTeamId = match.innings[currentInnings]?.team?._id || match.innings[currentInnings]?.team;
+      if (!battingTeamId) return;
 
-        const battingTeamRes = await api.get(`/teams/${battingTeamId}`);
-        const bowlingTeamRes = await api.get(`/teams/${bowlingTeamId}`);
+      const bowlingTeamId = match.teams.find(t => (t._id || t) !== battingTeamId);
+      if (!bowlingTeamId) return;
 
-        setAvailablePlayers({
-          batting: battingTeamRes.data.players || [],
-          bowling: bowlingTeamRes.data.players || []
-        });
+      // Try to get Playing XI first
+      const battingXI = match.playingXI?.find(xi => (xi.team?._id || xi.team) === (battingTeamId?._id || battingTeamId));
+      const bowlingXI = match.playingXI?.find(xi => (xi.team?._id || xi.team) === (bowlingTeamId?._id || bowlingTeamId));
+
+      let battingPlayers = [];
+      let bowlingPlayers = [];
+
+      // If Playing XI is set (usually 11 players), use it
+      if (battingXI && battingXI.players?.length > 0) {
+        battingPlayers = battingXI.players;
+      } else {
+        // Fallback to full squad
+        const res = await api.get(`/teams/${battingTeamId?._id || battingTeamId}`);
+        battingPlayers = res.data.players || res.data.playerList || [];
       }
+
+      if (bowlingXI && bowlingXI.players?.length > 0) {
+        bowlingPlayers = bowlingXI.players;
+      } else {
+        // Fallback to full squad
+        const res = await api.get(`/teams/${bowlingTeamId?._id || bowlingTeamId}`);
+        bowlingPlayers = res.data.players || res.data.playerList || [];
+      }
+
+      setAvailablePlayers({
+        batting: battingPlayers,
+        bowling: bowlingPlayers
+      });
     } catch (err) {
       console.error("Error loading players:", err);
     }
@@ -158,6 +187,12 @@ export default function MatchEditor({ matchId, onClose }) {
       // Reset form
       resetScoringForm();
 
+      if (isWicket) {
+        if (dismissedPlayerId === batsman1) setBatsman1("");
+        if (dismissedPlayerId === batsman2) setBatsman2("");
+        setOnStrikeBatsman("");
+      }
+
     } catch (err) {
       console.error(err);
       alert(err || "Error sending update");
@@ -177,6 +212,90 @@ export default function MatchEditor({ matchId, onClose }) {
     setDismissedPlayerId("");
     setFielderId("");
     setCommentaryText("");
+  };
+
+  const handleTossUpdate = async () => {
+    if (!tossWinnerId || !tossDecision) {
+      alert("Please select toss winner and decision");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await dispatch(updateToss({ matchId, tossWinnerId, decision: tossDecision })).unwrap();
+      alert("Toss updated successfully");
+    } catch (err) {
+      console.error(err);
+      alert(err || "Error updating toss");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSetPlayingXI = async () => {
+    if (tempXI.length !== 11) {
+      alert("Please select exactly 11 players");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await dispatch(setPlayingXI({
+        matchId,
+        teamId: selectedTeamForXI,
+        players: tempXI
+      })).unwrap();
+      alert("Playing XI updated successfully");
+      setShowPlayingXISelector(false);
+      fetchMatch();
+    } catch (err) {
+      console.error(err);
+      alert(err || "Error setting Playing XI");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSetOpeners = async () => {
+    if (!batsman1 || !batsman2) {
+      alert("Please select both openers");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await dispatch(setOpeners({
+        matchId,
+        inningsIndex: currentInnings,
+        batsman1Id: batsman1,
+        batsman2Id: batsman2
+      })).unwrap();
+      alert("Openers set successfully");
+      fetchMatch();
+    } catch (err) {
+      console.error(err);
+      alert(err || "Error setting openers");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const togglePlayerSelection = (playerId) => {
+    if (tempXI.includes(playerId)) {
+      setTempXI(tempXI.filter(id => id !== playerId));
+    } else if (tempXI.length < 11) {
+      setTempXI([...tempXI, playerId]);
+    } else {
+      alert("You can only select 11 players");
+    }
+  };
+
+  const openXISelector = (teamId) => {
+    const team = match.teams.find(t => (t._id || t) === teamId);
+    setSelectedTeamForXI(teamId);
+    const existingXI = match.playingXI?.find(xi => (xi.team?._id || xi.team) === teamId);
+    setTempXI(existingXI ? existingXI.players.map(p => p._id || p) : []);
+    setShowPlayingXISelector(true);
   };
 
   const handleEndInnings = async () => {
@@ -284,6 +403,127 @@ export default function MatchEditor({ matchId, onClose }) {
         </div>
       </div>
 
+      {/* Toss Selection */}
+      {!match.tossWinner && (
+        <div className="card bg-blue-50 border border-blue-200">
+          <h4 className="font-semibold text-blue-800 mb-3 flex items-center gap-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Toss Selection
+          </h4>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-blue-700 mb-1">Toss Winner</label>
+              <select
+                value={tossWinnerId}
+                onChange={(e) => setTossWinnerId(e.target.value)}
+                className="w-full p-2 border border-blue-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Select Team</option>
+                {match.teams?.map((t) => (
+                  <option key={t._id} value={t._id}>{t.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-blue-700 mb-1">Decision</label>
+              <select
+                value={tossDecision}
+                onChange={(e) => setTossDecision(e.target.value)}
+                className="w-full p-2 border border-blue-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Select Decision</option>
+                <option value="bat">Bat</option>
+                <option value="bowl">Bowl</option>
+              </select>
+            </div>
+          </div>
+          <button
+            onClick={handleTossUpdate}
+            disabled={loading || !tossWinnerId || !tossDecision}
+            className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg text-sm font-bold transition-colors disabled:opacity-50"
+          >
+            Update Toss
+          </button>
+        </div>
+      )}
+
+      {/* Playing XI Management */}
+      <div className="grid grid-cols-2 gap-2">
+        {match.teams?.map((team) => (
+          <button
+            key={team._id}
+            onClick={() => openXISelector(team._id)}
+            className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-lg text-xs font-bold transition-colors border border-slate-200 flex items-center justify-center gap-1"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            Set {team.name} XI
+            {match.playingXI?.find(xi => (xi.team?._id || xi.team) === team._id)?.players?.length === 11 && " ✓"}
+          </button>
+        ))}
+      </div>
+
+      {showPlayingXISelector && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="p-4 border-b flex items-center justify-between bg-slate-50">
+              <h3 className="font-bold text-slate-800">
+                Select Playing XI - {match.teams.find(t => (t._id || t) === selectedTeamForXI)?.name}
+              </h3>
+              <span className={`px-2 py-1 rounded-full text-xs font-bold ${tempXI.length === 11 ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"}`}>
+                {tempXI.length} / 11 Selected
+              </span>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 grid grid-cols-1 md:grid-cols-2 gap-2">
+              {match.teams.find(t => (t._id || t) === selectedTeamForXI)?.players?.map((player) => (
+                <button
+                  key={player._id}
+                  onClick={() => togglePlayerSelection(player._id)}
+                  className={`flex items-center justify-between p-3 rounded-lg border transition-all ${tempXI.includes(player._id)
+                    ? "bg-blue-50 border-blue-500 ring-1 ring-blue-500"
+                    : "bg-white border-slate-200 hover:border-blue-300"
+                    }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-4 h-4 rounded border flex items-center justify-center ${tempXI.includes(player._id) ? "bg-blue-500 border-blue-500" : "border-slate-300"
+                      }`}>
+                      {tempXI.includes(player._id) && (
+                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </div>
+                    <div className="text-left">
+                      <p className="font-medium text-slate-800 text-sm">{player.name}</p>
+                      <p className="text-xs text-slate-500">{player.role}</p>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+            <div className="p-4 border-t bg-slate-50 flex gap-3">
+              <button
+                onClick={() => setShowPlayingXISelector(false)}
+                className="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 py-2 rounded-lg font-bold transition-colors"
+                disabled={loading}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSetPlayingXI}
+                disabled={loading || tempXI.length !== 11}
+                className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-bold transition-colors disabled:opacity-50"
+              >
+                {loading ? "Saving..." : "Save Playing XI"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Innings Selector */}
       {match.innings && match.innings.length > 1 && (
         <div className="flex gap-2">
@@ -374,78 +614,127 @@ export default function MatchEditor({ matchId, onClose }) {
         </div>
       )}
 
-      {/* Player Selection */}
+      {/* Player Selection & Openers */}
       {innings.status !== "completed" && (
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Batsman 1 {batsman1 === onStrikeBatsman && "★"}
-            </label>
-            <select
-              value={batsman1}
-              onChange={(e) => {
-                setBatsman1(e.target.value);
-                if (!onStrikeBatsman) setOnStrikeBatsman(e.target.value);
-              }}
-              className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-            >
-              <option value="">Select Batsman 1</option>
-              {availablePlayers.batting.map(p => (
-                <option key={p._id} value={p._id}>{p.name}</option>
-              ))}
-            </select>
-          </div>
+        <div className="card bg-white border border-slate-200">
+          {(!innings.currentBatsman1 || !innings.currentBatsman2) && innings.runs === 0 && innings.wickets === 0 && (
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <h4 className="font-bold text-green-800 mb-2 flex items-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Select Openers
+              </h4>
+              <p className="text-sm text-green-700 mb-4">Select the two opening batsmen to start the innings.</p>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-xs font-medium text-green-800 mb-1">Batsman 1</label>
+                  <select
+                    value={batsman1}
+                    onChange={(e) => setBatsman1(e.target.value)}
+                    className="w-full p-2 border border-green-300 rounded-lg text-sm bg-white outline-none"
+                  >
+                    <option value="">Select Batsman 1</option>
+                    {availablePlayers.batting.map(p => (
+                      <option key={p._id} value={p._id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-green-800 mb-1">Batsman 2</label>
+                  <select
+                    value={batsman2}
+                    onChange={(e) => setBatsman2(e.target.value)}
+                    className="w-full p-2 border border-green-300 rounded-lg text-sm bg-white outline-none"
+                  >
+                    <option value="">Select Batsman 2</option>
+                    {availablePlayers.batting.map(p => (
+                      <option key={p._id} value={p._id} disabled={p._id === batsman1}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <button
+                onClick={handleSetOpeners}
+                disabled={loading || !batsman1 || !batsman2}
+                className="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg font-bold transition-colors disabled:opacity-50"
+              >
+                Start Innings with Openers
+              </button>
+            </div>
+          )}
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Batsman 2 {batsman2 === onStrikeBatsman && "★"}
-            </label>
-            <select
-              value={batsman2}
-              onChange={(e) => {
-                setBatsman2(e.target.value);
-                if (!onStrikeBatsman) setOnStrikeBatsman(e.target.value);
-              }}
-              className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-            >
-              <option value="">Select Batsman 2</option>
-              {availablePlayers.batting.map(p => (
-                <option key={p._id} value={p._id} disabled={p._id === batsman1}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Batsman 1 {batsman1 === onStrikeBatsman && "★"}
+              </label>
+              <select
+                value={batsman1}
+                onChange={(e) => {
+                  setBatsman1(e.target.value);
+                  if (!onStrikeBatsman) setOnStrikeBatsman(e.target.value);
+                }}
+                className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              >
+                <option value="">Select Batsman 1</option>
+                {availablePlayers.batting.map(p => (
+                  <option key={p._id} value={p._id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              On Strike Batsman
-            </label>
-            <select
-              value={onStrikeBatsman}
-              onChange={(e) => setOnStrikeBatsman(e.target.value)}
-              className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-            >
-              <option value="">Select On Strike</option>
-              {batsman1 && <option value={batsman1}>{getPlayerName(availablePlayers.batting.find(p => p._id === batsman1))}</option>}
-              {batsman2 && batsman2 !== batsman1 && <option value={batsman2}>{getPlayerName(availablePlayers.batting.find(p => p._id === batsman2))}</option>}
-            </select>
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Batsman 2 {batsman2 === onStrikeBatsman && "★"}
+              </label>
+              <select
+                value={batsman2}
+                onChange={(e) => {
+                  setBatsman2(e.target.value);
+                  if (!onStrikeBatsman) setOnStrikeBatsman(e.target.value);
+                }}
+                className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              >
+                <option value="">Select Batsman 2</option>
+                {availablePlayers.batting.map(p => (
+                  <option key={p._id} value={p._id} disabled={p._id === batsman1}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Bowler
-            </label>
-            <select
-              value={bowler}
-              onChange={(e) => setBowler(e.target.value)}
-              className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-            >
-              <option value="">Select Bowler</option>
-              {availablePlayers.bowling.map(p => (
-                <option key={p._id} value={p._id}>{p.name}</option>
-              ))}
-            </select>
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                On Strike Batsman
+              </label>
+              <select
+                value={onStrikeBatsman}
+                onChange={(e) => setOnStrikeBatsman(e.target.value)}
+                className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              >
+                <option value="">Select On Strike</option>
+                {batsman1 && <option value={batsman1}>{getPlayerName(availablePlayers.batting.find(p => p._id === batsman1))}</option>}
+                {batsman2 && batsman2 !== batsman1 && <option value={batsman2}>{getPlayerName(availablePlayers.batting.find(p => p._id === batsman2))}</option>}
+              </select>
+            </div>
+
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Bowler
+              </label>
+              <select
+                value={bowler}
+                onChange={(e) => setBowler(e.target.value)}
+                className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              >
+                <option value="">Select Bowler</option>
+                {availablePlayers.bowling.map(p => (
+                  <option key={p._id} value={p._id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
       )}
