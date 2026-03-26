@@ -6,7 +6,7 @@ export function initSocket() {
   if (socket) return socket;
 
   const SERVER = process.env.REACT_APP_API_SOCKET || "http://localhost:5000";
-  
+
   socket = clientIo(SERVER, {
     transports: ["websocket", "polling"],
     reconnection: true,

@@ -144,250 +144,298 @@ export default function Teams() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-slate-800">Manage Teams</h2>
-        <Link
-          to="/admin/bulk-import"
-          state={{ tab: "teams" }}
-          className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors font-medium shadow-sm"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-          </svg>
-          Bulk Import
-        </Link>
+    <div className="space-y-8 bg-[#f8fafc] min-h-screen p-6">
+      {/* Header section with premium styling */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-[#031d44] p-8 rounded-3xl shadow-2xl text-white">
+        <div>
+          <h2 className="text-3xl font-black uppercase tracking-tighter italic">Team Command Center</h2>
+          <p className="text-blue-200/60 font-medium text-sm mt-1 uppercase tracking-widest">Manage your league's franchises and rosters</p>
+        </div>
+        <div className="flex items-center gap-4">
+          <Link
+            to="/admin/bulk-import"
+            state={{ tab: "teams" }}
+            className="flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all font-black text-xs uppercase tracking-widest border border-white/10 backdrop-blur-md"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            Bulk Import
+          </Link>
+          <button 
+            onClick={() => { setEditingId(null); reset(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+            className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-900/40 transition-all active:scale-95"
+          >
+            New Team
+          </button>
+        </div>
       </div>
 
-      {/* Add/Edit Team Form */}
-      <div className="card">
-        <h3 className="text-lg font-semibold mb-4">
-          {editingId ? "Edit Team" : "Add New Team"}
-        </h3>
-        <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-5 gap-3">
-          <input
-            {...register("name", { required: true })}
-            placeholder="Team Name *"
-            className="p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-          />
-          <input
-            {...register("shortName")}
-            placeholder="Short Name (e.g., ABC)"
-            className="p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-          />
-          <input
-            {...register("ownername")}
-            placeholder="Owner Name"
-            className="p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-          />
-          <input
-            {...register("logo")}
-            placeholder="Logo URL"
-            className="p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-          />
-          <div className="flex gap-2">
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium py-2 transition-colors disabled:opacity-50"
-            >
-              {loading ? "Saving..." : editingId ? "Update" : "Add"}
-            </button>
-            {editingId && (
-              <button
-                type="button"
-                onClick={() => { setEditingId(null); reset(); }}
-                className="px-4 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg transition-colors"
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        {/* Left Side: Add/Edit Form as a sidebar card */}
+        <div className="lg:col-span-1">
+          <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-200 sticky top-6">
+            <div className="bg-[#031d44] px-6 py-4 border-b border-white/10">
+              <h3 className="text-white font-black uppercase tracking-widest text-xs">
+                {editingId ? "Edit Team Profile" : "Register New Team"}
+              </h3>
+            </div>
+            <div className="p-6">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+                <div>
+                  <label className="text-[10px] font-black uppercase text-slate-400 block mb-1.5 ml-1">Team Name</label>
+                  <input
+                    {...register("name", { required: true })}
+                    placeholder="e.g. Mumbai Indians"
+                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-800 placeholder:text-slate-300 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase text-slate-400 block mb-1.5 ml-1">Short Name</label>
+                  <input
+                    {...register("shortName")}
+                    placeholder="e.g. MI"
+                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-800 placeholder:text-slate-300 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase text-slate-400 block mb-1.5 ml-1">Owner / Manager</label>
+                  <input
+                    {...register("ownername")}
+                    placeholder="Enter full name"
+                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-800 placeholder:text-slate-300 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase text-slate-400 block mb-1.5 ml-1">Logo URL</label>
+                  <input
+                    {...register("logo")}
+                    placeholder="https://..."
+                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-800 placeholder:text-slate-300 transition-all"
+                  />
+                </div>
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-4 bg-[#031d44] hover:bg-slate-800 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-xl transition-all disabled:opacity-50 active:scale-95"
+                  >
+                    {loading ? "Processing..." : editingId ? "Update Team" : "Create Team"}
+                  </button>
+                  {editingId && (
+                    <button
+                      type="button"
+                      onClick={() => { setEditingId(null); reset(); }}
+                      className="w-full mt-3 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all"
+                    >
+                      Discard Changes
+                    </button>
+                  )}
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side: Teams Grid */}
+        <div className="lg:col-span-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {loading && (
+              <div className="col-span-full flex flex-col items-center justify-center py-24 bg-white rounded-3xl border border-dashed border-slate-300">
+                <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4" />
+                <p className="text-slate-400 font-black uppercase tracking-widest text-xs">Fetching franchises...</p>
+              </div>
+            )}
+            {teams.map((team) => (
+              <div 
+                key={team._id} 
+                className="group relative bg-white rounded-3xl shadow-sm hover:shadow-2xl transition-all duration-500 border border-slate-200 overflow-hidden cursor-pointer flex flex-col"
+                onClick={() => navigate(`/admin/teams/${team._id}`)}
               >
-                Cancel
-              </button>
+                {/* Team Card Background Accent */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-bl-full -mr-16 -mt-16 group-hover:bg-blue-50 transition-colors duration-500" />
+                
+                <div className="p-8 relative flex-1">
+                  <div className="flex items-start gap-6">
+                    {/* Logo with premium frame */}
+                    <div className="relative">
+                      <div className="w-20 h-20 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center p-3 shadow-inner group-hover:scale-110 transition-transform duration-500">
+                        {team.logo ? (
+                          <img
+                            src={team.logo}
+                            alt={team.name}
+                            className="w-full h-full object-contain"
+                            onError={(e) => { e.target.style.display = 'none'; }}
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-[#031d44] rounded-xl flex items-center justify-center font-black text-white text-2xl italic">
+                            {team.shortName || team.name?.substring(0, 2).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                      <div className="absolute -bottom-2 -right-2 bg-blue-600 text-white text-[10px] font-black px-2 py-1 rounded-lg shadow-lg uppercase">
+                        {team.shortName || "tm"}
+                      </div>
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-xl font-black text-slate-800 uppercase tracking-tighter italic leading-none mb-2 group-hover:text-blue-600 transition-colors">
+                        {team.name}
+                      </h3>
+                      {team.ownername && (
+                        <div className="flex items-center gap-2">
+                           <div className="w-1 h-1 bg-slate-300 rounded-full" />
+                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest truncate">Owner: {team.ownername}</p>
+                        </div>
+                      )}
+                      
+                      {/* Stat summary */}
+                      <div className="mt-6 grid grid-cols-2 gap-4">
+                         <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 group-hover:bg-white transition-colors">
+                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Squad Size</p>
+                            <p className="text-lg font-black text-slate-800">{getTeamPlayerCount(team)}</p>
+                         </div>
+                         <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 group-hover:bg-white transition-colors">
+                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Status</p>
+                            <p className="text-[10px] font-black text-green-600 uppercase">Active</p>
+                         </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer Controls */}
+                <div className="p-4 bg-slate-50 border-t border-slate-100 flex gap-2" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    onClick={() => openPlayerModal(team)}
+                    className="flex-[2] py-2.5 text-[10px] font-black uppercase tracking-widest text-[#031d44] hover:bg-white bg-slate-200/50 rounded-xl transition-all border border-transparent hover:border-slate-200"
+                  >
+                    Manage Squad
+                  </button>
+                  <button
+                    onClick={() => onEdit(team)}
+                    className="flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl transition-all border border-blue-200 hover:border-transparent"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => onDelete(team._id)}
+                    className="flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest text-red-600 hover:bg-red-600 hover:text-white rounded-xl transition-all border border-red-200 hover:border-transparent"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {teams.length === 0 && !loading && (
+              <div className="col-span-full flex flex-col items-center justify-center py-32 bg-white rounded-3xl border border-slate-200">
+                <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6">
+                  <svg className="w-10 h-10 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-black text-slate-800 uppercase tracking-tighter">No Teams Found</h3>
+                <p className="text-slate-400 text-sm mt-2 max-w-xs text-center">Start building your league by adding teams in the sidebar.</p>
+              </div>
             )}
           </div>
-        </form>
+        </div>
       </div>
 
-      {/* Teams Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {loading && (
-          <div className="col-span-full text-center py-12 text-slate-500">Loading teams...</div>
-        )}
-        {teams.map((team) => (
-          <div key={team._id} className="card border border-slate-100 hover:shadow-lg transition-all group cursor-pointer" onClick={() => navigate(`/admin/teams/${team._id}`)}>
-            {/* Header */}
-            <div className="flex items-center gap-4 mb-4">
-              {team.logo ? (
-                <img
-                  src={team.logo}
-                  alt={team.name}
-                  className="w-14 h-14 object-contain rounded-lg border border-slate-100"
-                  onError={(e) => { e.target.style.display = 'none'; }}
-                />
-              ) : (
-                <div className="w-14 h-14 bg-gradient-to-br from-blue-100 to-slate-100 rounded-lg flex items-center justify-center font-black text-blue-600 text-xl">
-                  {team.shortName || team.name?.substring(0, 2).toUpperCase()}
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-slate-800 truncate group-hover:text-blue-700 transition-colors">{team.name}</h3>
-                {team.ownername && <p className="text-sm text-slate-500 truncate">Owner: {team.ownername}</p>}
-              </div>
-              <svg className="w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-colors shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </div>
-
-            {/* Player avatars + count */}
-            <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg mb-3">
-              <div className="flex -space-x-1">
-                {team.players?.slice(0, 5).map((player, i) => (
-                  <div
-                    key={i}
-                    className="w-7 h-7 bg-blue-100 border-2 border-white rounded-full flex items-center justify-center text-xs font-bold text-blue-700"
-                  >
-                    {(player.name || "P")?.substring(0, 1).toUpperCase()}
-                  </div>
-                ))}
-                {getTeamPlayerCount(team) === 0 && (
-                  <div className="w-7 h-7 bg-slate-200 border-2 border-white rounded-full flex items-center justify-center">
-                    <svg className="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                  </div>
-                )}
-              </div>
-              <span className="text-sm font-medium text-slate-600">
-                {getTeamPlayerCount(team)} {getTeamPlayerCount(team) === 1 ? "Player" : "Players"}
-              </span>
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-              <button
-                onClick={() => openPlayerModal(team)}
-                className="flex-1 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 border border-slate-200 hover:border-slate-400 rounded-lg transition-all"
-              >
-                👥 Players
-              </button>
-              <button
-                onClick={() => onEdit(team)}
-                className="flex-1 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 border border-blue-200 hover:border-blue-400 rounded-lg transition-all"
-              >
-                Edit
-              </button>
-              <button
-                onClick={() => onDelete(team._id)}
-                className="flex-1 py-2 text-sm font-medium text-red-600 hover:bg-red-50 border border-red-200 hover:border-red-400 rounded-lg transition-all"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        ))}
-
-        {teams.length === 0 && !loading && (
-          <div className="col-span-full text-center py-16">
-            <svg className="w-16 h-16 text-slate-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-            <p className="text-slate-500 text-lg font-medium">No teams yet</p>
-            <p className="text-slate-400 text-sm mt-1">Create your first team using the form above.</p>
-          </div>
-        )}
-      </div>
-
-      {/* Player Management Modal */}
+      {/* Player Management Modal - Re-styled for premium feel */}
       {showPlayerModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+        <div className="fixed inset-0 bg-[#031d44]/80 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-in fade-in duration-300">
+          <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
 
             {/* Modal Header */}
-            <div className="p-5 border-b bg-gradient-to-r from-blue-600 to-blue-700 text-white">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  {showPlayerModal.logo ? (
-                    <img src={showPlayerModal.logo} className="w-10 h-10 rounded-lg object-contain bg-white/20 p-1" alt="" />
-                  ) : (
-                    <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center font-black text-sm">
-                      {showPlayerModal.shortName || showPlayerModal.name?.substring(0, 2).toUpperCase()}
-                    </div>
-                  )}
+            <div className="p-8 border-b bg-[#031d44] text-white overflow-hidden relative">
+              {/* Abstract Background patterns */}
+              <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32" />
+              
+              <div className="relative flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center p-2 backdrop-blur-md border border-white/20">
+                    {showPlayerModal.logo ? (
+                      <img src={showPlayerModal.logo} className="w-full h-full object-contain" alt="" />
+                    ) : (
+                      <div className="w-full h-full bg-white/20 rounded-xl flex items-center justify-center font-black text-lg italic">
+                        {showPlayerModal.shortName || showPlayerModal.name?.substring(0, 2).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
                   <div>
-                    <h3 className="font-bold text-lg">{showPlayerModal.name} — Squad</h3>
-                    <p className="text-blue-200 text-sm">{selectedPlayers.length} players selected</p>
+                    <h3 className="font-black text-2xl uppercase tracking-tighter italic">{showPlayerModal.name}</h3>
+                    <p className="text-blue-300/60 font-black text-[10px] uppercase tracking-widest">Managing Official Roster • {selectedPlayers.length} Members</p>
                   </div>
                 </div>
-                <button onClick={closePlayerModal} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button onClick={closePlayerModal} className="p-2 hover:bg-white/10 rounded-xl transition-all">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
 
-              {/* Tabs */}
-              <div className="flex gap-1 mt-4 bg-white/10 rounded-lg p-1">
+              {/* Enhanced Tabs */}
+              <div className="flex gap-2 mt-8 bg-white/5 rounded-2xl p-1 border border-white/10 backdrop-blur-sm">
                 <button
                   onClick={() => setPlayerTab("current")}
-                  className={`flex-1 py-1.5 rounded-md text-sm font-medium transition-all ${playerTab === "current"
-                    ? "bg-white text-blue-700 shadow"
-                    : "text-blue-100 hover:text-white"
+                  className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${playerTab === "current"
+                    ? "bg-white text-[#031d44] shadow-lg shadow-black/20"
+                    : "text-blue-200/50 hover:text-white"
                     }`}
                 >
-                  Current Squad ({selectedPlayers.length})
+                  Current Squad
                 </button>
                 <button
                   onClick={() => { setPlayerTab("add"); setPlayerSearch(""); }}
-                  className={`flex-1 py-1.5 rounded-md text-sm font-medium transition-all ${playerTab === "add"
-                    ? "bg-white text-blue-700 shadow"
-                    : "text-blue-100 hover:text-white"
+                  className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${playerTab === "add"
+                    ? "bg-white text-[#031d44] shadow-lg shadow-black/20"
+                    : "text-blue-200/50 hover:text-white"
                     }`}
                 >
-                  Add Players ({getAddablePlayers().length} available)
+                  Free Agents
                 </button>
               </div>
             </div>
 
             {/* Body */}
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto bg-slate-50 p-6">
               {playerTab === "current" ? (
-                <div className="p-4">
+                <div className="space-y-3">
                   {getCurrentPlayers().length === 0 ? (
-                    <div className="text-center py-12">
-                      <svg className="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0" />
-                      </svg>
-                      <p className="text-slate-500 font-medium">No players in squad yet</p>
+                    <div className="text-center py-20 flex flex-col items-center">
+                      <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-100 mb-6 font-black text-slate-200 text-3xl">!</div>
+                      <p className="text-slate-400 font-black uppercase tracking-widest text-xs">Squad is currently empty</p>
                       <button
                         onClick={() => setPlayerTab("add")}
-                        className="mt-3 text-blue-600 hover:text-blue-700 text-sm font-medium underline"
+                        className="mt-4 text-blue-600 hover:text-blue-700 text-[10px] font-black uppercase tracking-widest"
                       >
-                        Add players →
+                        Recruit Players →
                       </button>
                     </div>
                   ) : (
-                    <div className="space-y-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {getCurrentPlayers().map((player, i) => (
                         <div
                           key={player._id}
-                          className="flex items-center justify-between p-3 bg-blue-50 border border-blue-100 rounded-xl"
+                          className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-2xl hover:border-blue-300 transition-all group"
                         >
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-sm">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 bg-[#031d44] text-white rounded-xl flex items-center justify-center font-black text-sm italic italic">
                               {i + 1}
                             </div>
-                            <div>
-                              <p className="font-semibold text-slate-800">{player.name}</p>
-                              <p className="text-xs text-slate-500">{player.role || "No role"}{player.Campus ? ` • ${player.Campus}` : ""}</p>
+                            <div className="min-w-0">
+                              <p className="font-black text-slate-800 uppercase tracking-tighter truncate">{player.name}</p>
+                              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{player.role || "Unassigned"}</p>
                             </div>
                           </div>
                           <button
                             onClick={() => togglePlayer(player._id)}
-                            className="p-1.5 hover:bg-red-100 text-slate-400 hover:text-red-600 rounded-lg transition-colors"
+                            className="p-2.5 bg-slate-50 hover:bg-red-50 text-slate-300 hover:text-red-600 rounded-xl transition-all"
                             title="Remove from squad"
                           >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
+                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
                           </button>
                         </div>
                       ))}
@@ -395,54 +443,54 @@ export default function Teams() {
                   )}
                 </div>
               ) : (
-                <div className="p-4 space-y-3">
-                  {/* Search */}
-                  <div className="relative">
-                    <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="space-y-6">
+                  {/* Modern Search */}
+                  <div className="relative group">
+                    <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300 group-focus-within:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                     <input
                       value={playerSearch}
                       onChange={(e) => setPlayerSearch(e.target.value)}
-                      placeholder="Search by name, role, or campus..."
-                      className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      placeholder="Search scouts, roles, or campus..."
+                      className="w-full pl-12 pr-6 py-4 bg-white border border-slate-200 rounded-[1.25rem] outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 font-bold text-slate-800 placeholder:text-slate-300 transition-all"
                     />
                   </div>
 
                   {/* Players list */}
                   {getAddablePlayers().length === 0 ? (
-                    <div className="text-center py-8 text-slate-500">
-                      <p>{playerSearch ? "No players match your search." : "All available players are already in this squad."}</p>
+                    <div className="text-center py-16 text-slate-400 font-black uppercase tracking-widest text-[10px]">
+                      {playerSearch ? "Search mission failed." : "All personnel deployed."}
                     </div>
                   ) : (
-                    <div className="space-y-2">
-                      {getAddablePlayers().map((player) => (
-                        <button
-                          key={player._id}
-                          onClick={() => togglePlayer(player._id)}
-                          className="w-full flex items-center justify-between p-3 border border-slate-200 hover:border-blue-400 hover:bg-blue-50 rounded-xl transition-all text-left"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 bg-slate-100 rounded-full flex items-center justify-center font-bold text-slate-500">
-                              {player.name?.substring(0, 1).toUpperCase()}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {getAddablePlayers().map((player) => {
+                        const isInCategory = selectedPlayers.includes(String(player._id));
+                        return (
+                          <button
+                            key={player._id}
+                            onClick={() => togglePlayer(player._id)}
+                            className={`w-full flex items-center justify-between p-4 bg-white border rounded-2xl transition-all text-left ${
+                              isInCategory ? "border-blue-500 ring-2 ring-blue-500/10" : "border-slate-200 hover:border-blue-300"
+                            }`}
+                          >
+                            <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center font-black text-slate-400 text-sm">
+                                {player.name?.substring(0, 1).toUpperCase()}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-black text-slate-800 uppercase tracking-tighter truncate">{player.name}</p>
+                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{player.role || "No Role"}</p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="font-medium text-slate-800">{player.name}</p>
-                              <p className="text-xs text-slate-500">{player.role || "No role"}{player.Campus ? ` • ${player.Campus}` : ""}</p>
+                            <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
+                              isInCategory ? "bg-blue-600 border-blue-600" : "border-slate-200"
+                            }`}>
+                              {isInCategory && <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                             </div>
-                          </div>
-                          {player.team && (player.team._id || player.team) !== showPlayerModal._id && (
-                            <span className="px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-700 rounded-full border border-amber-200">
-                              {player.team.name || "In another team"}
-                            </span>
-                          )}
-                          <div className="w-5 h-5 rounded border-2 border-slate-300 hover:border-blue-500 flex items-center justify-center ml-2 shrink-0">
-                            <svg className="w-3 h-3 text-transparent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                            </svg>
-                          </div>
-                        </button>
-                      ))}
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -450,29 +498,26 @@ export default function Teams() {
             </div>
 
             {/* Footer */}
-            <div className="p-4 border-t bg-slate-50 flex gap-3">
+            <div className="p-6 border-t bg-white flex gap-4">
               <button
                 onClick={closePlayerModal}
                 disabled={savingPlayers}
-                className="flex-1 py-2.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-xl font-medium transition-colors"
+                className="flex-1 py-4 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all"
               >
-                Cancel
+                Close
               </button>
               <button
                 onClick={savePlayerSelection}
                 disabled={savingPlayers}
-                className="flex-[2] py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+                className="flex-[2] py-4 bg-[#031d44] hover:bg-slate-800 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-3 active:scale-95"
               >
                 {savingPlayers ? (
                   <>
-                    <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                    Saving...
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Synchronizing...
                   </>
                 ) : (
-                  `Save Squad (${selectedPlayers.length} players)`
+                  <>Deploy Squad Improvements</>
                 )}
               </button>
             </div>

@@ -19,6 +19,14 @@ const blogSchema = new mongoose.Schema(
       type: String,
       default: ""
     },
+    videoUrl: {
+      type: String,
+      default: ""
+    },
+    isLive: {
+      type: Boolean,
+      default: false
+    },
     category: {
       type: String,
       enum: ["General", "Match", "Player", "Tournament", "Venue", "Team"],

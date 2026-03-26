@@ -80,30 +80,10 @@ export const deleteMatch = createAsyncThunk(
 
 export const updateScore = createAsyncThunk(
   "matches/updateScore",
-  async ({
-    matchId,
-    inningsIndex,
-    runs,
-    wickets,
-    extraType,
-    commentaryText,
-    batsman1Id,
-    batsman2Id,
-    onStrikeBatsmanId,
-    bowlerId
-  }, thunkAPI) => {
+  async (payload, thunkAPI) => {
+    const { matchId, ...data } = payload;
     try {
-      const res = await api.post(`/matches/${matchId}/score`, {
-        inningsIndex,
-        runs,
-        wickets,
-        extraType,
-        commentaryText,
-        batsman1Id,
-        batsman2Id,
-        onStrikeBatsmanId,
-        bowlerId
-      });
+      const res = await api.post(`/matches/${matchId}/score`, data);
       return res.data;
     } catch (err) {
       return thunkAPI.rejectWithValue(
@@ -168,6 +148,37 @@ export const setOpeners = createAsyncThunk(
     } catch (err) {
       return thunkAPI.rejectWithValue(
         err.response?.data?.message || err.message || "Failed to set openers"
+      );
+    }
+  }
+);
+
+export const resolveTie = createAsyncThunk(
+  "matches/resolveTie",
+  async ({ matchId, resolution }, thunkAPI) => {
+    try {
+      const res = await api.post(`/matches/${matchId}/resolve-tie`, { resolution });
+      return res.data;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(
+        err.response?.data?.message || err.message || "Failed to resolve tie"
+      );
+    }
+  }
+);
+
+export const startSuperOver = createAsyncThunk(
+  "matches/startSuperOver",
+  async ({ matchId, batsmenIds, bowlerId }, thunkAPI) => {
+    try {
+      const res = await api.post(`/matches/${matchId}/start-super-over`, {
+        batsmenIds,
+        bowlerId
+      });
+      return res.data;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(
+        err.response?.data?.message || err.message || "Failed to start Super Over"
       );
     }
   }
@@ -327,6 +338,30 @@ const matchesSlice = createSlice({
       })
 
       .addCase(setOpeners.fulfilled, (state, action) => {
+        const updated = action.payload?.match || action.payload;
+        if (updated) {
+          const index = state.matches.findIndex((m) => m._id === updated._id);
+          if (index !== -1) {
+            state.matches[index] = updated;
+          }
+          if (state.currentMatch?._id === updated._id) {
+            state.currentMatch = updated;
+          }
+        }
+      })
+      .addCase(resolveTie.fulfilled, (state, action) => {
+        const updated = action.payload?.match || action.payload;
+        if (updated) {
+          const index = state.matches.findIndex((m) => m._id === updated._id);
+          if (index !== -1) {
+            state.matches[index] = updated;
+          }
+          if (state.currentMatch?._id === updated._id) {
+            state.currentMatch = updated;
+          }
+        }
+      })
+      .addCase(startSuperOver.fulfilled, (state, action) => {
         const updated = action.payload?.match || action.payload;
         if (updated) {
           const index = state.matches.findIndex((m) => m._id === updated._id);

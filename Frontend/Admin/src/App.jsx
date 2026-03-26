@@ -17,6 +17,7 @@ import BulkImport from "./pages/BulkImport";
 import Rankings from "./pages/Rankings";
 import PlayerProfile from "./pages/PlayerProfile";
 import TeamProfile from "./pages/TeamProfile";
+import Blogs from "./pages/Blogs";
 
 export default function App() {
   const { token } = useSelector((state) => state.auth);
@@ -47,6 +48,7 @@ export default function App() {
               <Route path="bulk-import" element={<BulkImport />} />
               <Route path="score/:matchId?" element={<ManageScore />} />
               <Route path="rankings" element={<Rankings />} />
+              <Route path="blogs" element={<Blogs />} />
               <Route path="*" element={<Navigate to="/admin" replace />} />
             </Routes>
           </Layout>

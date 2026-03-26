@@ -66,7 +66,7 @@ export default function LiveStats({ matchId }) {
           <ol className="list-decimal ml-5 text-sm">
             {stats.topBowlers.map((b, i) => (
               <li key={i}>
-                {b.name} — {b.wickets ?? 0} / {b.runs ?? 0} ({b.overs ?? "-"})
+                {b.name} — {b.wickets ?? 0} / {b.runs ?? 0} ({b.overs ?? 0}.{b.balls % 6 || 0})
               </li>
             ))}
           </ol>

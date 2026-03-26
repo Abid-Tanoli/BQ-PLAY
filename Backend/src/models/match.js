@@ -122,7 +122,7 @@ const matchSchema = new mongoose.Schema(
     },
     matchType: {
       type: String,
-      enum: ["6 Overs", "8 Overs", "T10", "T20", "ODI", "Test"],
+      enum: ["6 Overs", "8 Overs", "T10", "T20", "ODI", "Test", "Tape Ball"],
       default: "T20"
     },
     tournament: {
@@ -212,6 +212,7 @@ matchSchema.pre('save', function () {
       case 'T20': this.totalOvers = 20; break;
       case 'ODI': this.totalOvers = 50; break;
       case 'Test': this.totalOvers = 90; break;
+      case 'Tape Ball': this.totalOvers = 8; break;
       default: this.totalOvers = 20;
     }
   }

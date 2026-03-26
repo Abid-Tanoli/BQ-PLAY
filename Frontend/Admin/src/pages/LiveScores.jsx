@@ -73,7 +73,7 @@ export default function LiveScores() {
                   {match.innings?.[0]?.runs || 0}/{match.innings?.[0]?.wickets || 0}
                 </p>
                 <p className="text-sm text-slate-500">
-                  ({match.innings?.[0]?.overs || 0}.{match.innings?.[0]?.balls || 0} overs)
+                  ({match.innings?.[0]?.overs || 0}.{(match.innings?.[0]?.balls || 0) % 6} overs)
                 </p>
               </div>
               <div className="bg-slate-50 p-4 rounded-lg">
@@ -82,7 +82,7 @@ export default function LiveScores() {
                   {match.innings?.[1]?.runs || 0}/{match.innings?.[1]?.wickets || 0}
                 </p>
                 <p className="text-sm text-slate-500">
-                  ({match.innings?.[1]?.overs || 0}.{match.innings?.[1]?.balls || 0} overs)
+                  ({match.innings?.[1]?.overs || 0}.{(match.innings?.[1]?.balls || 0) % 6} overs)
                 </p>
               </div>
             </div>

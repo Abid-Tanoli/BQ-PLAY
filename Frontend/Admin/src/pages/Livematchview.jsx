@@ -5,6 +5,9 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getSocket } from "../store/socket";
 import api from "../services/api";
+import MatchEditor from "../components/MatchEditor";
+import InningsDashboard from "../components/InningsDashboard";
+import OverTimeline from "../components/OverTimeline";
 
 export default function LiveMatchView() {
   const { matchId } = useParams();
@@ -97,6 +100,7 @@ export default function LiveMatchView() {
     { id: "stats", label: "Live Stats" },
     { id: "overs", label: "Overs" },
     { id: "playingxi", label: "Playing XI" },
+    { id: "manage", label: "Manage Score" },
   ];
 
   if (match.tournament) {
@@ -106,144 +110,148 @@ export default function LiveMatchView() {
   tabs.push({ id: "rankings", label: "Rankings" });
 
   return (
-    <div className="max-w-7xl mx-auto pb-8">
-      <div className="bg-white shadow-sm border-b sticky top-0 z-10">
-        <div className="p-4">
+    <div className="max-w-7xl mx-auto pb-8 bg-slate-50 min-h-screen">
+      {/* Match Meta Header - ESPNCricinfo Style */}
+      <div className="bg-[#031d44] text-white py-2 px-4 text-xs font-medium flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className="text-blue-300 uppercase tracking-widest">{match.tournament?.name || "International Match"}</span>
+          <span className="text-slate-400">•</span>
+          <span>{match.matchType}</span>
+          <span className="text-slate-400">•</span>
+          <span>{match.venue}</span>
+        </div>
+        <div className="flex items-center gap-4">
+          <span className="text-slate-400">Match ID: {matchId.slice(-6)}</span>
           <button
             onClick={() => navigate("/admin")}
-            className="mb-4 flex items-center gap-2 text-slate-600 hover:text-slate-800"
+            className="flex items-center gap-1 hover:text-blue-300 transition-colors"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back to Dashboard
+            ADMIN DASHBOARD
           </button>
-
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-2xl font-bold text-slate-800">{match.title}</h1>
-              <div className="flex items-center gap-4 mt-2 text-sm text-slate-600">
-                {match.venue && (
-                  <span className="flex items-center gap-1">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    </svg>
-                    {match.venue}
-                  </span>
-                )}
-                <span className="px-2 py-1 bg-slate-100 rounded text-xs font-medium">{match.matchType}</span>
-              </div>
-            </div>
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${match.status === "live" ? "bg-green-100 text-green-700 animate-pulse" :
-              match.status === "pending_tie_resolution" ? "bg-orange-100 text-orange-700 animate-bounce" :
-                match.status === "completed" ? "bg-slate-100 text-slate-700" : "bg-blue-100 text-blue-700"
-              }`}>
-              {match.status === "live" && "● "}{match.status.replace(/_/g, " ").toUpperCase()}
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div className={`p-4 rounded-lg ${innings1?.status === "live" ? "bg-blue-50 border-2 border-blue-500" : "bg-slate-50"}`}>
-              <div className="flex items-center gap-2 mb-2">
-                {team1?.logo && <img src={team1.logo} alt={team1.name} className="w-8 h-8" />}
-                <span className="font-semibold">{team1?.name}</span>
-              </div>
-              <div className="text-3xl font-bold">{innings1?.runs || 0}/{innings1?.wickets || 0}</div>
-              <div className="text-sm text-slate-600">
-                ({innings1?.overs || 0}.{innings1?.balls || 0} overs)
-                {innings1?.runRate > 0 && ` • RR: ${innings1.runRate}`}
-              </div>
-            </div>
-
-            <div className={`p-4 rounded-lg ${innings2?.status === "live" ? "bg-blue-50 border-2 border-blue-500" : "bg-slate-50"}`}>
-              <div className="flex items-center gap-2 mb-2">
-                {team2?.logo && <img src={team2.logo} alt={team2.name} className="w-8 h-8" />}
-                <span className="font-semibold">{team2?.name}</span>
-              </div>
-              <div className="text-3xl font-bold">{innings2?.runs || 0}/{innings2?.wickets || 0}</div>
-              <div className="text-sm text-slate-600">
-                ({innings2?.overs || 0}.{innings2?.balls || 0} overs)
-                {innings2?.runRate > 0 && ` • RR: ${innings2.runRate}`}
-                {innings2?.requiredRunRate > 0 && ` • RRR: ${innings2.requiredRunRate}`}
-              </div>
-            </div>
-          </div>
-
-          {match.result?.description && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
-              <p className="text-green-800 font-medium text-center">{match.result.description}</p>
-            </div>
-          )}
-
-          {innings2?.target > 0 && match.status === "live" && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-              <p className="text-blue-800 text-center">
-                {team2?.name} needs {innings2.target - innings2.runs} runs from {
-                  ((match.totalOvers - innings2.overs) * 6 - innings2.balls)
-                } balls
-              </p>
-            </div>
-          )}
-
-          {match.status === "pending_tie_resolution" && (
-            <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-6 mb-4 text-center">
-              <h3 className="text-xl font-bold text-orange-800 mb-2">Match Tied!</h3>
-              <p className="text-orange-700 mb-4">Choose how to proceed with the result:</p>
-              <div className="flex justify-center gap-4">
-                <button
-                  onClick={() => handleResolveTie("declared_tie")}
-                  className="px-6 py-2 bg-white border border-orange-500 text-orange-700 font-bold rounded-lg hover:bg-orange-50 transition-colors"
-                >
-                  Declare Match Tie
-                </button>
-                <button
-                  onClick={() => handleResolveTie("super_over")}
-                  className="px-6 py-2 bg-orange-600 text-white font-bold rounded-lg hover:bg-orange-700 transition-colors"
-                >
-                  Start Super Over Match
-                </button>
-              </div>
-            </div>
-          )}
-
-          {match.tieResolution === "super_over" && match.status === "pending_tie_resolution" && (
-            <SuperOverSelection match={match} onStart={handleStartSuperOver} />
-          )}
-
-          <div className="flex gap-1 overflow-x-auto">
-            {tabs.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-2 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === tab.id
-                  ? "text-blue-600 border-b-2 border-blue-600"
-                  : "text-slate-600 hover:text-slate-800"
-                  }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
         </div>
       </div>
 
-      <div className="p-4">
-        {activeTab === "live" && <LiveTab match={match} currentInnings={currentInnings} />}
-        {activeTab === "scorecard" && <ScorecardTab match={match} />}
-        {activeTab === "commentary" && <CommentaryTab match={match} currentInnings={currentInnings} />}
-        {activeTab === "stats" && <StatsTab match={match} />}
-        {activeTab === "overs" && <OversTab match={match} currentInnings={currentInnings} />}
-        {activeTab === "playingxi" && <PlayingXITab match={match} />}
-        {activeTab === "table" && match.tournament && <TableTab tournamentId={match.tournament._id || match.tournament} />}
-        {activeTab === "fixtures" && match.tournament && <FixturesTab tournamentId={match.tournament._id || match.tournament} />}
-        {activeTab === "rankings" && <RankingsTab tournamentId={match.tournament?._id || match.tournament} />}
+      <div className="bg-white shadow-md border-b sticky top-0 z-20">
+        <div className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-6 max-w-7xl mx-auto">
+          {/* Main Score Area */}
+          <div className="flex items-center gap-8 flex-1">
+            {/* Team 1 */}
+            <div className={`flex items-center gap-4 transition-all ${innings1?.status === "live" ? "scale-105" : "opacity-80"}`}>
+              <div className="w-16 h-16 bg-slate-50 rounded-full border-2 border-slate-100 flex items-center justify-center p-2">
+                {team1?.logo ? (
+                  <img src={team1.logo} alt={team1.name} className="w-full h-full object-contain" />
+                ) : (
+                  <div className="w-full h-full bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xl uppercase">
+                    {team1?.name?.charAt(0)}
+                  </div>
+                )}
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-slate-800 uppercase tracking-tight">{team1?.shortName || team1?.name}</h2>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-black text-[#031d44]">{innings1?.runs || 0}/{innings1?.wickets || 0}</span>
+                  <span className="text-sm text-slate-500 font-medium">({innings1?.overs || 0}.{innings1?.balls % 6 || 0})</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="h-12 w-px bg-slate-200 hidden md:block" />
+
+            {/* Team 2 */}
+            <div className={`flex items-center gap-4 transition-all ${innings2?.status === "live" ? "scale-105" : "opacity-80"}`}>
+              <div className="w-16 h-16 bg-slate-50 rounded-full border-2 border-slate-100 flex items-center justify-center p-2">
+                {team2?.logo ? (
+                  <img src={team2.logo} alt={team2.name} className="w-full h-full object-contain" />
+                ) : (
+                  <div className="w-full h-full bg-red-600 rounded-full flex items-center justify-center text-white font-bold text-xl uppercase">
+                    {team2?.name?.charAt(0)}
+                  </div>
+                )}
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-slate-800 uppercase tracking-tight">{team2?.shortName || team2?.name}</h2>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-black text-[#031d44]">{innings2?.runs || 0}/{innings2?.wickets || 0}</span>
+                  <span className="text-sm text-slate-500 font-medium">({innings2?.overs || 0}.{innings2?.balls % 6 || 0})</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Match Status Badge & Info */}
+          <div className="flex flex-col items-end gap-2">
+            <span className={`px-4 py-1.5 rounded-full text-xs font-black tracking-widest shadow-sm ${match.status === "live" ? "bg-red-600 text-white animate-pulse" :
+              match.status === "pending_tie_resolution" ? "bg-orange-500 text-white" :
+                match.status === "completed" ? "bg-[#031d44] text-white" : "bg-blue-600 text-white"
+              }`}>
+              {match.status.replace(/_/g, " ").toUpperCase()}
+            </span>
+            {match.result?.description ? (
+              <p className="text-sm font-bold text-blue-800 bg-blue-50 px-3 py-1 rounded border border-blue-100 italic">
+                {match.result.description}
+              </p>
+            ) : innings2?.target > 0 && match.status === "live" ? (
+              <p className="text-sm font-bold text-blue-800">
+                {team2?.name} needs {innings2.target - innings2.runs} runs in {(match.totalOvers * 6 - innings2.balls)} balls
+              </p>
+            ) : null}
+          </div>
+        </div>
+
+        {/* Tab Bar - ESPNCricinfo Style */}
+        <div className="bg-white px-4 max-w-7xl mx-auto flex items-center gap-2 overflow-x-auto no-scrollbar border-t">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-5 py-3 font-bold text-xs uppercase tracking-wider transition-all relative ${activeTab === tab.id
+                ? "text-blue-600"
+                : "text-slate-500 hover:text-slate-800"
+                }`}
+            >
+              {tab.label}
+              {activeTab === tab.id && (
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-600 rounded-t" />
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="p-4 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Content Area */}
+          <div className="lg:col-span-2 space-y-6">
+            {activeTab === "live" && <LiveTab match={match} currentInnings={currentInnings} matchId={matchId} />}
+            {activeTab === "scorecard" && <ScorecardTab match={match} />}
+            {activeTab === "commentary" && <CommentaryTab match={match} currentInnings={currentInnings} />}
+            {activeTab === "stats" && <StatsTab match={match} />}
+            {activeTab === "overs" && <OversTab match={match} currentInnings={currentInnings} />}
+            {activeTab === "playingxi" && <PlayingXITab match={match} />}
+            {activeTab === "manage" && <div className="card shadow-xl"><MatchEditor matchId={matchId} isEmbedded={true} /></div>}
+            {activeTab === "table" && match.tournament && <TableTab tournamentId={match.tournament._id || match.tournament} />}
+            {activeTab === "fixtures" && match.tournament && <FixturesTab tournamentId={match.tournament._id || match.tournament} />}
+            {activeTab === "rankings" && <RankingsTab tournamentId={match.tournament?._id || match.tournament} />}
+          </div>
+
+          {/* Match Info Sidebar */}
+          <div className="lg:col-span-1 space-y-6">
+            <MatchInfoSidebar match={match} />
+          </div>
+        </div>
+
+        {/* Blog & News Gallery Section */}
+        <BlogGallery category="Match" relatedId={matchId} />
       </div>
     </div>
   );
 }
 
 // Live Tab Component
-function LiveTab({ match, currentInnings }) {
+function LiveTab({ match, currentInnings, matchId }) {
   if (!currentInnings) {
     return <div className="text-center py-8 text-slate-500">No live innings data</div>;
   }
@@ -251,116 +259,31 @@ function LiveTab({ match, currentInnings }) {
   const currentOver = currentInnings.oversHistory?.[currentInnings.oversHistory.length - 1];
   const recentBalls = currentOver?.balls?.slice(-6) || [];
 
+  // Calculate partnership
+  const currentPartnershipRuns = currentInnings.batting?.filter(b => !b.isOut).reduce((sum, b) => sum + b.runs, 0) || 0;
+  const currentPartnershipBalls = currentInnings.batting?.filter(b => !b.isOut).reduce((sum, b) => sum + b.balls, 0) || 0;
+  const lastFow = currentInnings.fallOfWickets?.[currentInnings.fallOfWickets.length - 1];
+
+  const getBallText = (ball) => {
+    if (ball.isWicket) return "W";
+    if (ball.isWide) return `${1 + ball.runs}w`;
+    if (ball.isNoBall) return `${1 + ball.runs}nb`;
+    if (ball.isBye) return `${ball.runs}b`;
+    if (ball.isLegBye) return `${ball.runs}lb`;
+    return ball.runs === 0 ? "•" : ball.runs.toString();
+  };
+
   return (
     <div className="space-y-6">
-      {/* Current Batsmen */}
-      <div className="card">
-        <h3 className="font-semibold mb-4">Current Batsmen</h3>
-        <div className="space-y-3">
-          {currentInnings.batting?.filter(b => !b.isOut).slice(0, 2).map((batsman, idx) => (
-            <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-              <div className="flex items-center gap-3">
-                {batsman.player?._id === currentInnings.onStrikeBatsman?._id && (
-                  <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                )}
-                <div>
-                  <p className="font-medium">{batsman.player?.name}</p>
-                  <p className="text-sm text-slate-500">{batsman.player?.role}</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="text-2xl font-bold">{batsman.runs}</p>
-                <p className="text-sm text-slate-500">
-                  ({batsman.balls}b, {batsman.fours}x4, {batsman.sixes}x6)
-                </p>
-                <p className="text-xs text-slate-500">SR: {batsman.strikeRate}</p>
-              </div>
-            </div>
-          ))}
+      <div className="card shadow-xl border border-slate-200 overflow-hidden">
+        <div className="bg-blue-50 border-b border-blue-100 px-6 py-3 flex items-center justify-between">
+           <h3 className="text-sm font-black text-blue-900 uppercase tracking-tighter italic">Live Match Control</h3>
+           <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest bg-white px-3 py-1 rounded-full shadow-sm">Admin Access</span>
         </div>
+        <MatchEditor matchId={matchId} isEmbedded={true} />
       </div>
-
-      {/* Current Bowler */}
-      {currentInnings.bowling?.find(b => b.player?._id === currentInnings.currentBowler?._id) && (
-        <div className="card">
-          <h3 className="font-semibold mb-4">Current Bowler</h3>
-          {(() => {
-            const bowler = currentInnings.bowling.find(
-              b => b.player?._id === currentInnings.currentBowler?._id
-            );
-            return (
-              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                <div>
-                  <p className="font-medium">{bowler.player?.name}</p>
-                  <p className="text-sm text-slate-500">{bowler.player?.role}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xl font-bold">
-                    {bowler.wickets}/{bowler.runs}
-                  </p>
-                  <p className="text-sm text-slate-500">
-                    {Math.floor(bowler.balls / 6)}.{bowler.balls % 6} overs
-                  </p>
-                  <p className="text-xs text-slate-500">Econ: {bowler.economy}</p>
-                </div>
-              </div>
-            );
-          })()}
-        </div>
-      )}
-
-      {/* Current Over */}
-      {recentBalls.length > 0 && (
-        <div className="card">
-          <h3 className="font-semibold mb-4">This Over</h3>
-          <div className="flex gap-2 flex-wrap">
-            {recentBalls.map((ball, idx) => (
-              <div
-                key={idx}
-                className={`w-12 h-12 flex items-center justify-center rounded-full font-bold ${ball.isWicket ? "bg-red-500 text-white" :
-                  ball.runs === 6 ? "bg-purple-500 text-white" :
-                    ball.runs === 4 ? "bg-green-500 text-white" :
-                      ball.isWide || ball.isNoBall ? "bg-orange-500 text-white" :
-                        ball.runs === 0 ? "bg-slate-300 text-slate-700" :
-                          "bg-blue-500 text-white"
-                  }`}
-              >
-                {ball.isWicket ? "W" :
-                  ball.isWide ? "Wd" :
-                    ball.isNoBall ? "Nb" :
-                      ball.runs}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Recent Commentary */}
-      <div className="card">
-        <h3 className="font-semibold mb-4">Recent Balls</h3>
-        <div className="space-y-3">
-          {currentOver?.balls?.slice().reverse().slice(0, 3).map((ball, idx) => (
-            <div key={idx} className="p-3 bg-slate-50 rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-bold text-blue-600">
-                  {currentOver.overNumber}.{ball.ballNumber}
-                </span>
-                <span className={`px-2 py-1 rounded text-xs font-bold ${ball.isWicket ? "bg-red-100 text-red-700" :
-                  ball.runs === 6 ? "bg-purple-100 text-purple-700" :
-                    ball.runs === 4 ? "bg-green-100 text-green-700" :
-                      "bg-slate-100 text-slate-700"
-                  }`}>
-                  {ball.isWicket ? "WICKET" :
-                    ball.isWide ? "WIDE" :
-                      ball.isNoBall ? "NO BALL" :
-                        `${ball.runs} ${ball.runs === 1 ? "run" : "runs"}`}
-                </span>
-              </div>
-              <p className="text-sm text-slate-700 whitespace-pre-wrap">{ball.commentary}</p>
-            </div>
-          ))}
-        </div>
-      </div>
+      <InningsDashboard innings={currentInnings} match={match} />
+      <OverTimeline innings={currentInnings} />
     </div>
   );
 }
@@ -662,45 +585,42 @@ function OversTab({ match, currentInnings }) {
   return (
     <div className="space-y-4">
       {currentInnings.oversHistory.slice().reverse().map((over, idx) => (
-        <div key={idx} className="card">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-semibold">Over {over.overNumber + 1}</h3>
-            <div className="text-right">
-              <p className="font-semibold">{over.runsScored} runs</p>
-              {over.wickets > 0 && (
-                <p className="text-sm text-red-600">{over.wickets} wicket{over.wickets > 1 ? 's' : ''}</p>
-              )}
-              {over.maidenOver && (
-                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">Maiden</span>
-              )}
+        <div key={idx} className="card p-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="w-20 shrink-0">
+              <p className="font-bold text-slate-800">
+                {over.overNumber + 1}{["st", "nd", "rd"][(over.overNumber + 1) % 10 - 1] || "th"}
+              </p>
+              <p className="text-xs text-slate-500 uppercase font-medium">{over.runsScored} Runs</p>
             </div>
-          </div>
 
-          <div className="mb-3">
-            <p className="text-sm text-slate-600">
-              <span className="font-medium">Bowler:</span> {over.bowler?.name || 'Unknown'}
-            </p>
-            <p className="text-sm text-slate-500 mt-1">{over.summary}</p>
-          </div>
+            <div className="flex gap-1.5 flex-wrap overflow-x-auto pb-1 sm:pb-0">
+              {over.balls.map((ball, bIdx) => (
+                <div
+                  key={bIdx}
+                  className={`w-9 h-9 flex items-center justify-center rounded-full font-bold text-xs shadow-sm shrink-0 ${ball.isWicket ? "bg-red-500 text-white" :
+                    ball.runs === 6 ? "bg-purple-500 text-white" :
+                      ball.runs === 4 ? "bg-green-500 text-white" :
+                        ball.isWide || ball.isNoBall ? "bg-orange-500 text-white" :
+                          ball.runs === 0 ? "bg-slate-300 text-slate-700" :
+                            "bg-blue-500 text-white"
+                    }`}
+                >
+                  {ball.isWicket ? "W" : 
+                    ball.isWide ? `${1 + ball.runs}w` :
+                      ball.isNoBall ? `${1 + ball.runs}nb` :
+                        ball.isBye ? `${ball.runs}b` :
+                          ball.isLegBye ? `${ball.runs}lb` :
+                            ball.runs === 0 ? "•" : ball.runs}
+                </div>
+              ))}
+            </div>
 
-          <div className="flex gap-2 flex-wrap">
-            {over.balls.map((ball, bIdx) => (
-              <div
-                key={bIdx}
-                className={`w-10 h-10 flex items-center justify-center rounded-full font-bold text-sm ${ball.isWicket ? "bg-red-500 text-white" :
-                  ball.runs === 6 ? "bg-purple-500 text-white" :
-                    ball.runs === 4 ? "bg-green-500 text-white" :
-                      ball.isWide || ball.isNoBall ? "bg-orange-500 text-white" :
-                        ball.runs === 0 ? "bg-slate-300 text-slate-700" :
-                          "bg-blue-500 text-white"
-                  }`}
-              >
-                {ball.isWicket ? "W" :
-                  ball.isWide ? "Wd" :
-                    ball.isNoBall ? "Nb" :
-                      ball.runs}
-              </div>
-            ))}
+            <div className="ml-auto text-right hidden sm:block">
+              <p className="text-sm font-medium text-slate-600">
+                {over.bowler?.name?.split(' ').pop()}
+              </p>
+            </div>
           </div>
         </div>
       ))}
@@ -933,6 +853,103 @@ function FixturesTab({ tournamentId }) {
   );
 }
 
+// Match Info Sidebar Component
+function MatchInfoSidebar({ match }) {
+  return (
+    <div className="space-y-6">
+      <div className="card shadow-md">
+        <h3 className="font-bold text-slate-800 mb-4 border-b pb-2 uppercase tracking-tight text-sm">Match Information</h3>
+        <div className="space-y-4">
+          <div>
+            <p className="text-xs text-slate-500 uppercase font-black mb-1">Series</p>
+            <p className="text-sm font-bold text-blue-800">{match.tournament?.name || "Independent Series"}</p>
+          </div>
+          <div>
+            <p className="text-xs text-slate-500 uppercase font-black mb-1">Match Type</p>
+            <p className="text-sm font-bold text-slate-800">{match.matchType} ({match.totalOvers} overs)</p>
+          </div>
+          <div>
+            <p className="text-xs text-slate-500 uppercase font-black mb-1">Venue</p>
+            <p className="text-sm font-bold text-slate-800">{match.venue || "TBD"}</p>
+          </div>
+          {match.tossWinner && (
+            <div>
+              <p className="text-xs text-slate-500 uppercase font-black mb-1">Toss</p>
+              <p className="text-sm font-bold text-slate-800">
+                {match.tossWinner === match.teams[0]?._id ? match.teams[0]?.name : match.teams[1]?.name} won the toss and elected to {match.tossChoice} first
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="card shadow-md bg-[#031d44] text-white border-none">
+        <h3 className="font-bold mb-4 border-b border-white/10 pb-2 uppercase tracking-tight text-sm">Series Status</h3>
+        <p className="text-sm font-medium italic">
+          Match ID: {match._id?.slice(-8).toUpperCase()}
+        </p>
+        <div className="mt-4 pt-4 border-t border-white/10">
+           <button className="w-full py-2 bg-white/10 hover:bg-white/20 rounded font-bold text-xs transition-all uppercase tracking-widest">
+             See Full Series Schedule
+           </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Blog & News Gallery Component
+function BlogGallery({ category, relatedId }) {
+  const [blogs, setBlogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchBlogs = async () => {
+      try {
+        const res = await api.get(`/blogs?category=${category}&relatedId=${relatedId}`);
+        setBlogs(res.data);
+      } catch (err) {
+        console.error("Error fetching match blogs:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (relatedId) fetchBlogs();
+  }, [category, relatedId]);
+
+  if (loading || blogs.length === 0) return null;
+
+  return (
+    <div className="mt-12">
+      <h2 className="text-xl font-black text-[#031d44] mb-6 uppercase tracking-tighter border-b-2 border-[#031d44] pb-2 inline-block">
+        Match News & Highlights
+      </h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {blogs.map((blog) => (
+          <div key={blog._id} className="group cursor-pointer bg-white rounded-xl shadow-sm hover:shadow-xl transition-all overflow-hidden border">
+            <div className="relative aspect-video">
+              <img src={blog.imageUrl || "https://img1.hscicdn.com/image/upload/f_auto,t_ds_wide_w_720/lsci/db/PICTURES/CMS/376400/376451.jpg"} alt={blog.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+              {blog.videoUrl && (
+                <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                  <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center text-white shadow-lg">
+                    <svg className="w-6 h-6 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="p-4">
+              <h3 className="font-bold text-slate-800 leading-tight group-hover:text-blue-600 transition-colors line-clamp-2 mb-2">
+                {blog.title}
+              </h3>
+              <p className="text-xs text-slate-500 font-medium">{new Date(blog.createdAt).toLocaleDateString()} • {blog.author}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function RankingsTab({ tournamentId }) {
   const [batting, setBatting] = useState([]);
   const [bowling, setBowling] = useState([]);
@@ -961,7 +978,7 @@ function RankingsTab({ tournamentId }) {
 
   return (
     <div className="grid md:grid-cols-2 gap-6">
-      <div className="card">
+      <div className="card shadow-lg">
         <h3 className="font-bold text-lg mb-4 text-slate-800 border-b pb-2">Top Batsmen</h3>
         <div className="space-y-3">
           {batting.slice(0, 5).map((r, i) => (
@@ -972,13 +989,13 @@ function RankingsTab({ tournamentId }) {
               </div>
               <div className="text-right">
                 <span className="font-black text-blue-600">{r.runs}</span>
-                <span className="text-[10px] block text-slate-400">runs</span>
+                <span className="text-[10px] block text-slate-400 font-bold uppercase">runs</span>
               </div>
             </div>
           ))}
         </div>
       </div>
-      <div className="card">
+      <div className="card shadow-lg">
         <h3 className="font-bold text-lg mb-4 text-slate-800 border-b pb-2">Top Bowlers</h3>
         <div className="space-y-3">
           {bowling.slice(0, 5).map((r, i) => (
@@ -989,7 +1006,7 @@ function RankingsTab({ tournamentId }) {
               </div>
               <div className="text-right">
                 <span className="font-black text-red-600">{r.wickets}</span>
-                <span className="text-[10px] block text-slate-400">wickets</span>
+                <span className="text-[10px] block text-slate-400 font-bold uppercase">wickets</span>
               </div>
             </div>
           ))}

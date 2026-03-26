@@ -2,7 +2,12 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Home } from "./pages/Home";
 import Match from "./pages/Match";
 import Players from "./pages/Players";
+import Teams from "./pages/Teams";
+import Rankings from "./pages/Rankings";
+import PointsTable from "./pages/PointsTable";
 import Live from "./pages/Live";
+import News from "./pages/News";
+import Videos from "./pages/Videos";
 
 function App() {
   return (
@@ -10,8 +15,13 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/live" element={<Live />} />
-        <Route path="/match/:id" element={<Match />} />
+        <Route path="/match/:matchId" element={<Match />} />
         <Route path="/players" element={<Players />} />
+        <Route path="/teams" element={<Teams />} />
+        <Route path="/rankings" element={<Rankings />} />
+        <Route path="/points-table" element={<PointsTable />} />
+        <Route path="/news" element={<News />} />
+        <Route path="/videos" element={<Videos />} />
       </Routes>
     </Router>
   );

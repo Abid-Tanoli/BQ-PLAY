@@ -5,17 +5,17 @@ import MatchTabs from "../components/MatchTabs";
 import { initSocket, joinMatchRoom, leaveMatchRoom } from "../services/socket";
 
 const Match = () => {
-  const { id } = useParams();
+  const { matchId } = useParams();
   const [match, setMatch] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
-    initSocket();
+    const socket = initSocket();
 
-    const load = async () => {
+    const loadMatch = async () => {
       try {
-        const res = await api.get(`/matches/${id}`);
+        const res = await api.get(`/matches/${matchId}`);
         if (mounted) setMatch(res.data);
       } catch (err) {
         console.error("Failed to load match:", err);
@@ -23,46 +23,50 @@ const Match = () => {
         if (mounted) setLoading(false);
       }
     };
-    load();
+    loadMatch();
 
-    const socket = initSocket();
-    const onMatchUpdate = (payload) => {
+    const onMatchUpdated = (updatedMatch) => {
       if (!mounted) return;
-      if (payload.matchId !== id) return;
-      setMatch((prev) => {
-        const next = prev ? { ...prev } : {};
-        if (payload.innings) next.innings = payload.innings;
-        if (payload.status) next.status = payload.status;
-        return next;
-      });
-    };
-    const onCommentary = (payload) => {
-      if (!mounted) return;
-      if (payload.matchId !== id) return;
-      setMatch((prev) => {
-        const next = prev ? { ...prev } : {};
-        next.commentary = [...(next.commentary || []), payload.commentary];
-        return next;
-      });
+      if (updatedMatch._id === matchId) {
+        setMatch(updatedMatch);
+      }
     };
 
-    socket.on("match:update", onMatchUpdate);
-    socket.on("match:commentary", onCommentary);
-    joinMatchRoom(id);
+    const onScoreUpdate = () => loadMatch();
+    const onBallUpdate = () => loadMatch();
+
+    socket.on("match:updated", onMatchUpdated);
+    socket.on("match:scoreUpdate", onScoreUpdate);
+    socket.on("match:ballUpdate", onBallUpdate);
+    
+    joinMatchRoom(matchId);
 
     return () => {
       mounted = false;
-      leaveMatchRoom(id);
-      socket.off("match:update", onMatchUpdate);
-      socket.off("match:commentary", onCommentary);
+      leaveMatchRoom(matchId);
+      socket.off("match:updated", onMatchUpdated);
+      socket.off("match:scoreUpdate", onScoreUpdate);
+      socket.off("match:ballUpdate", onBallUpdate);
     };
-  }, [id]);
+  }, [matchId]);
 
   if (loading) {
-    return <div className="p-4 text-gray-300">Loading match...</div>;
+    return (
+      <div className="min-h-screen bg-[#031d44] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
+      </div>
+    );
   }
 
-  return <MatchTabs matchId={id} match={match} />;
+  if (!match) {
+    return (
+      <div className="min-h-screen bg-[#031d44] flex items-center justify-center text-white font-black uppercase tracking-widest">
+        Match Signal Lost
+      </div>
+    );
+  }
+
+  return <MatchTabs matchId={matchId} match={match} />;
 };
 
 export default Match;
