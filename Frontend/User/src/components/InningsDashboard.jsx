@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 export default function InningsDashboard({ innings, match }) {
   if (!innings) return null;
@@ -18,13 +19,17 @@ export default function InningsDashboard({ innings, match }) {
 
   const renderBatterRow = (b, isOnStrike) => {
     const p = b.player || b;
+    const playerId = p._id || p;
     return (
-      <tr key={p._id || p} className="border-b border-slate-100 last:border-0 group">
+      <tr key={playerId} className="border-b border-slate-100 last:border-0 group">
         <td className="py-4 pl-4">
           <div className="flex items-center gap-2">
-            <span className={`text-[13px] font-black uppercase tracking-tight ${isOnStrike ? 'text-[#031d44]' : 'text-slate-400'}`}>
+            <Link
+              to={`/players/${playerId}`}
+              className={`text-[13px] font-black uppercase tracking-tight hover:text-blue-600 hover:underline transition-colors ${isOnStrike ? 'text-[#031d44]' : 'text-slate-400'}`}
+            >
               {p.name}{isOnStrike ? '*' : ''}
-            </span>
+            </Link>
           </div>
         </td>
         <td className="py-4 text-center font-black text-[#031d44] text-[13px]">{b.runs || 0}</td>
@@ -33,14 +38,53 @@ export default function InningsDashboard({ innings, match }) {
         <td className="py-4 text-center font-bold text-slate-400 text-[11px]">{b.sixes || 0}</td>
         <td className="py-4 text-center font-bold text-slate-400 text-[11px]">{b.strikeRate || '0.00'}</td>
         <td className="py-4 text-center font-bold text-slate-400 text-[10px] hidden md:table-cell uppercase tracking-tighter">
-           {b.runs || 0} ({b.balls || 0}b)
+          {b.runs || 0} ({b.balls || 0}b)
         </td>
         <td className="py-4 text-center font-bold text-slate-400 text-[11px] hidden lg:table-cell">
-           <div className="flex gap-0.5 justify-center">
-              {getRecentBalls().map((ball, i) => (
-                <span key={i} className="w-1.5 h-1.5 rounded-full bg-slate-200" />
-              ))}
-           </div>
+          <div className="flex gap-0.5 justify-center">
+            {getRecentBalls().map((ball, i) => (
+              <span key={i} className="w-1.5 h-1.5 rounded-full bg-slate-200" />
+            ))}
+          </div>
+        </td>
+        <td className="py-4 text-center text-slate-300 text-[11px] hidden xl:table-cell">-</td>
+        <td className="py-4 text-center text-slate-300 text-[11px] hidden xl:table-cell">-</td>
+        <td className="py-4 text-center text-slate-300 text-[11px] hidden xl:table-cell">-</td>
+        <td className="py-4 text-center text-slate-300 text-[11px] hidden xl:table-cell">-</td>
+      </tr>
+    );
+  };
+
+  const renderBowlerRow = (b) => {
+    const p = b.player || b;
+    const playerId = p._id || p;
+    const totalOvers = Math.floor((b.balls || 0) / 6);
+    const remainingBalls = (b.balls || 0) % 6;
+    const oversStr = `${totalOvers}.${remainingBalls}`;
+    const economy = (totalOvers + remainingBalls / 6) > 0
+      ? (b.runs / (totalOvers + remainingBalls / 6)).toFixed(2)
+      : '0.00';
+
+    return (
+      <tr key={playerId} className="group">
+        <td className="py-4 pl-4">
+          <Link
+            to={`/players/${playerId}`}
+            className="text-[13px] font-black uppercase text-[#031d44] tracking-tight hover:text-blue-600 hover:underline transition-colors"
+          >
+            {p.name}
+          </Link>
+        </td>
+        <td className="py-4 text-center font-bold text-[#031d44] text-[13px]">{oversStr}</td>
+        <td className="py-4 text-center font-bold text-slate-400 text-[13px]">{b.maidens || 0}</td>
+        <td className="py-4 text-center font-bold text-slate-400 text-[13px]">{b.runs || 0}</td>
+        <td className="py-4 text-center font-black text-red-600 text-[13px]">{b.wickets || 0}</td>
+        <td className="py-4 text-center font-bold text-slate-400 text-[11px]">{economy}</td>
+        <td className="py-4 text-center font-bold text-slate-400 text-[11px] hidden md:table-cell">{b.dotBalls || 0}</td>
+        <td className="py-4 text-center font-bold text-slate-400 text-[11px] hidden md:table-cell">-</td>
+        <td className="py-4 text-center font-bold text-slate-400 text-[11px] hidden md:table-cell">-</td>
+        <td className="py-4 text-center font-bold text-slate-400 text-[10px] hidden lg:table-cell uppercase tracking-tighter">
+          {b.wickets || 0}-{b.runs || 0}-{totalOvers}.{remainingBalls}
         </td>
         <td className="py-4 text-center text-slate-300 text-[11px] hidden xl:table-cell">-</td>
         <td className="py-4 text-center text-slate-300 text-[11px] hidden xl:table-cell">-</td>
@@ -52,6 +96,32 @@ export default function InningsDashboard({ innings, match }) {
 
   return (
     <div className="bg-white rounded-[2rem] shadow-2xl shadow-slate-200 border border-slate-100 overflow-hidden mb-6">
+      {/* Powerplay Status Indicator */}
+      {match?.powerplayConfig?.enabled && innings?.powerplayStatus && (
+        <div className={`px-6 py-3 border-b ${innings.powerplayStatus.isActive
+            ? "bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200"
+            : "bg-slate-50 border-slate-100"
+          }`}>
+          <div className="flex items-center gap-3">
+            <div className={`w-2.5 h-2.5 rounded-full ${innings.powerplayStatus.isActive
+                ? "bg-purple-500 animate-pulse"
+                : "bg-slate-400"
+              }`}></div>
+            <span className={`text-xs font-black uppercase tracking-wider ${innings.powerplayStatus.isActive
+                ? "text-purple-700"
+                : "text-slate-500"
+              }`}>
+              {innings.powerplayStatus.isActive ? "⚡ Powerplay Active" : "Powerplay Completed"}
+            </span>
+            {innings.powerplayStatus.isActive && (
+              <span className="text-xs font-bold text-purple-600 ml-2">
+                {innings.powerplayStatus.currentOver + 1}/{match.powerplayConfig.overs}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Batters Table */}
       <div className="overflow-x-auto">
         <table className="w-full border-collapse">
@@ -72,7 +142,7 @@ export default function InningsDashboard({ innings, match }) {
             </tr>
           </thead>
           <tbody>
-            {(currentBatsmen.length > 0 ? currentBatsmen : [innings.currentBatsman1, innings.currentBatsman2]).filter(Boolean).map(b => 
+            {(currentBatsmen.length > 0 ? currentBatsmen : [innings.currentBatsman1, innings.currentBatsman2]).filter(Boolean).map(b =>
               renderBatterRow(b, (b.player?._id || b._id || b) === (innings.onStrikeBatsman?._id || innings.onStrikeBatsman))
             )}
           </tbody>
@@ -101,30 +171,7 @@ export default function InningsDashboard({ innings, match }) {
             </tr>
           </thead>
           <tbody>
-            {[currentBowlerStats].filter(Boolean).map(b => (
-              <tr key={b.player?._id || b._id || b} className="group">
-                <td className="py-4 pl-4">
-                  <span className="text-[13px] font-black uppercase text-[#031d44] tracking-tight">
-                    {b.player?.name || b.name}
-                  </span>
-                </td>
-                <td className="py-4 text-center font-bold text-[#031d44] text-[13px]">{b.overs || 0}.{b.balls % 6 || 0}</td>
-                <td className="py-4 text-center font-bold text-slate-400 text-[13px]">{b.maidens || 0}</td>
-                <td className="py-4 text-center font-bold text-slate-400 text-[13px]">{b.runs || 0}</td>
-                <td className="py-4 text-center font-black text-red-600 text-[13px]">{b.wickets || 0}</td>
-                <td className="py-4 text-center font-bold text-slate-400 text-[11px]">{b.economy || '0.00'}</td>
-                <td className="py-4 text-center font-bold text-slate-400 text-[11px] hidden md:table-cell">-</td>
-                <td className="py-4 text-center font-bold text-slate-400 text-[11px] hidden md:table-cell">-</td>
-                <td className="py-4 text-center font-bold text-slate-400 text-[11px] hidden md:table-cell">-</td>
-                <td className="py-4 text-center font-bold text-slate-400 text-[10px] hidden lg:table-cell uppercase tracking-tighter">
-                   {b.wickets || 0}-{b.runs || 0}-{Math.floor(b.balls/6 || 0)}.{b.balls % 6 || 0}
-                </td>
-                <td className="py-4 text-center text-slate-300 text-[11px] hidden xl:table-cell">-</td>
-                <td className="py-4 text-center text-slate-300 text-[11px] hidden xl:table-cell">-</td>
-                <td className="py-4 text-center text-slate-300 text-[11px] hidden xl:table-cell">-</td>
-                <td className="py-4 text-center text-slate-300 text-[11px] hidden xl:table-cell">-</td>
-              </tr>
-            ))}
+            {[currentBowlerStats].filter(Boolean).map(b => renderBowlerRow(b))}
           </tbody>
         </table>
       </div>

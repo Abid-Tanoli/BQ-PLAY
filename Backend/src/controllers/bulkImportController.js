@@ -22,21 +22,21 @@ export const bulkImportPlayers = async (req, res) => {
 
       try {
         // Validate required fields
-        if (!row.Name || !row.name) {
+        if (!row.Name) {
           errors.push({ row: i + 2, error: 'Name is required' });
           continue;
         }
 
         const playerData = {
-          name: row.Name || row.name,
-          role: row.Role || row.role || '',
-          Campus: row.Campus || row.campus || '',
-          imageUrl: row.ImageUrl || row.imageurl || row.imageUrl || row.Image || row.image || '',
+          name: row.Name,
+          role: row.Role || '',
+          Campus: row.Campus || '',
+          imageUrl: row.ImageUrl || row.Image || '',
         };
 
         // Handle team assignment
-        if (row.Team || row.team) {
-          const teamName = row.Team || row.team;
+        if (row.Team) {
+          const teamName = row.Team;
           let team = await Team.findOne({ name: new RegExp(`^${teamName}$`, 'i') });
 
           if (team) {
@@ -108,29 +108,29 @@ export const bulkImportTeams = async (req, res) => {
       const row = data[i];
 
       try {
-        if (!row.Name || !row.name) {
+        if (!row.Name) {
           errors.push({ row: i + 2, error: 'Team name is required' });
           continue;
         }
 
         // Check if team already exists
         const existingTeam = await Team.findOne({
-          name: new RegExp(`^${row.Name || row.name}$`, 'i')
+          name: new RegExp(`^${row.Name}$`, 'i')
         });
 
         if (existingTeam) {
           errors.push({
             row: i + 2,
-            error: `Team "${row.Name || row.name}" already exists`
+            error: `Team "${row.Name}" already exists`
           });
           continue;
         }
 
         const teamData = {
-          name: row.Name || row.name,
-          shortName: row.ShortName || row.shortName || (row.Name || row.name).substring(0, 3).toUpperCase(),
-          ownername: row.Owner || row.owner || row.OwnerName || row.ownername || '',
-          logo: row.Logo || row.logo || ''
+          name: row.Name,
+          shortName: row.ShortName || row.Name.substring(0, 3).toUpperCase(),
+          ownername: row.Owner || row.OwnerName || '',
+          logo: row.Logo || ''
         };
 
         const team = await Team.create(teamData);

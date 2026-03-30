@@ -1,9 +1,11 @@
-require('dotenv').config();
-const mongoose = require('mongoose');
-const connectDB = require('../config/db');
-const Team = require('../models/Team');
-const Player = require('../models/Player');
-const Match = require('../models/match');
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+import Team from '../models/Team.js';
+import Player from '../models/Player.js';
+import Match from '../models/match.js';
+import connectDB from '../config/db.js';
+
+dotenv.config();
 
 async function seed() {
   const uri = process.env.MONGO_URI || 'mongodb://localhost:27017/bqplay';

@@ -16,18 +16,22 @@ export default function PlayingXI({ matchId, compact = false }) {
         const res = await api.get(`/matches/${matchId}`);
         if (!mounted) return;
         const m = res.data || {};
-        // Expect m.teams or m.playingXI
-        // Try multiple shapes
-        const teams = m.teams || m.teamsInfo || [];
-        if (teams && teams.length) {
+        // Playing XI is stored in match.playingXI array with team and players
+        if (m.playingXI && m.playingXI.length > 0) {
           setPlaying(
-            teams.map((t) => ({
-              name: t.name,
-              players: t.playingXI || t.players || [],
+            m.playingXI.map((xi) => ({
+              name: xi.team?.name || `Team ${xi.team}`,
+              players: xi.players || [],
             }))
           );
-        } else if (m.playingXI) {
-          setPlaying(m.playingXI);
+        } else if (m.teams && m.teams.length) {
+          // Fallback to teams if playingXI not set
+          setPlaying(
+            m.teams.map((t) => ({
+              name: t.name,
+              players: t.players || t.playingXI || [],
+            }))
+          );
         } else {
           setPlaying([]);
         }

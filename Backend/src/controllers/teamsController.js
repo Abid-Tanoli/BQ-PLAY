@@ -4,14 +4,8 @@ import { getIO } from "../socket/socket.js";
 
 export const listTeams = async (req, res) => {
   try {
-    const teams = await Team.find().populate("playerList");
-    // For compatibility with frontend that expects 'players' array
-    const mappedTeams = teams.map(t => {
-      const teamObj = t.toJSON();
-      teamObj.players = teamObj.playerList || [];
-      return teamObj;
-    });
-    res.status(200).json(mappedTeams);
+    const teams = await Team.find().populate("players");
+    res.status(200).json(teams);
   } catch (error) {
     console.error("Error fetching teams:", error);
     res.status(500).json({ message: "Failed to fetch teams", error: error.message });
@@ -20,16 +14,13 @@ export const listTeams = async (req, res) => {
 
 export const getTeam = async (req, res) => {
   try {
-    const team = await Team.findById(req.params.id).populate("playerList");
+    const team = await Team.findById(req.params.id).populate("players");
 
     if (!team) {
       return res.status(404).json({ message: "Team not found" });
     }
 
-    const teamObj = team.toJSON();
-    teamObj.players = teamObj.playerList || [];
-
-    res.status(200).json(teamObj);
+    res.status(200).json(team);
   } catch (error) {
     console.error("Error fetching team:", error);
     res.status(500).json({ message: "Failed to fetch team", error: error.message });
@@ -65,18 +56,16 @@ export const createTeam = async (req, res) => {
     }
 
     // Populate players before sending response
-    await team.populate("playerList");
-    const teamObj = team.toJSON();
-    teamObj.players = teamObj.playerList || [];
+    await team.populate("players");
 
     try {
       const io = getIO();
-      io.emit("team:created", teamObj);
+      io.emit("team:created", team);
     } catch (socketError) {
       console.log("Socket not available:", socketError.message);
     }
 
-    res.status(201).json({ team: teamObj, message: "Team created successfully" });
+    res.status(201).json({ team, message: "Team created successfully" });
   } catch (error) {
     console.error("Error creating team:", error);
     res.status(400).json({ message: "Failed to create team", error: error.message });
@@ -128,19 +117,16 @@ export const updateTeam = async (req, res) => {
       req.params.id,
       updateData,
       { new: true }
-    ).populate("playerList");
-
-    const teamObj = updatedTeam.toJSON();
-    teamObj.players = teamObj.playerList || [];
+    ).populate("players");
 
     try {
       const io = getIO();
-      io.emit("team:updated", teamObj);
+      io.emit("team:updated", updatedTeam);
     } catch (socketError) {
       console.log("Socket not available:", socketError.message);
     }
 
-    res.status(200).json({ team: teamObj, message: "Team updated successfully" });
+    res.status(200).json({ team: updatedTeam, message: "Team updated successfully" });
   } catch (error) {
     console.error("Error updating team:", error);
     res.status(400).json({ message: "Failed to update team", error: error.message });

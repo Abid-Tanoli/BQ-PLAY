@@ -24,8 +24,20 @@ export default function LiveStats({ matchId }) {
             const m = res2.data || {};
             // Minimal computed stats fallback:
             setStats({
-              topScorers: (m.innings || []).flatMap((inn) => inn.batting || []).slice(0, 3),
-              topBowlers: (m.innings || []).flatMap((inn) => inn.bowling || []).slice(0, 3),
+              topScorers: (m.innings || []).flatMap((inn) => inn.batting || []).map(b => ({
+                name: b.player?.name || b.player,
+                runs: b.runs ?? 0,
+                balls: b.balls ?? 0,
+                strikeRate: b.strikeRate ?? 0
+              })).slice(0, 3),
+              topBowlers: (m.innings || []).flatMap((inn) => inn.bowling || []).map(b => ({
+                name: b.player?.name || b.player,
+                wickets: b.wickets ?? 0,
+                runs: b.runs ?? 0,
+                overs: b.overs ?? 0,
+                balls: b.balls ?? 0,
+                economy: b.economy ?? 0
+              })).slice(0, 3),
             });
           }
         } catch (err2) {

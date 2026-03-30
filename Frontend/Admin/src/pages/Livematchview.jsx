@@ -9,6 +9,46 @@ import MatchEditor from "../components/MatchEditor";
 import InningsDashboard from "../components/InningsDashboard";
 import OverTimeline from "../components/OverTimeline";
 
+// Error Boundary to catch component errors
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("Component Error:", error);
+    console.error("Error Info:", errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+          <h2 className="text-red-800 font-bold mb-2">Component Error</h2>
+          <p className="text-red-700 text-sm mb-3">{this.state.error?.message}</p>
+          <details className="text-xs text-red-600">
+            <summary>Stack Trace</summary>
+            <pre className="mt-2 p-2 bg-white rounded overflow-auto">{this.state.error?.toString()}</pre>
+          </details>
+          <button 
+            onClick={() => window.location.reload()}
+            className="mt-3 px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700"
+          >
+            Reload Page
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 export default function LiveMatchView() {
   const { matchId } = useParams();
   const navigate = useNavigate();
@@ -16,6 +56,7 @@ export default function LiveMatchView() {
   const [match, setMatch] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("live");
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     loadMatch();
@@ -39,11 +80,17 @@ export default function LiveMatchView() {
 
   const loadMatch = async () => {
     try {
+      console.log("Loading match:", matchId);
+      setError(null);
       const res = await api.get(`/matches/${matchId}`);
+      console.log("Match loaded:", res.data);
       setMatch(res.data);
       setLoading(false);
     } catch (err) {
-      console.error(err);
+      console.error("Failed to load match:", err);
+      console.error("Error details:", err.response?.data || err.message);
+      const errorMsg = err.response?.data?.message || err.message || "Unknown error occurred";
+      setError(errorMsg);
       setLoading(false);
     }
   };
@@ -72,6 +119,26 @@ export default function LiveMatchView() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 max-w-2xl mx-auto">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <h2 className="text-red-900 font-black text-xl mb-2">❌ Failed to Load Match</h2>
+          <p className="text-red-800 mb-4">{error}</p>
+          <p className="text-red-700 text-sm mb-4">Match ID: {matchId}</p>
+          <div className="flex gap-2">
+            <button onClick={() => loadMatch()} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+              Retry
+            </button>
+            <button onClick={() => navigate("/admin")} className="px-4 py-2 bg-slate-600 text-white rounded hover:bg-slate-700">
+              Go Back
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -110,7 +177,8 @@ export default function LiveMatchView() {
   tabs.push({ id: "rankings", label: "Rankings" });
 
   return (
-    <div className="max-w-7xl mx-auto pb-8 bg-slate-50 min-h-screen">
+    <ErrorBoundary>
+      <div className="max-w-7xl mx-auto pb-8 bg-slate-50 min-h-screen">
       {/* Match Meta Header - ESPNCricinfo Style */}
       <div className="bg-[#031d44] text-white py-2 px-4 text-xs font-medium flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -234,7 +302,7 @@ export default function LiveMatchView() {
             {activeTab === "manage" && <div className="card shadow-xl"><MatchEditor matchId={matchId} isEmbedded={true} /></div>}
             {activeTab === "table" && match.tournament && <TableTab tournamentId={match.tournament._id || match.tournament} />}
             {activeTab === "fixtures" && match.tournament && <FixturesTab tournamentId={match.tournament._id || match.tournament} />}
-            {activeTab === "rankings" && <RankingsTab tournamentId={match.tournament?._id || match.tournament} />}
+            {activeTab === "rankings" && match.tournament && <RankingsTab tournamentId={match.tournament?._id || match.tournament} />}
           </div>
 
           {/* Match Info Sidebar */}
@@ -246,7 +314,8 @@ export default function LiveMatchView() {
         {/* Blog & News Gallery Section */}
         <BlogGallery category="Match" relatedId={matchId} />
       </div>
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 }
 
@@ -277,8 +346,8 @@ function LiveTab({ match, currentInnings, matchId }) {
     <div className="space-y-6">
       <div className="card shadow-xl border border-slate-200 overflow-hidden">
         <div className="bg-blue-50 border-b border-blue-100 px-6 py-3 flex items-center justify-between">
-           <h3 className="text-sm font-black text-blue-900 uppercase tracking-tighter italic">Live Match Control</h3>
-           <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest bg-white px-3 py-1 rounded-full shadow-sm">Admin Access</span>
+          <h3 className="text-sm font-black text-blue-900 uppercase tracking-tighter italic">Live Match Control</h3>
+          <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest bg-white px-3 py-1 rounded-full shadow-sm">Admin Access</span>
         </div>
         <MatchEditor matchId={matchId} isEmbedded={true} />
       </div>
@@ -606,7 +675,7 @@ function OversTab({ match, currentInnings }) {
                             "bg-blue-500 text-white"
                     }`}
                 >
-                  {ball.isWicket ? "W" : 
+                  {ball.isWicket ? "W" :
                     ball.isWide ? `${1 + ball.runs}w` :
                       ball.isNoBall ? `${1 + ball.runs}nb` :
                         ball.isBye ? `${ball.runs}b` :
@@ -872,11 +941,11 @@ function MatchInfoSidebar({ match }) {
             <p className="text-xs text-slate-500 uppercase font-black mb-1">Venue</p>
             <p className="text-sm font-bold text-slate-800">{match.venue || "TBD"}</p>
           </div>
-          {match.tossWinner && (
+          {match.tossWinner && match.teams && (
             <div>
               <p className="text-xs text-slate-500 uppercase font-black mb-1">Toss</p>
               <p className="text-sm font-bold text-slate-800">
-                {match.tossWinner === match.teams[0]?._id ? match.teams[0]?.name : match.teams[1]?.name} won the toss and elected to {match.tossChoice} first
+                {match.tossWinner === match.teams?.[0]?._id ? match.teams?.[0]?.name : match.teams?.[1]?.name} won the toss and elected to {match.tossChoice} first
               </p>
             </div>
           )}
@@ -889,9 +958,9 @@ function MatchInfoSidebar({ match }) {
           Match ID: {match._id?.slice(-8).toUpperCase()}
         </p>
         <div className="mt-4 pt-4 border-t border-white/10">
-           <button className="w-full py-2 bg-white/10 hover:bg-white/20 rounded font-bold text-xs transition-all uppercase tracking-widest">
-             See Full Series Schedule
-           </button>
+          <button className="w-full py-2 bg-white/10 hover:bg-white/20 rounded font-bold text-xs transition-all uppercase tracking-widest">
+            See Full Series Schedule
+          </button>
         </div>
       </div>
     </div>
@@ -932,7 +1001,7 @@ function BlogGallery({ category, relatedId }) {
               {blog.videoUrl && (
                 <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
                   <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center text-white shadow-lg">
-                    <svg className="w-6 h-6 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    <svg className="w-6 h-6 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
                   </div>
                 </div>
               )}

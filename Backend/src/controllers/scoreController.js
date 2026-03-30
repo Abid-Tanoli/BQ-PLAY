@@ -21,7 +21,11 @@ export const updateScore = async (req, res) => {
       batsmanNonStrikeId,
       bowlerId,
       commentaryText = "",
-      customCommentary = false
+      customCommentary = false,
+      // Shot placement data for wagon wheel
+      shotPlacement = null,
+      fieldingZone = "",
+      shotType = ""
     } = req.body;
 
     const match = await Match.findById(matchId)
@@ -46,6 +50,19 @@ export const updateScore = async (req, res) => {
     if (!innings.oversHistory) {
       innings.oversHistory = [];
     }
+
+    // Initialize powerplay tracking if not exists
+    if (!innings.powerplayStatus) {
+      innings.powerplayStatus = {
+        isActive: false,
+        isCompleted: false,
+        currentOver: 0
+      };
+    }
+
+    // Check if powerplay is enabled for this match
+    const powerplayEnabled = match.powerplayConfig?.enabled && match.powerplayConfig?.overs > 0;
+    const powerplayOversLimit = match.powerplayConfig?.overs || 0;
 
     let currentOverNumber = Math.floor(innings.balls / 6);
     let currentOver = innings.oversHistory.find(o => o.overNumber === currentOverNumber);
@@ -127,6 +144,12 @@ export const updateScore = async (req, res) => {
       batsmanOnStrikeStats.balls += 1;
       batsmanOnStrikeStats.runs += batsmanRuns;
 
+      // Track dot balls
+      if (batsmanRuns === 0 && !isBye && !isLegBye) {
+        if (!batsmanOnStrikeStats.dotBalls) batsmanOnStrikeStats.dotBalls = 0;
+        batsmanOnStrikeStats.dotBalls += 1;
+      }
+
       if (batsmanRuns === 4) batsmanOnStrikeStats.fours += 1;
       if (batsmanRuns === 6) batsmanOnStrikeStats.sixes += 1;
 
@@ -134,6 +157,20 @@ export const updateScore = async (req, res) => {
         batsmanOnStrikeStats.balls > 0
           ? ((batsmanOnStrikeStats.runs / batsmanOnStrikeStats.balls) * 100).toFixed(2)
           : 0;
+
+      // Track shot for wagon wheel
+      if (!batsmanOnStrikeStats.shots) {
+        batsmanOnStrikeStats.shots = [];
+      }
+      batsmanOnStrikeStats.shots.push({
+        runs: batsmanRuns,
+        angle: shotPlacement?.angle || 0,
+        distance: shotPlacement?.distance || 50,
+        position: shotPlacement?.position || fieldingZone || "",
+        over: currentOverNumber,
+        ball: ballNumberInOver,
+        bowler: bowlerId
+      });
     }
 
     let bowlerStats = innings.bowling.find(
@@ -161,17 +198,47 @@ export const updateScore = async (req, res) => {
 
     if (isBallLegal) {
       bowlerStats.balls += 1;
+      // Track dot balls for bowler
+      if (batsmanRuns === 0 && !isBye && !isLegBye) {
+        if (!bowlerStats.dotBalls) bowlerStats.dotBalls = 0;
+        bowlerStats.dotBalls += 1;
+      }
       // Increment will be synced later from total history to ensure no drift
     }
-    
+
     // Robust Over Completion Check: based on this over's legal ball count
     const isOverComplete = isBallLegal && (legalBallsInCurrentOver + 1 === 6);
-    
+
     if (isOverComplete) {
       if (currentOver.runsScored === 0) {
         currentOver.maidenOver = true;
         bowlerStats.maidens += 1;
       }
+    }
+
+    // Update powerplay status
+    if (powerplayEnabled) {
+      const completedOvers = innings.overs; // Overs completed before this ball
+
+      // Powerplay starts from over 0 (first over)
+      if (completedOvers === 0 && !innings.powerplayStatus.isCompleted) {
+        innings.powerplayStatus.isActive = true;
+        innings.powerplayStatus.currentOver = 0;
+      }
+
+      // Check if powerplay should end after this over
+      if (isOverComplete && innings.powerplayStatus.isActive) {
+        const oversAfterThisOver = completedOvers + 1;
+        if (oversAfterThisOver >= powerplayOversLimit) {
+          innings.powerplayStatus.isActive = false;
+          innings.powerplayStatus.isCompleted = true;
+        } else {
+          innings.powerplayStatus.currentOver = oversAfterThisOver;
+        }
+      }
+    } else {
+      innings.powerplayStatus.isActive = false;
+      innings.powerplayStatus.isCompleted = true;
     }
 
     // Sync global balls and overs from history to prevent desync
@@ -183,13 +250,13 @@ export const updateScore = async (req, res) => {
       return total + balls.filter(b => !b.isWide && !b.isNoBall).length;
     }, 0);
     totalLegalBalls += tempBalls.filter(b => !b.isWide && !b.isNoBall).length;
-    
+
     console.log(`[ScoreUpdate] ballNumberInOver: ${ballNumberInOver}, isOverComplete: ${isOverComplete}, totalLegalBalls: ${totalLegalBalls}`);
-    
+
     innings.balls = totalLegalBalls;
     innings.overs = Math.floor(totalLegalBalls / 6);
     bowlerStats.overs = Math.floor(bowlerStats.balls / 6);
-    
+
     const bowlerOvers = (bowlerStats.overs) + (bowlerStats.balls % 6) / 6;
     bowlerStats.economy = bowlerOvers > 0 ? (bowlerStats.runs / bowlerOvers).toFixed(2) : 0;
 
@@ -200,6 +267,22 @@ export const updateScore = async (req, res) => {
       innings.wickets += 1;
       currentOver.wickets += 1;
       bowlerStats.wickets += 1;
+
+      // Complete current partnership and start new one
+      if (innings.partnerships && innings.partnerships.length > 0) {
+        const currentPartnership = innings.partnerships[innings.partnerships.length - 1];
+        currentPartnership.wicket = innings.wickets;
+
+        // Start new partnership with new batsman
+        const newBatsmanId = innings.battingOrder?.[innings.wickets] || batsmanNonStrikeId;
+        innings.partnerships.push({
+          batsman1: newBatsmanId,
+          batsman2: batsmanNonStrikeId,
+          runs: 0,
+          balls: 0,
+          wicket: 0
+        });
+      }
 
       // If no dismissedPlayerId provided, assume striker is out (except for run outs)
       let actualDismissedId = dismissedPlayerId;
@@ -277,7 +360,11 @@ export const updateScore = async (req, res) => {
       commentary,
       notation: ballNotation,
       isFreeHit: innings.isFreeHit || false,
-      timestamp: new Date()
+      timestamp: new Date(),
+      // Shot placement data
+      shotPlacement: shotPlacement || { angle: 0, distance: 50, position: "" },
+      fieldingZone,
+      shotType
     };
 
     // Update Free Hit state
@@ -293,6 +380,23 @@ export const updateScore = async (req, res) => {
     innings.currentBatsman2 = batsmanNonStrikeId;
     innings.currentBowler = bowlerId;
 
+    // Update partnership tracking
+    if (!innings.partnerships || innings.partnerships.length === 0) {
+      // Initialize first partnership
+      innings.partnerships = [{
+        batsman1: batsmanOnStrikeId,
+        batsman2: batsmanNonStrikeId,
+        runs: batsmanRuns + extraRuns,
+        balls: isBallLegal ? 1 : 0,
+        wicket: 0
+      }];
+    } else {
+      // Update current partnership
+      const currentPartnership = innings.partnerships[innings.partnerships.length - 1];
+      currentPartnership.runs += batsmanRuns + extraRuns;
+      if (isBallLegal) currentPartnership.balls += 1;
+    }
+
     const isRunsOdd = runs % 2 !== 0;
 
     // Strike Rotation Logic:
@@ -302,7 +406,7 @@ export const updateScore = async (req, res) => {
     if (!isWicket) {
       // shouldChangeStrike means "does the striker for the NEXT ball change relative to the CURRENT striker?"
       const shouldChangeStrike = (isRunsOdd !== isOverComplete);
-      
+
       if (shouldChangeStrike) {
         innings.onStrikeBatsman = batsmanNonStrikeId;
       } else {
@@ -389,7 +493,9 @@ export const updateScore = async (req, res) => {
         overs: innings.overs,
         balls: innings.balls,
         runRate: innings.runRate,
-        requiredRunRate: innings.requiredRunRate
+        requiredRunRate: innings.requiredRunRate,
+        powerplayStatus: innings.powerplayStatus,
+        powerplayConfig: match.powerplayConfig
       });
 
       if (isOverComplete) {
@@ -946,5 +1052,64 @@ export const startSuperOverInnings = async (req, res) => {
     res.status(200).json({ match, message: `Super Over Innings ${isFirstSO ? 1 : 2} started` });
   } catch (error) {
     res.status(400).json({ message: "Failed to start Super Over innings", error: error.message });
+  }
+};
+
+export const editCommentary = async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    const { inningsIndex, overNumber, ballNumber, newCommentary } = req.body;
+
+    if (!matchId || inningsIndex === undefined || overNumber === undefined || ballNumber === undefined) {
+      return res.status(400).json({ message: "Missing required parameters" });
+    }
+
+    const match = await Match.findById(matchId);
+    if (!match) {
+      return res.status(404).json({ message: "Match not found" });
+    }
+
+    const innings = match.innings[inningsIndex];
+    if (!innings || !innings.oversHistory) {
+      return res.status(400).json({ message: "Invalid innings index" });
+    }
+
+    const over = innings.oversHistory.find(o => o.overNumber === overNumber);
+    if (!over || !over.balls) {
+      return res.status(400).json({ message: "Over not found" });
+    }
+
+    const ball = over.balls.find(b => b.ballNumber === ballNumber);
+    if (!ball) {
+      return res.status(400).json({ message: "Ball not found" });
+    }
+
+    ball.commentary = newCommentary;
+    await match.save();
+
+    try {
+      const io = getIO();
+      io.to(matchId).emit("match:commentaryUpdated", {
+        matchId,
+        inningsIndex,
+        overNumber,
+        ballNumber,
+        newCommentary
+      });
+      io.emit("match:updated", match);
+    } catch (socketError) {
+      console.log("Socket not available:", socketError.message);
+    }
+
+    res.status(200).json({
+      match,
+      message: "Commentary updated successfully"
+    });
+  } catch (error) {
+    console.error("Error editing commentary:", error);
+    res.status(400).json({
+      message: "Failed to edit commentary",
+      error: error.message
+    });
   }
 };

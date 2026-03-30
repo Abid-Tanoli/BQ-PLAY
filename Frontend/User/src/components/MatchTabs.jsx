@@ -14,6 +14,8 @@ import OverTimeline from "./OverTimeline";
  * Tabs now sync with URL hash. Clicking a tab sets the hash (e.g. #scorecard)
  * and the component reads the hash to set active tab. Using anchors also
  * allows direct linking / copy-paste of a specific tab.
+ * 
+ * Live tab is hidden when match is completed - redirects to Scorecard
  */
 
 const TABS = [
@@ -34,17 +36,31 @@ export default function MatchTabs({ matchId, match }) {
   const innings1 = match?.innings?.[0];
   const innings2 = match?.innings?.[1];
 
+  const isMatchCompleted = match?.status === 'completed';
+
+  // Filter tabs based on match status - hide Live tab when match is completed
+  const availableTabs = isMatchCompleted
+    ? TABS.filter(t => t.key !== 'live')
+    : TABS;
+
   const initialFromHash = (location.hash && location.hash.slice(1)) || "live";
   const [tab, setTab] = useState(
-    TABS.find((t) => t.key === initialFromHash) ? initialFromHash : "live"
+    availableTabs.find((t) => t.key === initialFromHash) ? initialFromHash : availableTabs[0]?.key || "live"
   );
+
+  // Redirect to scorecard if trying to access live tab on completed match
+  useEffect(() => {
+    if (isMatchCompleted && (location.hash === '#live' || location.hash === '')) {
+      navigate(`${location.pathname}#scorecard`, { replace: true });
+    }
+  }, [isMatchCompleted, location.hash, location.pathname, navigate]);
 
   useEffect(() => {
     const h = (location.hash && location.hash.slice(1)) || "live";
-    if (h && h !== tab && TABS.find((t) => t.key === h)) {
+    if (h && h !== tab && availableTabs.find((t) => t.key === h)) {
       setTab(h);
     }
-  }, [location.hash]);
+  }, [location.hash, availableTabs, tab]);
 
   const onSelect = (key) => {
     setTab(key);
@@ -116,6 +132,14 @@ export default function MatchTabs({ matchId, match }) {
             </div>
 
             <div className="flex flex-col md:items-end gap-3">
+              {/* Toss Display */}
+              {match?.tossWinner && (
+                <div className="bg-white/10 backdrop-blur-sm px-4 py-2 rounded-lg border border-white/20 mb-2">
+                  <p className="text-xs font-bold text-blue-200 uppercase tracking-widest">
+                    Toss: {match.tossWinner.name} elected to {match.tossDecision === 'bat' ? 'bat' : 'bowl'} first
+                  </p>
+                </div>
+              )}
               <span className={`px-4 py-1.5 rounded-full text-xs font-black tracking-widest ${match?.status === "live" ? "bg-red-600 text-white animate-pulse" : "bg-white/20 text-white"
                 }`}>
                 {match?.status?.replace(/_/g, " ").toUpperCase()}
@@ -132,7 +156,7 @@ export default function MatchTabs({ matchId, match }) {
         {/* Dynamic Tab Bar */}
         <div className="bg-white/5 backdrop-blur-md border-t border-white/10 overflow-x-auto no-scrollbar">
           <div className="max-w-7xl mx-auto px-4 flex">
-            {TABS.map((t) => {
+            {availableTabs.map((t) => {
               const isActive = t.key === tab;
               return (
                 <button
@@ -156,7 +180,7 @@ export default function MatchTabs({ matchId, match }) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Content Area */}
           <div className="lg:col-span-2 space-y-8">
-            {tab === "live" && (
+            {tab === "live" && availableTabs.find(t => t.key === 'live') && (
               <>
                 <div className="bg-white rounded-[2rem] shadow-xl overflow-hidden border border-slate-200">
                   <InningsDashboard innings={match?.currentInnings === 0 ? innings1 : innings2} match={match} />
@@ -225,7 +249,7 @@ export default function MatchTabs({ matchId, match }) {
             </div>
           </div>
         </div>
-        
+
         {/* User Side Blog Gallery */}
         <div className="mt-16">
           <div className="flex items-center justify-between mb-8">

@@ -5,7 +5,7 @@ let socket = null;
 export function initSocket() {
   if (socket) return socket;
 
-  const SERVER = process.env.REACT_APP_API_SOCKET || "http://localhost:5000";
+  const SERVER = import.meta.env.VITE_SOCKET_URL || "http://localhost:5000";
 
   socket = clientIo(SERVER, {
     transports: ["websocket", "polling"],
@@ -27,12 +27,12 @@ export function initSocket() {
 
 export function joinMatchRoom(matchId) {
   const s = initSocket();
-  s.emit("joinMatch", matchId);
+  s.emit("join-match", matchId);
 }
 
 export function leaveMatchRoom(matchId) {
   if (!socket) return;
-  socket.emit("leaveMatch", matchId);
+  socket.emit("leave-match", matchId);
 }
 
 export function disconnectSocket() {
