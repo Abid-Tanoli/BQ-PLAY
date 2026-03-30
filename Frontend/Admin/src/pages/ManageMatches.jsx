@@ -21,8 +21,13 @@ export default function ManageMatches() {
   const [teamPlayers, setTeamPlayers] = useState([]);
   const [xiLoading, setXiLoading] = useState(false);
 
+  // Powerplay State
+  const [powerplayEnabled, setPowerplayEnabled] = useState(false);
+  const [powerplayOvers, setPowerplayOvers] = useState(2);
+
   const teamAValue = watch("teamA");
   const teamBValue = watch("teamB");
+  const matchTypeValue = watch("matchType");
 
   useEffect(() => {
     dispatch(fetchMatches());
@@ -75,6 +80,10 @@ export default function ManageMatches() {
         startAt: data.startTime,
         venue: data.venue || "",
         matchType: data.matchType || "T20",
+        powerplayConfig: {
+          enabled: powerplayEnabled,
+          overs: powerplayEnabled ? powerplayOvers : 0
+        }
       };
 
       if (editingMatchId) {
@@ -102,6 +111,15 @@ export default function ManageMatches() {
     setValue("startTime", new Date(match.startAt).toISOString().slice(0, 16));
     setValue("venue", match.venue || "");
     setValue("matchType", match.matchType || "T20");
+    
+    // Load existing powerplay config
+    if (match.powerplayConfig) {
+      setPowerplayEnabled(match.powerplayConfig.enabled || false);
+      setPowerplayOvers(match.powerplayConfig.overs || 2);
+    } else {
+      setPowerplayEnabled(false);
+      setPowerplayOvers(2);
+    }
   };
 
   const onDelete = async (id) => {
@@ -118,6 +136,8 @@ export default function ManageMatches() {
   const cancelEdit = () => {
     setEditingMatchId(null);
     reset();
+    setPowerplayEnabled(false);
+    setPowerplayOvers(2);
   };
 
   const openXISelector = async (match, teamId) => {
@@ -286,14 +306,60 @@ export default function ManageMatches() {
                   {...register("matchType")}
                   className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 >
-                  <option value="T10">T6 (6 overs)</option>
-                  <option value="T10">T8 (8 overs)</option>
+                  <option value="6 Overs">T6 (6 overs)</option>
+                  <option value="8 Overs">T8 (8 overs)</option>
                   <option value="T10">T10 (10 overs)</option>
                   <option value="T20">T20 (20 overs)</option>
                   <option value="ODI">ODI (50 overs)</option>
                   <option value="Test">Test Match</option>
+                  <option value="Tape Ball">Tape Ball</option>
                 </select>
               </div>
+
+              {/* Powerplay Configuration - Only for Tape Ball */}
+              {matchTypeValue === "Tape Ball" && (
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <label className="flex items-center gap-2 mb-3">
+                    <input
+                      type="checkbox"
+                      checked={powerplayEnabled}
+                      onChange={(e) => setPowerplayEnabled(e.target.checked)}
+                      className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm font-medium text-slate-700">
+                      Enable Powerplay
+                    </span>
+                  </label>
+
+                  {powerplayEnabled && (
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                        Powerplay Overs
+                      </label>
+                      <select
+                        value={powerplayOvers}
+                        onChange={(e) => setPowerplayOvers(Number(e.target.value))}
+                        className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+                      >
+                        {[1, 2, 3, 4, 5, 6].map((overs) => {
+                          const maxOvers = matchTypeValue === "Tape Ball" ? 
+                            (watch("matchType") === "6 Overs" ? 6 : 
+                             watch("matchType") === "8 Overs" ? 6 : 6) : 6;
+                          if (overs > maxOvers) return null;
+                          return (
+                            <option key={overs} value={overs}>
+                              {overs} {overs === 1 ? "Over" : "Overs"}
+                            </option>
+                          );
+                        })}
+                      </select>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Select how many overs the powerplay should last
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">

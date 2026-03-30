@@ -27,10 +27,12 @@ connectDB();
 const corsOptions = {
   origin: [
     "http://localhost:5173",
-    "http://localhost:5174", 
+    "http://localhost:5174",
+    "http://localhost:5175",
     "http://localhost:3000",
-    "http://localhost:3001"
-  ],
+    "http://localhost:3001",
+    process.env.FRONTEND_URL
+  ].filter(Boolean),
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
@@ -61,7 +63,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/players", playerRoutes);
 app.use("/api/matches", matchRoutes);
-app.use("/api/teams", teamRoutes); 
+app.use("/api/teams", teamRoutes);
 app.use("/api/livematch", liveMatchRoutes);
 app.use("/api/tournaments", tournamentRoutes);
 app.use("/api/bulk-import", bulkImportRoutes);
@@ -69,15 +71,15 @@ app.use("/api/rankings", rankingsRoutes);
 app.use("/api/blogs", blogRoutes);
 
 app.get("/api/health", (req, res) => {
-  res.json({ 
-    status: "ok", 
+  res.json({
+    status: "ok",
     message: "Server is running",
     timestamp: new Date().toISOString()
   });
 });
 
 app.get("/", (req, res) => {
-  res.json({ 
+  res.json({
     message: "BQ-Play API Server",
     version: "1.0.0",
     endpoints: {
@@ -94,7 +96,7 @@ app.get("/", (req, res) => {
 app.use(errorHandler);
 
 app.use((req, res) => {
-  res.status(404).json({ 
+  res.status(404).json({
     message: "Route not found",
     path: req.path
   });

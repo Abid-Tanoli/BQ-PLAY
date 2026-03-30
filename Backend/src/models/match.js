@@ -18,7 +18,16 @@ const ballSchema = new mongoose.Schema({
   dismissedPlayer: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
   fielder: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
   commentary: { type: String, default: "" },
-  timestamp: { type: Date, default: Date.now }
+  timestamp: { type: Date, default: Date.now },
+  // Shot placement for wagon wheel
+  shotPlacement: {
+    angle: { type: Number, default: 0 }, // -180 to 180, 0 = straight
+    distance: { type: Number, default: 50 }, // 0-100, distance from batsman
+    position: { type: String, default: "" } // e.g., "cover", "mid-wicket"
+  },
+  // Fielding position where ball was fielded
+  fieldingZone: { type: String, default: "" },
+  shotType: { type: String, default: "" }
 });
 
 const overSchema = new mongoose.Schema({
@@ -42,7 +51,18 @@ const batsmanStatsSchema = new mongoose.Schema({
   dismissalType: { type: String, default: "" },
   dismissedBy: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
   fielder: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
-  position: { type: Number, default: 0 }
+  position: { type: Number, default: 0 },
+  dotBalls: { type: Number, default: 0 },
+  // Shot data for wagon wheel
+  shots: [{
+    runs: { type: Number, default: 0 },
+    angle: { type: Number, default: 0 },
+    distance: { type: Number, default: 50 },
+    position: { type: String, default: "" },
+    over: { type: Number, default: 0 },
+    ball: { type: Number, default: 0 },
+    bowler: { type: mongoose.Schema.Types.ObjectId, ref: "Player" }
+  }]
 });
 
 const bowlerStatsSchema = new mongoose.Schema({
@@ -54,7 +74,8 @@ const bowlerStatsSchema = new mongoose.Schema({
   wickets: { type: Number, default: 0 },
   wides: { type: Number, default: 0 },
   noBalls: { type: Number, default: 0 },
-  economy: { type: Number, default: 0 }
+  economy: { type: Number, default: 0 },
+  dotBalls: { type: Number, default: 0 }
 });
 
 const partnershipSchema = new mongoose.Schema({
@@ -103,6 +124,10 @@ const inningsSchema = new mongoose.Schema({
   requiredRunRate: { type: Number, default: 0 },
   target: { type: Number, default: 0 },
   powerplayOvers: { type: Number, default: 0 },
+  powerplayConfig: {
+    enabled: { type: Boolean, default: false },
+    overs: { type: Number, default: 0, min: 0 }
+  },
   declared: { type: Boolean, default: false }
 });
 
@@ -184,6 +209,18 @@ const matchSchema = new mongoose.Schema(
       temperature: Number
     },
     playingXI: [{
+      team: { type: mongoose.Schema.Types.ObjectId, ref: "Team" },
+      players: [{ type: mongoose.Schema.Types.ObjectId, ref: "Player" }]
+    }],
+    squad15: [{
+      team: { type: mongoose.Schema.Types.ObjectId, ref: "Team" },
+      players: [{ type: mongoose.Schema.Types.ObjectId, ref: "Player" }]
+    }],
+    twelfthMan: [{
+      team: { type: mongoose.Schema.Types.ObjectId, ref: "Team" },
+      player: { type: mongoose.Schema.Types.ObjectId, ref: "Player" }
+    }],
+    bowlingXI: [{
       team: { type: mongoose.Schema.Types.ObjectId, ref: "Team" },
       players: [{ type: mongoose.Schema.Types.ObjectId, ref: "Player" }]
     }],

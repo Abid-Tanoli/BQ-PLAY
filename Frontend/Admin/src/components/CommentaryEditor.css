@@ -1,0 +1,327 @@
+.commentary-editor {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+}
+
+.commentary-placeholder {
+  background: white;
+  padding: 40px;
+  text-align: center;
+  color: #666;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.commentary-header {
+  margin-bottom: 20px;
+}
+
+.commentary-header h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  color: #333;
+  font-weight: 600;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 12px;
+  color: #999;
+  font-style: italic;
+}
+
+.commentary-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+  font-size: 14px;
+}
+
+.over-group {
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.over-header {
+  background: #f5f5f5;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.over-number {
+  font-weight: 600;
+  color: #333;
+  font-size: 14px;
+}
+
+.over-summary {
+  font-size: 12px;
+  color: #666;
+}
+
+.balls-group {
+  padding: 0;
+}
+
+.ball-commentary {
+  padding: 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.ball-commentary:last-child {
+  border-bottom: none;
+}
+
+.ball-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.ball-number {
+  font-weight: 600;
+  color: #333;
+  min-width: 40px;
+  font-size: 13px;
+}
+
+.ball-notation {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  min-width: 30px;
+  text-align: center;
+}
+
+.ball-notation.dot {
+  background: #e0e0e0;
+  color: #666;
+}
+
+.ball-notation.run {
+  background: #c8e6c9;
+  color: #2e7d32;
+}
+
+.ball-notation.four {
+  background: #81c784;
+  color: white;
+  font-weight: bold;
+}
+
+.ball-notation.six {
+  background: #4caf50;
+  color: white;
+  font-weight: bold;
+}
+
+.ball-notation.wide {
+  background: #fff176;
+  color: #f57f17;
+}
+
+.ball-notation.noball {
+  background: #ffe082;
+  color: #f57f17;
+}
+
+.ball-notation.wicket {
+  background: #ef5350;
+  color: white;
+  font-weight: bold;
+}
+
+.commentary-text {
+  padding: 12px;
+  background: #fafafa;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #333;
+  min-height: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+}
+
+.commentary-text:hover {
+  background: #f0f0f0;
+  padding: 12px;
+}
+
+.commentary-text p {
+  margin: 4px 0;
+  padding: 0;
+}
+
+.commentary-text p:first-child {
+  margin-top: 0;
+}
+
+.commentary-text p:last-child {
+  margin-bottom: 0;
+}
+
+.edit-hint {
+  font-size: 11px;
+  color: #999;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+.no-commentary {
+  color: #999;
+  font-size: 12px;
+}
+
+.editing-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.editing-mode textarea {
+  width: 100%;
+  padding: 10px;
+  border: 2px solid #2196F3;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.editing-mode textarea:focus {
+  outline: none;
+  border-color: #1976D2;
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+}
+
+.edit-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.btn-save,
+.btn-cancel {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-save {
+  background-color: #2196F3;
+  color: white;
+}
+
+.btn-save:hover:not(:disabled) {
+  background-color: #1976D2;
+}
+
+.btn-save:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.btn-cancel {
+  background-color: #f5f5f5;
+  color: #333;
+  border: 1px solid #ddd;
+}
+
+.btn-cancel:hover:not(:disabled) {
+  background-color: #e0e0e0;
+}
+
+.btn-cancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ball-details {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+  font-size: 11px;
+}
+
+.detail {
+  background: #f0f0f0;
+  padding: 2px 6px;
+  border-radius: 3px;
+  color: #666;
+}
+
+.detail.badge {
+  background: #e3f2fd;
+  color: #1976D2;
+  font-weight: 600;
+}
+
+.detail.badge.wicket {
+  background: #ffebee;
+  color: #c62828;
+}
+
+/* Scrollbar styling */
+.commentary-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.commentary-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.commentary-list::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 3px;
+}
+
+.commentary-list::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .commentary-editor {
+    padding: 12px;
+  }
+
+  .commentary-list {
+    max-height: 400px;
+  }
+
+  .ball-header {
+    flex-wrap: wrap;
+  }
+
+  .ball-commentary {
+    padding: 12px;
+  }
+}

@@ -19,8 +19,8 @@ export default function Overs({ matchId }) {
         // Try different places for over info
         if (m.innings && m.innings.length) {
           const byInnings = m.innings.map((inn, idx) => ({
-            team: inn.teamName || `Innings ${idx + 1}`,
-            overs: inn.oversList || inn.oversSummary || [],
+            team: inn.team?.name || inn.teamName || `Innings ${idx + 1}`,
+            overs: inn.oversHistory || [],
           }));
           setOversData(byInnings);
         } else {
@@ -53,7 +53,7 @@ export default function Overs({ matchId }) {
               {inn.overs.map((o, idx) => (
                 <div key={idx} className="p-2 bg-gray-800 rounded">
                   <div className="font-medium">Over {o.overNumber ?? idx + 1}</div>
-                  <div className="text-gray-300">{o.summary ?? o.runs + " / " + (o.wickets ?? 0)}</div>
+                  <div className="text-gray-300">{o.summary ?? `${o.runsScored ?? 0} / ${o.wickets ?? 0}`}</div>
                 </div>
               ))}
             </div>

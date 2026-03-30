@@ -11,13 +11,12 @@ export default function MatchList({ matches, selected, onSelect }) {
         <li
           key={match._id}
           onClick={() => onSelect(match)}
-          className={`p-3 rounded cursor-pointer transition-all ${
-            selected?._id === match._id
+          className={`p-3 rounded cursor-pointer transition-all ${selected?._id === match._id
               ? "bg-blue-600 text-white font-semibold"
               : "bg-gray-100 hover:bg-gray-200"
-          }`}
+            }`}
         >
-          {match.name || `${match.teamA} vs ${match.teamB}`}
+          {match.title || `${match.teams?.[0]?.name || 'Team A'} vs ${match.teams?.[1]?.name || 'Team B'}`}
         </li>
       ))}
     </ul>

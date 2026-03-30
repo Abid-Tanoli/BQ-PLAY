@@ -39,7 +39,7 @@ export const loginUser = async (req, res) => {
     console.log("Login Attempt:", email);
 
     if (!email || !password) {
-      console.log("Missing fields");   
+      console.log("Missing fields");
       return res.status(400).json({ message: "All fields are required" });
     }
 
@@ -56,6 +56,7 @@ export const loginUser = async (req, res) => {
     }
 
     const token = generateToken(user);
+    console.log("Login Successful for:", email);
 
     res.json({
       token,
@@ -66,7 +67,6 @@ export const loginUser = async (req, res) => {
         role: user.role,
       },
     });
-    console.log("Login Successful for:", email);
   } catch (err) {
     console.error("Login Error:", err);
     res.status(500).json({ message: "Login failed" });

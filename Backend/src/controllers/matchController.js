@@ -1,5 +1,6 @@
 import Match from "../models/match.js";
 import Team from "../models/Team.js";
+import Tournament from "../models/Tournament.js";
 import { getIO } from "../socket/socket.js";
 
 export const getMatches = async (req, res) => {
@@ -48,7 +49,7 @@ export const getMatch = async (req, res) => {
 
 export const createMatch = async (req, res) => {
   try {
-    const { title, venue, matchType, startAt, teams } = req.body;
+    const { title, venue, matchType, startAt, teams, powerplayConfig } = req.body;
 
     if (!teams || teams.length !== 2) {
       return res.status(400).json({
@@ -106,14 +107,14 @@ export const createMatch = async (req, res) => {
       startAt,
       teams,
       innings,
-      status: "upcoming"
+      status: "upcoming",
+      powerplayConfig: powerplayConfig || { enabled: false, overs: 0 }
     });
 
     await match.save();
 
     // Link match to tournament if provided
     if (req.body.tournamentId) {
-      const Tournament = (await import("../models/Tournament.js")).default;
       await Tournament.findByIdAndUpdate(req.body.tournamentId, {
         $push: { matches: match._id }
       });
@@ -145,7 +146,7 @@ export const createMatch = async (req, res) => {
 
 export const updateMatch = async (req, res) => {
   try {
-    const { title, venue, matchType, startAt, teams, status } = req.body;
+    const { title, venue, matchType, startAt, teams, status, powerplayConfig } = req.body;
 
     const match = await Match.findById(req.params.id);
     if (!match) {
@@ -182,6 +183,7 @@ export const updateMatch = async (req, res) => {
     if (matchType !== undefined) match.matchType = matchType;
     if (startAt !== undefined) match.startAt = startAt;
     if (status !== undefined) match.status = status;
+    if (powerplayConfig !== undefined) match.powerplayConfig = powerplayConfig;
 
     await match.save();
 
@@ -514,6 +516,180 @@ export const updateToss = async (req, res) => {
     console.error("Error updating toss:", error);
     res.status(400).json({
       message: "Failed to update toss",
+      error: error.message
+    });
+  }
+};
+
+export const setSquad15 = async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    const { teamId, players } = req.body;
+
+    if (!players || players.length !== 15) {
+      return res.status(400).json({
+        message: "Exactly 15 players required for squad"
+      });
+    }
+
+    const match = await Match.findById(matchId);
+    if (!match) {
+      return res.status(404).json({ message: "Match not found" });
+    }
+
+    const isTeamInMatch = match.teams.some(
+      t => t.toString() === teamId.toString()
+    );
+
+    if (!isTeamInMatch) {
+      return res.status(400).json({
+        message: "Team is not part of this match"
+      });
+    }
+
+    const existingSquad = match.squad15.find(
+      xi => xi.team.toString() === teamId.toString()
+    );
+
+    if (existingSquad) {
+      existingSquad.players = players;
+    } else {
+      match.squad15.push({ team: teamId, players });
+    }
+
+    await match.save();
+    await match.populate("squad15.team", "name shortName logo");
+    await match.populate("squad15.players", "name role playingRole");
+
+    try {
+      const io = getIO();
+      io.to(matchId).emit("match:squadUpdated", match);
+    } catch (socketError) {
+      console.log("Socket not available:", socketError.message);
+    }
+
+    res.status(200).json({
+      match,
+      message: "15-member squad set successfully"
+    });
+  } catch (error) {
+    console.error("Error setting squad:", error);
+    res.status(400).json({
+      message: "Failed to set squad",
+      error: error.message
+    });
+  }
+};
+
+export const setTwelfthMan = async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    const { teamId, playerId } = req.body;
+
+    const match = await Match.findById(matchId);
+    if (!match) {
+      return res.status(404).json({ message: "Match not found" });
+    }
+
+    const isTeamInMatch = match.teams.some(
+      t => t.toString() === teamId.toString()
+    );
+
+    if (!isTeamInMatch) {
+      return res.status(400).json({
+        message: "Team is not part of this match"
+      });
+    }
+
+    const existingEntry = match.twelfthMan.find(
+      tm => tm.team.toString() === teamId.toString()
+    );
+
+    if (existingEntry) {
+      existingEntry.player = playerId;
+    } else {
+      match.twelfthMan.push({ team: teamId, player: playerId });
+    }
+
+    await match.save();
+    await match.populate("twelfthMan.team", "name shortName logo");
+    await match.populate("twelfthMan.player", "name role playingRole");
+
+    try {
+      const io = getIO();
+      io.to(matchId).emit("match:twelfthManUpdated", match);
+    } catch (socketError) {
+      console.log("Socket not available:", socketError.message);
+    }
+
+    res.status(200).json({
+      match,
+      message: "12th man set successfully"
+    });
+  } catch (error) {
+    console.error("Error setting 12th man:", error);
+    res.status(400).json({
+      message: "Failed to set 12th man",
+      error: error.message
+    });
+  }
+};
+
+export const setBowlingXI = async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    const { teamId, players } = req.body;
+
+    if (!players || players.length < 1 || players.length > 11) {
+      return res.status(400).json({
+        message: "Select 1-11 bowlers from Playing XI"
+      });
+    }
+
+    const match = await Match.findById(matchId);
+    if (!match) {
+      return res.status(404).json({ message: "Match not found" });
+    }
+
+    const isTeamInMatch = match.teams.some(
+      t => t.toString() === teamId.toString()
+    );
+
+    if (!isTeamInMatch) {
+      return res.status(400).json({
+        message: "Team is not part of this match"
+      });
+    }
+
+    const existingXI = match.bowlingXI.find(
+      xi => xi.team.toString() === teamId.toString()
+    );
+
+    if (existingXI) {
+      existingXI.players = players;
+    } else {
+      match.bowlingXI.push({ team: teamId, players });
+    }
+
+    await match.save();
+    await match.populate("bowlingXI.team", "name shortName logo");
+    await match.populate("bowlingXI.players", "name role playingRole");
+
+    try {
+      const io = getIO();
+      io.to(matchId).emit("match:bowlingXIUpdated", match);
+    } catch (socketError) {
+      console.log("Socket not available:", socketError.message);
+    }
+
+    res.status(200).json({
+      match,
+      message: "Bowling XI set successfully"
+    });
+  } catch (error) {
+    console.error("Error setting Bowling XI:", error);
+    res.status(400).json({
+      message: "Failed to set Bowling XI",
       error: error.message
     });
   }
