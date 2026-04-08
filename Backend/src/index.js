@@ -14,9 +14,12 @@ import teamRoutes from "./routes/teamRoutes.js";
 import liveMatchRoutes from "./routes/liveMatchRoutes.js";
 import errorHandler from "./middleware/errorHandler.js";
 import tournamentRoutes from "./routes/tournamentRoutes.js";
+import eventRoutes from "./routes/eventRoutes.js";
 import bulkImportRoutes from "./routes/bulkImportRoutes.js";
 import rankingsRoutes from "./routes/rankingsRoutes.js";
 import blogRoutes from "./routes/blogRoutes.js";
+import cricketApiRoutes from "./routes/cricketApiRoutes.js";
+import cricketPolling from "./services/cricketPolling.js";
 
 dotenv.config();
 
@@ -25,14 +28,7 @@ const app = express();
 connectDB();
 
 const corsOptions = {
-  origin: [
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "http://localhost:5175",
-    "http://localhost:3000",
-    "http://localhost:3001",
-    process.env.FRONTEND_URL
-  ].filter(Boolean),
+  origin: true, // Allow all origins during development
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
@@ -66,9 +62,11 @@ app.use("/api/matches", matchRoutes);
 app.use("/api/teams", teamRoutes);
 app.use("/api/livematch", liveMatchRoutes);
 app.use("/api/tournaments", tournamentRoutes);
+app.use("/api/events", eventRoutes);
 app.use("/api/bulk-import", bulkImportRoutes);
 app.use("/api/rankings", rankingsRoutes);
 app.use("/api/blogs", blogRoutes);
+app.use("/api/cricket", cricketApiRoutes);
 
 app.get("/api/health", (req, res) => {
   res.json({
@@ -102,12 +100,20 @@ app.use((req, res) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8000;
 
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📡 Socket.IO ready for connections`);
-  console.log(`🌐 CORS enabled for: ${corsOptions.origin.join(", ")}`);
+  console.log(`🌐 CORS enabled for all origins (development mode)`);
+
+  // Start cricket polling if API key is configured
+  if (process.env.CRICKET_API_KEY && process.env.CRICKET_API_KEY !== 'your_api_key_here') {
+    cricketPolling.start();
+    console.log(`🏏 Cricket API polling started (interval: ${cricketPolling.pollingInterval}ms)`);
+  } else {
+    console.log(`⚠️  Cricket API not configured - set CRICKET_API_KEY in .env to enable live scores`);
+  }
 });
 
 server.on("error", (error) => {

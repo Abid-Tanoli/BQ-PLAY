@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import Commentary from "./Commentary";
 import LiveStats from "./LiveStats";
 import Overs from "./Overs";
@@ -22,9 +22,10 @@ const TABS = [
   { key: "live", label: "Live" },
   { key: "scorecard", label: "Scorecard" },
   { key: "commentary", label: "Commentary" },
-  { key: "livestats", label: "Match Info" },
+  { key: "livestats", label: "Live Stats" },
   { key: "overs", label: "Overs" },
   { key: "playingxi", label: "Playing XI" },
+  { key: "table", label: "Table" },
 ];
 
 export default function MatchTabs({ matchId, match }) {
@@ -74,7 +75,11 @@ export default function MatchTabs({ matchId, match }) {
       <div className="bg-[#031d44] text-white overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-blue-300/80">
           <div className="flex items-center gap-4">
-            <span>{match?.tournament?.name || "Cricket Series"}</span>
+            {match?.tournament ? (
+              <Link to={`/series/${match.tournament._id || match.tournament}`} className="hover:text-white transition-colors underline">{match.tournament.name}</Link>
+            ) : (
+              <span>Cricket Series</span>
+            )}
             <span>•</span>
             <span>{match?.matchType}</span>
             <span>•</span>

@@ -37,6 +37,7 @@ export const getPlayer = async (req, res) => {
     const player = await Player.findById(req.params.id).populate("team", "name");
     if (!player) return res.status(404).json({ message: "Player not found" });
     res.json(player);
+    console.log(player);
   } catch (err) {
     res.status(500).json({ message: "Error fetching player" });
   }

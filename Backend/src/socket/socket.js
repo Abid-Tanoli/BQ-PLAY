@@ -5,7 +5,7 @@ let io;
 export const initSocket = (server) => {
   io = new Server(server, {
     cors: {
-      origin: ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"],
+      origin: true, // Allow all origins during development
       methods: ["GET", "POST", "PUT", "DELETE"],
       credentials: true
     },
@@ -45,6 +45,11 @@ export const initSocket = (server) => {
     socket.on("join-players", () => {
       socket.join("players");
       console.log(`👤 Socket ${socket.id} joined players room`);
+    });
+
+    socket.on("join-cricket-live", () => {
+      socket.join("cricket-live");
+      console.log(`🏏 Socket ${socket.id} joined cricket-live room`);
     });
 
     socket.on("match:updateList", () => {
@@ -99,5 +104,12 @@ export const emitMatchUpdate = (matchId, data) => {
   if (io) {
     io.to(matchId).emit("match:update", data);
     io.emit("match:update", data);
+  }
+};
+
+export const emitCricketLiveUpdate = (data) => {
+  if (io) {
+    io.to("cricket-live").emit("cricket:liveUpdate", data);
+    io.emit("cricket:liveUpdate", data);
   }
 };

@@ -38,6 +38,21 @@ const playerSchema = new mongoose.Schema(
     Campus: { type: String },
     imageUrl: { type: String, default: "" },
     team: { type: mongoose.Schema.Types.ObjectId, ref: "Team" },
+    birthInfo: {
+      date: { type: Date },
+      place: { type: String, default: "" }
+    },
+    age: { type: Number },
+    relations: [{
+      player: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
+      relationType: { type: String } // e.g., "Father", "Brother", "Son", etc.
+    }],
+    teamHistory: [{
+      team: { type: mongoose.Schema.Types.ObjectId, ref: "Team" },
+      from: { type: Date },
+      to: { type: Date },
+      isCurrent: { type: Boolean, default: false }
+    }],
     stats: {
       runs: { type: Number, default: 0 },
       wickets: { type: Number, default: 0 },

@@ -135,6 +135,70 @@ export const setPlayingXI = createAsyncThunk(
   }
 );
 
+export const setSquad15 = createAsyncThunk(
+  "matches/setSquad15",
+  async ({ matchId, teamId, players, captain, viceCaptain, wicketKeepers }, thunkAPI) => {
+    try {
+      const res = await api.put(`/matches/${matchId}/squad15`, { teamId, players, captain, viceCaptain, wicketKeepers });
+      return res.data;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(
+        err.response?.data?.message || err.message || "Failed to set squad"
+      );
+    }
+  }
+);
+
+export const setTwelfthMan = createAsyncThunk(
+  "matches/setTwelfthMan",
+  async ({ matchId, teamId, playerId }, thunkAPI) => {
+    try {
+      const res = await api.put(`/matches/${matchId}/twelfth-man`, { teamId, playerId });
+      return res.data;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(
+        err.response?.data?.message || err.message || "Failed to set 12th man"
+      );
+    }
+  }
+);
+
+export const setTeamRoles = createAsyncThunk(
+  "matches/setTeamRoles",
+  async ({ matchId, teamId, captain, viceCaptain, wicketKeepers }, thunkAPI) => {
+    try {
+      const res = await api.put(`/matches/${matchId}/team-roles`, { teamId, captain, viceCaptain, wicketKeepers });
+      return res.data;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(
+        err.response?.data?.message || err.message || "Failed to set team roles"
+      );
+    }
+  }
+);
+
+export const updateWicketKeeper = createAsyncThunk(
+  "matches/updateWicketKeeper",
+  async ({ matchId, teamId, wicketKeeperId }, thunkAPI) => {
+    try {
+      const match = await api.get(`/matches/${matchId}`);
+      const currentRoles = match.data.teamRoles?.find(r => r.team._id === teamId || r.team === teamId);
+      const updatedWicketKeepers = [wicketKeeperId];
+      const res = await api.put(`/matches/${matchId}/team-roles`, {
+        teamId,
+        captain: currentRoles?.captain,
+        viceCaptain: currentRoles?.viceCaptain,
+        wicketKeepers: updatedWicketKeepers
+      });
+      return res.data;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(
+        err.response?.data?.message || err.message || "Failed to update wicket-keeper"
+      );
+    }
+  }
+);
+
 export const setOpeners = createAsyncThunk(
   "matches/setOpeners",
   async ({ matchId, inningsIndex, batsman1Id, batsman2Id }, thunkAPI) => {
@@ -325,6 +389,58 @@ const matchesSlice = createSlice({
       })
 
       .addCase(setPlayingXI.fulfilled, (state, action) => {
+        const updated = action.payload?.match || action.payload;
+        if (updated) {
+          const index = state.matches.findIndex((m) => m._id === updated._id);
+          if (index !== -1) {
+            state.matches[index] = updated;
+          }
+          if (state.currentMatch?._id === updated._id) {
+            state.currentMatch = updated;
+          }
+        }
+      })
+
+      .addCase(setSquad15.fulfilled, (state, action) => {
+        const updated = action.payload?.match || action.payload;
+        if (updated) {
+          const index = state.matches.findIndex((m) => m._id === updated._id);
+          if (index !== -1) {
+            state.matches[index] = updated;
+          }
+          if (state.currentMatch?._id === updated._id) {
+            state.currentMatch = updated;
+          }
+        }
+      })
+
+      .addCase(setTwelfthMan.fulfilled, (state, action) => {
+        const updated = action.payload?.match || action.payload;
+        if (updated) {
+          const index = state.matches.findIndex((m) => m._id === updated._id);
+          if (index !== -1) {
+            state.matches[index] = updated;
+          }
+          if (state.currentMatch?._id === updated._id) {
+            state.currentMatch = updated;
+          }
+        }
+      })
+
+      .addCase(setTeamRoles.fulfilled, (state, action) => {
+        const updated = action.payload?.match || action.payload;
+        if (updated) {
+          const index = state.matches.findIndex((m) => m._id === updated._id);
+          if (index !== -1) {
+            state.matches[index] = updated;
+          }
+          if (state.currentMatch?._id === updated._id) {
+            state.currentMatch = updated;
+          }
+        }
+      })
+
+      .addCase(updateWicketKeeper.fulfilled, (state, action) => {
         const updated = action.payload?.match || action.payload;
         if (updated) {
           const index = state.matches.findIndex((m) => m._id === updated._id);

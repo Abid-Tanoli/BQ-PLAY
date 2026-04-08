@@ -3,13 +3,12 @@ import dotenv from 'dotenv';
 import Team from '../models/Team.js';
 import Player from '../models/Player.js';
 import Match from '../models/match.js';
-import connectDB from '../config/db.js';
+import connectDB from '../utils/db.js';
 
 dotenv.config();
 
 async function seed() {
-  const uri = process.env.MONGO_URI || 'mongodb://localhost:27017/bqplay';
-  await connectDB(uri);
+  await connectDB();
 
   await Team.deleteMany({});
   await Player.deleteMany({});

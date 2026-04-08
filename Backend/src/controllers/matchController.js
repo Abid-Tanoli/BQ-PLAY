@@ -1,12 +1,13 @@
 import Match from "../models/match.js";
 import Team from "../models/Team.js";
-import Tournament from "../models/Tournament.js";
+import Event from "../models/Event.js";
 import { getIO } from "../socket/socket.js";
 
 export const getMatches = async (req, res) => {
   try {
     const matches = await Match.find()
       .populate("teams", "name shortName logo")
+      .populate("tournament", "name shortName slug")
       .populate("innings.team", "name shortName")
       .populate("result.winner", "name")
       .populate("manOfMatch", "name")
@@ -25,13 +26,13 @@ export const getMatches = async (req, res) => {
 export const getMatch = async (req, res) => {
   try {
     const match = await Match.findById(req.params.id)
-      .populate("teams", "name shortName logo players")
+      .populate("teams", "name shortName logo")
       .populate("innings.team", "name shortName")
-      .populate("innings.batting.player", "name role")
-      .populate("innings.bowling.player", "name role")
-      .populate("result.winner", "name")
-      .populate("tossWinner", "name")
-      .populate("manOfMatch", "name role");
+      .populate("innings.batting.player", "name playingRole")
+      .populate("innings.bowling.player", "name playingRole")
+      .populate("result.winner", "name shortName")
+      .populate("tossWinner", "name shortName")
+      .populate("manOfMatch", "name playingRole");
 
     if (!match) {
       return res.status(404).json({ message: "Match not found" });
@@ -49,7 +50,7 @@ export const getMatch = async (req, res) => {
 
 export const createMatch = async (req, res) => {
   try {
-    const { title, venue, matchType, startAt, teams, powerplayConfig } = req.body;
+    const { title, venue, matchType, matchCategory, matchSubcategory, startAt, teams, powerplayConfig, series, seriesMatchNumber } = req.body;
 
     if (!teams || teams.length !== 2) {
       return res.status(400).json({
@@ -77,7 +78,6 @@ export const createMatch = async (req, res) => {
         team: teams[0],
         runs: 0,
         wickets: 0,
-        overs: 0,
         balls: 0,
         extras: 0,
         status: "upcoming",
@@ -89,7 +89,6 @@ export const createMatch = async (req, res) => {
         team: teams[1],
         runs: 0,
         wickets: 0,
-        overs: 0,
         balls: 0,
         extras: 0,
         status: "upcoming",
@@ -103,12 +102,16 @@ export const createMatch = async (req, res) => {
       title: title || `${team1.name} vs ${team2.name}`,
       venue: venue || "",
       matchType: matchType || "T20",
+      matchCategory: matchCategory || "local-club",
+      matchSubcategory: matchSubcategory || "",
       tournament: req.body.tournamentId || null,
       startAt,
       teams,
       innings,
       status: "upcoming",
-      powerplayConfig: powerplayConfig || { enabled: false, overs: 0 }
+      powerplayConfig: powerplayConfig || { enabled: false, overs: 0 },
+      series: series || "",
+      seriesMatchNumber: seriesMatchNumber || null
     });
 
     await match.save();
@@ -146,7 +149,7 @@ export const createMatch = async (req, res) => {
 
 export const updateMatch = async (req, res) => {
   try {
-    const { title, venue, matchType, startAt, teams, status, powerplayConfig } = req.body;
+    const { title, venue, matchType, startAt, teams, status, powerplayConfig, series, seriesMatchNumber } = req.body;
 
     const match = await Match.findById(req.params.id);
     if (!match) {
@@ -184,6 +187,8 @@ export const updateMatch = async (req, res) => {
     if (startAt !== undefined) match.startAt = startAt;
     if (status !== undefined) match.status = status;
     if (powerplayConfig !== undefined) match.powerplayConfig = powerplayConfig;
+    if (series !== undefined) match.series = series;
+    if (seriesMatchNumber !== undefined) match.seriesMatchNumber = seriesMatchNumber;
 
     await match.save();
 
@@ -524,11 +529,29 @@ export const updateToss = async (req, res) => {
 export const setSquad15 = async (req, res) => {
   try {
     const { matchId } = req.params;
-    const { teamId, players } = req.body;
+    const { teamId, players, captain, viceCaptain, wicketKeepers } = req.body;
 
-    if (!players || players.length !== 15) {
+    if (!players || players.length < 11 || players.length > 20) {
       return res.status(400).json({
-        message: "Exactly 15 players required for squad"
+        message: "Squad size must be between 11 and 20 players"
+      });
+    }
+
+    if (!captain) {
+      return res.status(400).json({
+        message: "Captain is required"
+      });
+    }
+
+    if (!viceCaptain) {
+      return res.status(400).json({
+        message: "Vice-captain is required"
+      });
+    }
+
+    if (!wicketKeepers || wicketKeepers.length === 0) {
+      return res.status(400).json({
+        message: "At least one wicket-keeper is required"
       });
     }
 
@@ -553,8 +576,11 @@ export const setSquad15 = async (req, res) => {
 
     if (existingSquad) {
       existingSquad.players = players;
+      existingSquad.captain = captain;
+      existingSquad.viceCaptain = viceCaptain;
+      existingSquad.wicketKeepers = wicketKeepers;
     } else {
-      match.squad15.push({ team: teamId, players });
+      match.squad15.push({ team: teamId, players, captain, viceCaptain, wicketKeepers });
     }
 
     await match.save();
@@ -690,6 +716,85 @@ export const setBowlingXI = async (req, res) => {
     console.error("Error setting Bowling XI:", error);
     res.status(400).json({
       message: "Failed to set Bowling XI",
+      error: error.message
+    });
+  }
+};
+
+export const setTeamRoles = async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    const { teamId, captain, viceCaptain, wicketKeepers } = req.body;
+
+    if (!captain) {
+      return res.status(400).json({
+        message: "Captain is required"
+      });
+    }
+
+    if (!viceCaptain) {
+      return res.status(400).json({
+        message: "Vice-captain is required"
+      });
+    }
+
+    if (!wicketKeepers || wicketKeepers.length === 0) {
+      return res.status(400).json({
+        message: "At least one wicket-keeper is required"
+      });
+    }
+
+    const match = await Match.findById(matchId);
+    if (!match) {
+      return res.status(404).json({ message: "Match not found" });
+    }
+
+    const isTeamInMatch = match.teams.some(
+      t => t.toString() === teamId.toString()
+    );
+
+    if (!isTeamInMatch) {
+      return res.status(400).json({
+        message: "Team is not part of this match"
+      });
+    }
+
+    const existingRoles = match.teamRoles?.find(
+      r => r.team.toString() === teamId.toString()
+    );
+
+    if (existingRoles) {
+      existingRoles.captain = captain;
+      existingRoles.viceCaptain = viceCaptain;
+      existingRoles.wicketKeepers = wicketKeepers;
+    } else {
+      if (!match.teamRoles) {
+        match.teamRoles = [];
+      }
+      match.teamRoles.push({ team: teamId, captain, viceCaptain, wicketKeepers });
+    }
+
+    await match.save();
+    await match.populate("teamRoles.team", "name shortName logo");
+    await match.populate("teamRoles.captain", "name role playingRole");
+    await match.populate("teamRoles.viceCaptain", "name role playingRole");
+    await match.populate("teamRoles.wicketKeepers", "name role playingRole");
+
+    try {
+      const io = getIO();
+      io.to(matchId).emit("match:teamRolesUpdated", match);
+    } catch (socketError) {
+      console.log("Socket not available:", socketError.message);
+    }
+
+    res.status(200).json({
+      match,
+      message: "Team roles set successfully"
+    });
+  } catch (error) {
+    console.error("Error setting team roles:", error);
+    res.status(400).json({
+      message: "Failed to set team roles",
       error: error.message
     });
   }

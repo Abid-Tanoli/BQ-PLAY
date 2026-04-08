@@ -80,7 +80,6 @@ export default function TournamentManagement() {
     setValue("format", tournament.format);
     setValue("startDate", tournament.startDate?.substring(0, 10));
     setValue("endDate", tournament.endDate?.substring(0, 10));
-    setValue("venue", tournament.venue);
     setValue("teams", tournament.teams.map(t => t._id || t));
   };
 
@@ -182,15 +181,6 @@ export default function TournamentManagement() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Venue</label>
-                <input
-                  {...register("venue")}
-                  className="w-full p-2 border rounded-lg"
-                  placeholder="National Stadium"
-                />
-              </div>
-
-              <div>
                 <label className="block text-sm font-medium mb-2">
                   Teams * (Selected: {selectedTeams.length})
                 </label>
@@ -279,12 +269,6 @@ export default function TournamentManagement() {
                     </div>
                   </div>
 
-                  {tournament.venue && (
-                    <p className="text-sm text-slate-600 mb-3">
-                      <span className="font-medium">Venue:</span> {tournament.venue}
-                    </p>
-                  )}
-
                   <div className="mb-3">
                     <p className="text-sm font-medium mb-2">Teams ({tournament.teams?.length})</p>
                     <div className="flex flex-wrap gap-2">
@@ -360,6 +344,15 @@ function TournamentDetailsModal({ tournament, onClose }) {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("fixtures");
   const [showCreateMatch, setShowCreateMatch] = useState(false);
+  const [tournamentSquads, setTournamentSquads] = useState({});
+  const [selectedTeamForSquad, setSelectedTeamForSquad] = useState("");
+  const [showSquadForm, setShowSquadForm] = useState(false);
+  const [selectedPlayers, setSelectedPlayers] = useState([]);
+  const [captain, setCaptain] = useState("");
+  const [viceCaptain, setViceCaptain] = useState("");
+  const [wicketKeepers, setWicketKeepers] = useState([]);
+  const [teamPlayers, setTeamPlayers] = useState([]);
+  const [savingSquad, setSavingSquad] = useState(false);
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
 
@@ -369,12 +362,20 @@ function TournamentDetailsModal({ tournament, onClose }) {
 
   const loadData = async () => {
     try {
-      const [fixRes, tableRes] = await Promise.all([
+      const [fixRes, tableRes, squadRes] = await Promise.all([
         api.get(`/tournaments/${tournament._id}/fixtures`),
-        api.get(`/tournaments/${tournament._id}/points-table`)
+        api.get(`/tournaments/${tournament._id}/points-table`),
+        api.get(`/tournaments/${tournament._id}/squad`)
       ]);
       setFixtures(fixRes.data);
       setPointsTable(tableRes.data);
+      // Convert squad array to object keyed by teamId
+      const squadsObj = {};
+      squadRes.data.forEach(s => {
+        const teamId = s.team?._id || s.team;
+        squadsObj[teamId] = s;
+      });
+      setTournamentSquads(squadsObj);
       setLoading(false);
     } catch (err) {
       console.error(err);
@@ -415,6 +416,89 @@ function TournamentDetailsModal({ tournament, onClose }) {
     }
   };
 
+  const openSquadForm = async (teamId) => {
+    setSelectedTeamForSquad(teamId);
+    setShowSquadForm(true);
+    try {
+      const res = await api.get(`/teams/${teamId}`);
+      const players = res.data.players || res.data.playerList || [];
+      setTeamPlayers(players);
+    } catch (err) {
+      console.error(err);
+    }
+
+    // Load existing squad if any
+    const existingSquad = tournamentSquads[teamId];
+    if (existingSquad) {
+      setSelectedPlayers(existingSquad.players.map(p => p._id || p));
+      setCaptain(existingSquad.captain?._id || existingSquad.captain || "");
+      setViceCaptain(existingSquad.viceCaptain?._id || existingSquad.viceCaptain || "");
+      setWicketKeepers((existingSquad.wicketKeepers || []).map(w => w._id || w));
+    } else {
+      setSelectedPlayers([]);
+      setCaptain("");
+      setViceCaptain("");
+      setWicketKeepers([]);
+    }
+  };
+
+  const handlePlayerToggle = (playerId) => {
+    if (selectedPlayers.includes(playerId)) {
+      setSelectedPlayers(selectedPlayers.filter(id => id !== playerId));
+      if (captain === playerId) setCaptain("");
+      if (viceCaptain === playerId) setViceCaptain("");
+      if (wicketKeepers.includes(playerId)) {
+        setWicketKeepers(wicketKeepers.filter(id => id !== playerId));
+      }
+    } else if (selectedPlayers.length < 20) {
+      setSelectedPlayers([...selectedPlayers, playerId]);
+    } else {
+      alert("Maximum 20 players can be selected");
+    }
+  };
+
+  const saveTournamentSquad = async () => {
+    if (selectedPlayers.length < 11 || selectedPlayers.length > 20) {
+      alert("Please select between 11 and 20 players");
+      return;
+    }
+    if (!captain) {
+      alert("Please select a captain");
+      return;
+    }
+    if (!viceCaptain) {
+      alert("Please select a vice-captain");
+      return;
+    }
+    if (captain === viceCaptain) {
+      alert("Captain and vice-captain must be different");
+      return;
+    }
+    if (wicketKeepers.length === 0) {
+      alert("Please select at least one wicket-keeper");
+      return;
+    }
+
+    setSavingSquad(true);
+    try {
+      await api.post(`/tournaments/${tournament._id}/squad`, {
+        teamId: selectedTeamForSquad,
+        players: selectedPlayers,
+        captain,
+        viceCaptain,
+        wicketKeepers
+      });
+      alert("Tournament squad saved successfully");
+      setShowSquadForm(false);
+      loadData();
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || "Failed to save tournament squad");
+    } finally {
+      setSavingSquad(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
@@ -439,6 +523,12 @@ function TournamentDetailsModal({ tournament, onClose }) {
                 className={`px-3 py-1 text-sm font-medium rounded-lg transition-colors ${activeTab === "rankings" ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-200"}`}
               >
                 Rankings
+              </button>
+              <button
+                onClick={() => setActiveTab("squads")}
+                className={`px-3 py-1 text-sm font-medium rounded-lg transition-colors ${activeTab === "squads" ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-200"}`}
+              >
+                Squads (11-20)
               </button>
             </div>
           </div>
@@ -571,7 +661,8 @@ function TournamentDetailsModal({ tournament, onClose }) {
                         f.status === "upcoming" &&
                         (f.teams.some(t => t._id === entry.team?._id))
                       );
-                      const opponent = nextMatch?.teams.find(t => t._id !== entry.team?._id);
+                      const opponent = nextMatch?.teams?.find(t => t._id !== entry.team?._id);
+                      const opponentName = opponent?.shortName || opponent?.name || "TBD";
 
                       return (
                         <tr key={idx} className={`${idx < 4 ? "bg-green-50/30" : "hover:bg-slate-50"} transition-colors`}>
@@ -601,7 +692,7 @@ function TournamentDetailsModal({ tournament, onClose }) {
                           <td className="px-4 py-4 text-center text-[11px]">
                             {nextMatch ? (
                               <div className="text-blue-700">
-                                <span className="font-bold block">vs {opponent?.shortName || opponent?.name}</span>
+                                <span className="font-bold block">vs {opponentName}</span>
                                 <span className="text-[10px] opacity-70">{new Date(nextMatch.startAt).toLocaleDateString()}</span>
                               </div>
                             ) : (
@@ -626,15 +717,185 @@ function TournamentDetailsModal({ tournament, onClose }) {
                 </table>
               </div>
             </div>
-          ) : (
+          ) : activeTab === "rankings" ? (
             <div className="space-y-6">
               <h4 className="text-lg font-semibold">Tournament Rankings</h4>
               {/* Here we can reuse a ranking view or show top performers of this tournament */}
               <p className="text-slate-500 italic">Tournament specific rankings coming soon. View global rankings in the sidebar.</p>
             </div>
-          )
+          ) : activeTab === "squads" ? (
+            <div className="space-y-6">
+              <div>
+                <h4 className="text-lg font-semibold">Tournament Squads (11-20 Players per Team)</h4>
+              </div>
+              <p className="text-sm text-slate-500">Select squads for each team in this series/tournament. These squads apply to all matches.</p>
+
+              {/* Team squad cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {tournament.teams?.map(team => {
+                  const squad = tournamentSquads[team._id];
+                  const playerCount = squad?.players?.length || 0;
+                  const isReady = playerCount >= 11;
+                  return (
+                    <div key={team._id} className={`p-4 bg-white rounded-lg border hover:shadow-md transition-shadow ${isReady ? 'border-green-300' : 'border-slate-200'}`}>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          {team.logo && <img src={team.logo} alt={team.name} className="w-10 h-10 rounded-lg object-cover" />}
+                          <div>
+                            <h5 className="font-bold text-slate-800">{team.name}</h5>
+                            <p className={`text-xs font-bold ${isReady ? 'text-green-600' : 'text-slate-500'}`}>
+                              {playerCount}/20 players {isReady ? '✓ Ready' : '(Min 11 required)'}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => openSquadForm(team._id)}
+                          className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold"
+                        >
+                          {squad ? "Edit Squad" : "Set Squad"}
+                        </button>
+                      </div>
+                      {squad && squad.players?.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-3">
+                          {squad.players.slice(0, 8).map(p => (
+                            <span key={p._id || p} className="px-2 py-1 bg-slate-100 rounded text-[10px] font-bold">
+                              {p.name || "Player"}
+                              {(p._id || p) === squad.captain && <span className="ml-1 text-blue-600">(C)</span>}
+                              {(p._id || p) === squad.viceCaptain && <span className="ml-1 text-green-600">(VC)</span>}
+                              {squad.wicketKeepers?.some(w => (w._id || w) === (p._id || p)) && <span className="ml-1 text-orange-600">(WK)</span>}
+                            </span>
+                          ))}
+                          {squad.players.length > 8 && (
+                            <span className="px-2 py-1 bg-slate-200 rounded text-[10px] font-bold">+{squad.players.length - 8} more</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Squad Form Modal */}
+              {showSquadForm && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+                  <div className="bg-white rounded-xl max-w-3xl w-full max-h-[85vh] overflow-hidden flex flex-col">
+                    <div className="p-5 border-b flex items-center justify-between bg-slate-50">
+                      <div>
+                        <h4 className="text-lg font-bold text-slate-800">
+                          Set Tournament Squad - {tournament.teams?.find(t => t._id === selectedTeamForSquad)?.name}
+                        </h4>
+                        <p className="text-xs text-slate-500">Select 11-20 players from team roster</p>
+                      </div>
+                      <button onClick={() => setShowSquadForm(false)} className="p-2 hover:bg-slate-200 rounded-lg">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-5">
+                      {/* Selection Info */}
+                      <div className="flex items-center justify-between mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                        <span className="text-sm font-bold text-blue-800">
+                          Players: {selectedPlayers.length}/20 (Min 11)
+                        </span>
+                        <div className="flex gap-4 text-xs">
+                          <span className="text-blue-600 font-bold">C: {captain ? teamPlayers.find(p => (p._id || p) === captain)?.name : "Not selected"}</span>
+                          <span className="text-green-600 font-bold">VC: {viceCaptain ? teamPlayers.find(p => (p._id || p) === viceCaptain)?.name : "Not selected"}</span>
+                          <span className="text-orange-600 font-bold">WK: {wicketKeepers.length > 0 ? wicketKeepers.map(id => teamPlayers.find(p => (p._id || p) === id)?.name).join(", ") : "Not selected"}</span>
+                        </div>
+                      </div>
+
+                      {/* Players Grid */}
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {teamPlayers.map(player => {
+                          const isSelected = selectedPlayers.includes(player._id);
+                          const isCaptain = captain === player._id;
+                          const isViceCaptain = viceCaptain === player._id;
+                          const isWK = wicketKeepers.includes(player._id);
+                          return (
+                            <div
+                              key={player._id}
+                              className={`p-3 rounded-lg border cursor-pointer transition-all ${isSelected
+                                ? "bg-blue-50 border-blue-300 ring-2 ring-blue-200"
+                                : "bg-white border-slate-200 hover:border-slate-300"
+                                }`}
+                              onClick={() => handlePlayerToggle(player._id)}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-bold text-sm text-slate-800 truncate">{player.name}</p>
+                                  <p className="text-[10px] text-slate-500">{player.playingRole || player.role || "Player"}</p>
+                                </div>
+                                <div className="flex gap-1">
+                                  {isSelected && (
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => { e.stopPropagation(); setCaptain(isCaptain ? "" : player._id); }}
+                                        className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${isCaptain ? "bg-blue-600 text-white" : "bg-blue-100 text-blue-600 hover:bg-blue-200"}`}
+                                        title="Captain"
+                                      >
+                                        C
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => { e.stopPropagation(); setViceCaptain(isViceCaptain ? "" : player._id); }}
+                                        className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${isViceCaptain ? "bg-green-600 text-white" : "bg-green-100 text-green-600 hover:bg-green-200"}`}
+                                        title="Vice-Captain"
+                                      >
+                                        VC
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => { e.stopPropagation(); if (isWK) setWicketKeepers(wicketKeepers.filter(id => id !== player._id)); else setWicketKeepers([...wicketKeepers, player._id]); }}
+                                        className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${isWK ? "bg-orange-600 text-white" : "bg-orange-100 text-orange-600 hover:bg-orange-200"}`}
+                                        title="Wicket-Keeper"
+                                      >
+                                        WK
+                                      </button>
+                                    </>
+                                  )}
+                                  <div className={`w-5 h-5 rounded flex items-center justify-center text-xs font-bold ${isSelected ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-300"}`}>
+                                    {isSelected ? "✓" : ""}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {teamPlayers.length === 0 && (
+                        <div className="text-center py-12">
+                          <p className="text-slate-500">No players available for this team</p>
+                          <p className="text-sm text-slate-400 mt-2">Add players to the team first</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-4 border-t bg-slate-50 flex gap-3">
+                      <button
+                        onClick={() => setShowSquadForm(false)}
+                        className="flex-1 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-bold text-sm"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={saveTournamentSquad}
+                        disabled={savingSquad}
+                        className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-sm disabled:opacity-50"
+                      >
+                        {savingSquad ? "Saving..." : "Save Squad"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : null
           }
-        </div >
+        </div>
 
         <div className="p-6 border-t bg-slate-50 flex justify-end">
           <button

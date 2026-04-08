@@ -13,7 +13,8 @@ import {
   updateToss,
   setSquad15,
   setTwelfthMan,
-  setBowlingXI
+  setBowlingXI,
+  setTeamRoles
 } from "../controllers/matchController.js";
 import { updateScore, endInnings, startNextInnings, reduceOvers, resolveTie, startSuperOverInnings, editCommentary } from "../controllers/scoreController.js";
 
@@ -41,6 +42,7 @@ router.put("/:matchId/toss", updateToss);
 router.put("/:matchId/squad15", setSquad15);
 router.put("/:matchId/twelfth-man", setTwelfthMan);
 router.put("/:matchId/bowling-xi", setBowlingXI);
+router.put("/:matchId/team-roles", setTeamRoles);
 
 router.delete("/:id", deleteMatch);
 

@@ -25,6 +25,10 @@ export function initSocket() {
   return socket;
 }
 
+export function getSocket() {
+  return initSocket();
+}
+
 export function joinMatchRoom(matchId) {
   const s = initSocket();
   s.emit("join-match", matchId);

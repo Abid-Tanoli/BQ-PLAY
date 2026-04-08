@@ -12,8 +12,10 @@ export const login = createAsyncThunk(
   "auth/login",
   async ({ email, password }, thunkAPI) => {
     try {
-      const res = await api.post("/auth/login", { email, password });
-      return res.data;
+      const res = await api.post("/admin/login", { email, password });
+      // adminController returns { token, admin: {...} } — normalize to { token, user }
+      const data = res.data;
+      return { token: data.token, user: data.user || data.admin };
     } catch (err) {
       return thunkAPI.rejectWithValue(
         err.response?.data?.message || "Login failed"
@@ -26,8 +28,10 @@ export const register = createAsyncThunk(
   "auth/register",
   async ({ name, email, password }, thunkAPI) => {
     try {
-      const res = await api.post("/auth/register", { name, email, password });
-      return res.data;
+      const res = await api.post("/admin/register", { name, email, password });
+      // adminController returns { token, admin: {...} } — normalize to { token, user }
+      const data = res.data;
+      return { token: data.token, user: data.user || data.admin };
     } catch (err) {
       return thunkAPI.rejectWithValue(
         err.response?.data?.message || "Registration failed"

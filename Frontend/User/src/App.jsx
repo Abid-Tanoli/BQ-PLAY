@@ -10,6 +10,8 @@ import PointsTable from "./pages/PointsTable";
 import Live from "./pages/Live";
 import News from "./pages/News";
 import Videos from "./pages/Videos";
+import Series from "./pages/Series";
+import SeriesList from "./pages/SeriesList";
 
 function App() {
   return (
@@ -17,6 +19,8 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/live" element={<Live />} />
+        <Route path="/series" element={<SeriesList />} />
+        <Route path="/series/:seriesId" element={<Series />} />
         <Route path="/match/:matchId" element={<Match />} />
         <Route path="/summary/:matchId" element={<Summary />} />
         <Route path="/players" element={<Players />} />

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 import Header from "../components/Header";
 import MatchList from "../components/MatchList";
@@ -9,6 +9,7 @@ import Register from "../components/Register";
 import { fetchMatches } from "../store/slices/matchesSlice";
 import { initAuthFromStorage, logout as doLogout, getStoredUser } from "../pages/auth/auth";
 import BlogGallery from "../components/BlogGallery";
+import { api } from "../services/api";
 
 export function Home() {
    const dispatch = useDispatch();
@@ -20,6 +21,7 @@ export function Home() {
    const upcomingMatches = matches.filter(m => m.status === "upcoming" || m.status === "scheduled");
    const completedMatches = matches.filter(m => m.status === "completed");
 
+   const [series, setSeries] = useState([]);
    const [authUser, setAuthUser] = useState(null);
    const [showLogin, setShowLogin] = useState(false);
    const [showRegister, setShowRegister] = useState(false);
@@ -28,7 +30,15 @@ export function Home() {
       const user = initAuthFromStorage && getStoredUser();
       setAuthUser(user);
       dispatch(fetchMatches());
+      loadSeries();
    }, [dispatch]);
+
+   const loadSeries = async () => {
+      try {
+         const res = await api.get("/events");
+         setSeries(res.data);
+      } catch (err) { console.error(err); }
+   };
 
    const handleLoginSuccess = (user) => { setAuthUser(user); setShowLogin(false); dispatch(fetchMatches()); };
    const handleRegisterSuccess = (user) => { setAuthUser(user); setShowRegister(false); dispatch(fetchMatches()); };
@@ -43,6 +53,38 @@ export function Home() {
             onShowRegister={() => { setShowRegister(true); setShowLogin(false); }}
             onLogout={handleLogout}
          />
+
+         {/* Series/Events Section */}
+         {series.length > 0 && (
+            <div className="bg-gradient-to-r from-[#031d44] via-[#0a2d5e] to-[#031d44] border-b border-white/10">
+               <div className="max-w-7xl mx-auto px-4 py-8">
+                  <div className="flex items-center justify-between mb-6">
+                     <h2 className="text-white font-black uppercase tracking-widest text-sm flex items-center gap-2">
+                        <span className="text-2xl">🏆</span> Series & Tournaments
+                     </h2>
+                     <Link to="/series" className="text-blue-300 text-xs font-black uppercase hover:text-white transition-colors">View All →</Link>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                     {series.slice(0, 6).map(ev => (
+                        <Link key={ev._id} to={`/series/${ev.slug || ev._id}`} className="group bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl overflow-hidden transition-all backdrop-blur-sm">
+                           <div className="aspect-square bg-white/10 flex items-center justify-center p-4">
+                              {ev.logo ? (
+                                 <img src={ev.logo} alt={ev.name} className="w-full h-full object-contain" />
+                              ) : (
+                                 <span className="text-4xl font-black text-white/80">{ev.name?.charAt(0)}</span>
+                              )}
+                           </div>
+                           <div className="p-3">
+                              <p className="text-[9px] font-bold text-blue-300/60 uppercase truncate">{ev.eventType?.replace('-', ' ')}</p>
+                              <p className="text-xs font-black text-white uppercase tracking-tight truncate group-hover:text-blue-300 transition-colors">{ev.shortName || ev.name}</p>
+                              <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[8px] font-bold uppercase ${ev.status === "live" ? "bg-red-600 text-white animate-pulse" : ev.status === "completed" ? "bg-green-600 text-white" : "bg-blue-500/20 text-blue-300"}`}>{ev.status}</span>
+                           </div>
+                        </Link>
+                     ))}
+                  </div>
+               </div>
+            </div>
+         )}
 
          {/* Hero Live Section - Premium */}
          <div className="bg-[#031d44] border-b border-white/10 shadow-2xl">

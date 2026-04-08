@@ -150,6 +150,20 @@ const matchSchema = new mongoose.Schema(
       enum: ["6 Overs", "8 Overs", "T10", "T20", "ODI", "Test", "Tape Ball"],
       default: "T20"
     },
+    matchCategory: {
+      type: String,
+      enum: [
+        "international",
+        "league",
+        "domestic",
+        "local-club"
+      ],
+      default: "local-club"
+    },
+    matchSubcategory: {
+      type: String,
+      default: ""
+    },
     tournament: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Tournament"
@@ -214,7 +228,10 @@ const matchSchema = new mongoose.Schema(
     }],
     squad15: [{
       team: { type: mongoose.Schema.Types.ObjectId, ref: "Team" },
-      players: [{ type: mongoose.Schema.Types.ObjectId, ref: "Player" }]
+      players: [{ type: mongoose.Schema.Types.ObjectId, ref: "Player" }],
+      captain: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
+      viceCaptain: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
+      wicketKeepers: [{ type: mongoose.Schema.Types.ObjectId, ref: "Player" }]
     }],
     twelfthMan: [{
       team: { type: mongoose.Schema.Types.ObjectId, ref: "Team" },
@@ -224,6 +241,21 @@ const matchSchema = new mongoose.Schema(
       team: { type: mongoose.Schema.Types.ObjectId, ref: "Team" },
       players: [{ type: mongoose.Schema.Types.ObjectId, ref: "Player" }]
     }],
+    teamRoles: [{
+      team: { type: mongoose.Schema.Types.ObjectId, ref: "Team" },
+      captain: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
+      viceCaptain: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
+      wicketKeepers: [{ type: mongoose.Schema.Types.ObjectId, ref: "Player" }]
+    }],
+    series: {
+      type: String,
+      default: "",
+      trim: true
+    },
+    seriesMatchNumber: {
+      type: Number,
+      default: null
+    },
     seriesStanding: {
       matchesPlayed: { type: Number, default: 0 },
       position: { type: Number }

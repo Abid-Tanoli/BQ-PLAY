@@ -4,7 +4,16 @@
       "Bash(del *)",
       "Bash(dir *)",
       "Bash(type *)",
-      "Bash(curl *)"
+      "Bash(curl *)",
+      "Bash(npm *)",
+      "Bash(node *)",
+      "Bash(findstr *)",
+      "Bash(timeout *)",
+      "Bash(taskkill *)",
+      "Bash(netstat *)",
+      "Bash(git checkout *)",
+      "Bash(npx *)",
+      "Bash(tasklist)"
     ]
   },
   "$version": 3

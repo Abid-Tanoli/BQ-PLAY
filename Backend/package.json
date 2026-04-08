@@ -5,7 +5,13 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "nodemon src/index.js"
+    "dev": "nodemon src/index.js",
+    "import:old": "node scripts/importOldData.js",
+    "seed": "node src/seed/seedAll.js",
+    "migrate": "knex migrate:latest",
+    "migrate:rollback": "knex migrate:down",
+    "migrate:make": "knex migrate:make",
+    "seed:make": "knex seed:make"
   },
   "keywords": [],
   "author": "",
@@ -19,9 +25,12 @@
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
+    "knex": "^3.2.7",
     "mongoose": "^9.1.5",
+    "pg": "^8.20.0",
     "socket.io": "^4.8.3",
-    "zod": "^4.3.5"
+    "zod": "^4.3.5",
+    "node-fetch": "^3.3.2"
   },
   "devDependencies": {
     "multer": "^1.4.5-lts.1",

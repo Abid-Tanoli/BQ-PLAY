@@ -153,7 +153,7 @@ export default function Dashboard() {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Link to="/admin/matches" className="card hover:shadow-lg transition-shadow">
+        <Link to="/admin/events" className="card hover:shadow-lg transition-shadow">
           <div className="flex items-center space-x-4">
             <div className="bg-blue-100 p-3 rounded-lg">
               <svg
@@ -231,7 +231,7 @@ export default function Dashboard() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-slate-800">Recent Matches</h2>
           <Link
-            to="/admin/matches"
+            to="/admin/events"
             className="text-sm text-blue-600 hover:text-blue-700 font-medium"
           >
             View All →

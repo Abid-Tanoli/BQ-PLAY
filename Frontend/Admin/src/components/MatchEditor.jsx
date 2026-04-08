@@ -4,6 +4,8 @@ import { updateScore } from "../store/slices/matchesSlice";
 import api from "../services/api";
 import { getSocket } from "../store/socket";
 import PartnershipChart from "./PartnershipChart";
+import SquadSelectionModal from "./SquadSelectionModal";
+import PlayingXISelector from "./PlayingXISelector";
 
 // Fielding positions based on actual cricket field (angles from straight, distance from pitch)
 // Reference: Standard cricket fielding positions
@@ -533,11 +535,11 @@ export default function MatchEditor({ matchId, onClose, isEmbedded = false }) {
   };
 
   const handleSetSquad15 = async () => {
-    if (tempSquad15.length !== 15) { alert("Please select exactly 15 players"); return; }
+    if (tempSquad15.length < 11 || tempSquad15.length > 20) { alert("Please select between 11 and 20 players"); return; }
     setLoading(true);
     try {
       await api.put(`/matches/${matchId}/squad15`, { teamId: selectedTeamForSquad, players: tempSquad15 });
-      alert("15-member squad updated successfully");
+      alert("Squad updated successfully");
       setShowSquad15Selector(false);
       fetchMatch();
     } catch (err) { alert(err || "Error setting squad"); } finally { setLoading(false); }
@@ -572,8 +574,8 @@ export default function MatchEditor({ matchId, onClose, isEmbedded = false }) {
 
   const togglePlayerSelectionForSquad = (playerId) => {
     if (tempSquad15.includes(playerId)) setTempSquad15(tempSquad15.filter(id => id !== playerId));
-    else if (tempSquad15.length < 15) setTempSquad15([...tempSquad15, playerId]);
-    else alert("You can only select 15 players");
+    else if (tempSquad15.length < 20) setTempSquad15([...tempSquad15, playerId]);
+    else alert("You can only select up to 20 players");
   };
 
   const openXISelector = (teamId) => {
@@ -645,20 +647,59 @@ export default function MatchEditor({ matchId, onClose, isEmbedded = false }) {
         <div className="space-y-3">
           <h4 className="font-semibold text-slate-800 text-sm uppercase tracking-widest">Pre-Match Selections</h4>
           <div className="grid grid-cols-3 gap-2">
-            {match.teams?.map((team) => (
-              <React.Fragment key={team._id}>
-                <button onClick={() => openSquad15Selector(team._id)} className="bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-lg text-xs font-bold">
-                  Squad 15 {match.squad15?.find(sq => (sq.team?._id || sq.team) === team._id)?.players?.length === 15 && "✓"}
+            {match.teams?.map((team) => {
+              const squad = match.squad15?.find(sq => (sq.team?._id || sq.team) === team._id);
+              const squadSet = squad?.players?.length >= 11 && squad?.players?.length <= 20;
+              return (
+                <button
+                  key={team._id}
+                  onClick={() => openSquad15Selector(team._id)}
+                  className={`py-2 rounded-lg text-xs font-bold transition-all ${squadSet
+                    ? "bg-green-100 text-green-700 border-2 border-green-500"
+                    : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                    }`}
+                >
+                  Squad ({squad?.players?.length || 0}/20) {squadSet && "✓"}
                 </button>
-                <button onClick={() => openXISelector(team._id)} className="bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-lg text-xs font-bold">
-                  Playing XI {match.playingXI?.find(xi => (xi.team?._id || xi.team) === team._id)?.players?.length === 11 && "✓"}
-                </button>
-                <button onClick={() => openTwelfthManSelector(team._id)} className="bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-lg text-xs font-bold">
-                  12th Man {match.twelfthMan?.find(tm => (tm.team?._id || tm.team) === team._id)?.player && "✓"}
-                </button>
-              </React.Fragment>
-            ))}
+              );
+            })}
           </div>
+          {match.squad15?.length > 0 && (
+            <div className="grid grid-cols-2 gap-4 mt-4">
+              {match.teams?.map((team) => {
+                const squad = match.squad15?.find(sq => (sq.team?._id || sq.team) === team._id);
+                if (!squad) return null;
+                const captain = squad.captain ? squad.players?.find(p => p._id === squad.captain) : null;
+                const viceCaptain = squad.viceCaptain ? squad.players?.find(p => p._id === squad.viceCaptain) : null;
+                const wicketKeepers = squad.wicketKeepers?.map(id => squad.players?.find(p => p._id === id)).filter(Boolean) || [];
+                return (
+                  <div key={team._id} className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                    <h5 className="font-bold text-sm text-slate-700 mb-2">{team.name} Squad</h5>
+                    <div className="space-y-1 text-xs">
+                      {captain && (
+                        <div className="flex items-center gap-1">
+                          <span className="px-1.5 py-0.5 bg-yellow-400 text-black rounded font-bold text-[10px]">C</span>
+                          <span className="text-slate-600">{captain.name}</span>
+                        </div>
+                      )}
+                      {viceCaptain && (
+                        <div className="flex items-center gap-1">
+                          <span className="px-1.5 py-0.5 bg-green-500 text-white rounded font-bold text-[10px]">VC</span>
+                          <span className="text-slate-600">{viceCaptain.name}</span>
+                        </div>
+                      )}
+                      {wicketKeepers.length > 0 && (
+                        <div className="flex items-center gap-1 flex-wrap">
+                          <span className="px-1.5 py-0.5 bg-orange-500 text-white rounded font-bold text-[10px]">WK</span>
+                          <span className="text-slate-600">{wicketKeepers.map(wk => wk.name).join(", ")}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -673,72 +714,29 @@ export default function MatchEditor({ matchId, onClose, isEmbedded = false }) {
         </div>
       )}
 
-      {showPlayingXISelector && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-            <div className="p-4 border-b flex justify-between items-center">
-              <h3 className="font-bold">Select Playing XI - {match.teams.find(t => (t._id || t) === selectedTeamForXI)?.name}</h3>
-              <span className="text-xs font-bold">{tempXI.length}/11</span>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4 grid grid-cols-2 gap-2">
-              {match.teams.find(t => (t._id || t) === selectedTeamForXI)?.players?.map((player) => (
-                <button key={player._id} onClick={() => togglePlayerSelection(player._id)} className={`p-3 rounded-lg border text-left ${tempXI.includes(player._id) ? "bg-blue-50 border-blue-500" : "bg-white"}`}>
-                  <p className="font-medium text-sm">{player.name}</p>
-                  <p className="text-xs text-slate-500">{player.role}</p>
-                </button>
-              ))}
-            </div>
-            <div className="p-4 border-t flex gap-3">
-              <button onClick={() => setShowPlayingXISelector(false)} className="flex-1 bg-slate-200 py-2 rounded-lg font-bold">Cancel</button>
-              <button onClick={handleSetPlayingXI} disabled={tempXI.length !== 11} className="flex-[2] bg-blue-600 text-white py-2 rounded-lg font-bold disabled:opacity-50">Save Playing XI</button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {showSquad15Selector && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-            <div className="p-4 border-b flex justify-between items-center">
-              <h3 className="font-bold">Select Squad (15 players) - {match.teams.find(t => (t._id || t) === selectedTeamForSquad)?.name}</h3>
-              <span className="text-xs font-bold">{tempSquad15.length}/15</span>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4 grid grid-cols-2 gap-2">
-              {match.teams.find(t => (t._id || t) === selectedTeamForSquad)?.players?.map((player) => (
-                <button key={player._id} onClick={() => togglePlayerSelectionForSquad(player._id)} className={`p-3 rounded-lg border text-left ${tempSquad15.includes(player._id) ? "bg-green-50 border-green-500" : "bg-white"}`}>
-                  <p className="font-medium text-sm">{player.name}</p>
-                  <p className="text-xs text-slate-500">{player.role}</p>
-                </button>
-              ))}
-            </div>
-            <div className="p-4 border-t flex gap-3">
-              <button onClick={() => setShowSquad15Selector(false)} className="flex-1 bg-slate-200 py-2 rounded-lg font-bold">Cancel</button>
-              <button onClick={handleSetSquad15} disabled={tempSquad15.length !== 15} className="flex-[2] bg-green-600 text-white py-2 rounded-lg font-bold disabled:opacity-50">Save Squad 15</button>
-            </div>
-          </div>
-        </div>
+        <SquadSelectionModal
+          matchId={matchId}
+          teams={match.teams?.filter(t => t._id === selectedTeamForSquad)}
+          onClose={() => setShowSquad15Selector(false)}
+          onSubmit={() => {
+            setShowSquad15Selector(false);
+            fetchMatch();
+          }}
+        />
       )}
 
-      {showTwelfthManSelector && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col">
-            <div className="p-4 border-b flex justify-between items-center">
-              <h3 className="font-bold">Select 12th Man - {match.teams.find(t => (t._id || t) === selectedTeamFor12thMan)?.name}</h3>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4 grid grid-cols-2 gap-2">
-              {match.teams.find(t => (t._id || t) === selectedTeamFor12thMan)?.players?.map((player) => (
-                <button key={player._id} onClick={() => setTemp12thMan(player._id)} className={`p-3 rounded-lg border text-left ${temp12thMan === player._id ? "bg-orange-50 border-orange-500" : "bg-white"}`}>
-                  <p className="font-medium text-sm">{player.name}</p>
-                  <p className="text-xs text-slate-500">{player.role}</p>
-                </button>
-              ))}
-            </div>
-            <div className="p-4 border-t flex gap-3">
-              <button onClick={() => setShowTwelfthManSelector(false)} className="flex-1 bg-slate-200 py-2 rounded-lg font-bold">Cancel</button>
-              <button onClick={handleSetTwelfthMan} disabled={!temp12thMan} className="flex-[2] bg-orange-600 text-white py-2 rounded-lg font-bold disabled:opacity-50">Save 12th Man</button>
-            </div>
-          </div>
-        </div>
+      {showPlayingXISelector && (
+        <PlayingXISelector
+          matchId={matchId}
+          match={match}
+          teams={match.teams?.filter(t => t._id === selectedTeamForXI)}
+          onClose={() => setShowPlayingXISelector(false)}
+          onSubmit={() => {
+            setShowPlayingXISelector(false);
+            fetchMatch();
+          }}
+        />
       )}
 
       {/* Innings Selector */}
@@ -826,16 +824,15 @@ export default function MatchEditor({ matchId, onClose, isEmbedded = false }) {
                               <span className="inline-block px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-black">
                                 {over.overNumber + 1}.{ball.ballNumber}
                               </span>
-                              <span className={`text-sm font-bold ${
-                                ball.isWicket ? 'text-red-600' :
+                              <span className={`text-sm font-bold ${ball.isWicket ? 'text-red-600' :
                                 ball.runs === 4 || ball.runs === 6 ? 'text-green-600' :
-                                ball.isWide || ball.isNoBall ? 'text-orange-600' :
-                                ball.runs === 0 ? 'text-slate-500' : 'text-blue-600'
-                              }`}>
+                                  ball.isWide || ball.isNoBall ? 'text-orange-600' :
+                                    ball.runs === 0 ? 'text-slate-500' : 'text-blue-600'
+                                }`}>
                                 {ball.isWicket ? '⚾ WICKET' :
-                                 ball.isWide ? 'Wd' :
-                                 ball.isNoBall ? 'Nb' :
-                                 `${ball.runs} run${ball.runs !== 1 ? 's' : ''}`}
+                                  ball.isWide ? 'Wd' :
+                                    ball.isNoBall ? 'Nb' :
+                                      `${ball.runs} run${ball.runs !== 1 ? 's' : ''}`}
                               </span>
                             </div>
                             <button
@@ -888,13 +885,12 @@ export default function MatchEditor({ matchId, onClose, isEmbedded = false }) {
                     }
                   }
                 }}
-                className={`w-full text-left px-3 py-2 rounded-lg border-2 transition-all ${
-                  onStrikeBatsman === (b.player?._id || b.player)
-                    ? 'bg-blue-600 text-white border-blue-700'
-                    : b.isOut
+                className={`w-full text-left px-3 py-2 rounded-lg border-2 transition-all ${onStrikeBatsman === (b.player?._id || b.player)
+                  ? 'bg-blue-600 text-white border-blue-700'
+                  : b.isOut
                     ? 'bg-red-50 text-red-700 border-red-200 opacity-60'
                     : 'bg-white text-slate-800 border-blue-200 hover:border-blue-400'
-                }`}
+                  }`}
               >
                 <div className="flex justify-between items-center">
                   <span className="font-bold">{b.player?.name}  {onStrikeBatsman === (b.player?._id || b.player) && ' ☆'} {b.isOut && ' ✗'}</span>
@@ -915,11 +911,10 @@ export default function MatchEditor({ matchId, onClose, isEmbedded = false }) {
                 <button
                   key={bowlerData?._id || bowlerData}
                   onClick={() => setBowler(bowlerData?._id || bowlerData)}
-                  className={`w-full text-left px-3 py-2 rounded-lg border-2 transition-all ${
-                    bowler === (bowlerData?._id || bowlerData)
-                      ? 'bg-green-600 text-white border-green-700'
-                      : 'bg-white text-slate-800 border-green-200 hover:border-green-400'
-                  }`}
+                  className={`w-full text-left px-3 py-2 rounded-lg border-2 transition-all ${bowler === (bowlerData?._id || bowlerData)
+                    ? 'bg-green-600 text-white border-green-700'
+                    : 'bg-white text-slate-800 border-green-200 hover:border-green-400'
+                    }`}
                 >
                   <div className="flex justify-between items-center">
                     <span className="font-bold">{bowlerData?.name} {bowler === (bowlerData?._id || bowlerData) && ' ☆'}</span>

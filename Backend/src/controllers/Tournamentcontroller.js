@@ -345,3 +345,149 @@ export const getTournamentFixtures = async (req, res) => {
     });
   }
 };
+
+// Tournament/Series Squad Management (11-20 players per team)
+export const setTournamentSquad = async (req, res) => {
+  try {
+    const { tournamentId } = req.params;
+    const { teamId, players, captain, viceCaptain, wicketKeepers } = req.body;
+
+    if (!players || players.length < 11 || players.length > 20) {
+      return res.status(400).json({
+        message: "Tournament squad size must be between 11 and 20 players"
+      });
+    }
+
+    if (!captain) {
+      return res.status(400).json({ message: "Captain is required" });
+    }
+
+    if (!viceCaptain) {
+      return res.status(400).json({ message: "Vice-captain is required" });
+    }
+
+    if (!wicketKeepers || wicketKeepers.length === 0) {
+      return res.status(400).json({ message: "At least one wicket-keeper is required" });
+    }
+
+    const tournament = await Tournament.findById(tournamentId);
+    if (!tournament) {
+      return res.status(404).json({ message: "Tournament not found" });
+    }
+
+    const isTeamInTournament = tournament.teams.some(
+      t => t.toString() === teamId.toString()
+    );
+
+    if (!isTeamInTournament) {
+      return res.status(400).json({
+        message: "Team is not part of this tournament"
+      });
+    }
+
+    const existingSquad = tournament.tournamentSquads.find(
+      s => s.team.toString() === teamId.toString()
+    );
+
+    if (existingSquad) {
+      existingSquad.players = players;
+      existingSquad.captain = captain;
+      existingSquad.viceCaptain = viceCaptain;
+      existingSquad.wicketKeepers = wicketKeepers;
+    } else {
+      tournament.tournamentSquads.push({
+        team: teamId,
+        players,
+        captain,
+        viceCaptain,
+        wicketKeepers
+      });
+    }
+
+    await tournament.save();
+    await tournament.populate("tournamentSquads.team", "name shortName logo");
+    await tournament.populate("tournamentSquads.players", "name role playingRole");
+
+    try {
+      const io = getIO();
+      io.emit("tournament:squadUpdated", { tournamentId, teamId });
+    } catch (socketError) {
+      console.log("Socket not available:", socketError.message);
+    }
+
+    res.status(200).json({
+      message: "Tournament squad set successfully",
+      tournament: tournament
+    });
+  } catch (error) {
+    console.error("Error setting tournament squad:", error);
+    res.status(500).json({
+      message: "Failed to set tournament squad",
+      error: error.message
+    });
+  }
+};
+
+export const getTournamentSquad = async (req, res) => {
+  try {
+    const { tournamentId, teamId } = req.params;
+
+    const tournament = await Tournament.findById(tournamentId)
+      .populate("tournamentSquads.team", "name shortName logo")
+      .populate("tournamentSquads.players", "name role playingRole imageUrl battingStyle bowlingStyle");
+
+    if (!tournament) {
+      return res.status(404).json({ message: "Tournament not found" });
+    }
+
+    if (teamId) {
+      const squad = tournament.tournamentSquads.find(
+        s => s.team?._id?.toString() === teamId || s.team?.toString() === teamId
+      );
+      if (!squad) {
+        return res.status(404).json({ message: "Squad not found for this team" });
+      }
+      return res.status(200).json(squad);
+    }
+
+    res.status(200).json(tournament.tournamentSquads);
+  } catch (error) {
+    console.error("Error fetching tournament squad:", error);
+    res.status(500).json({
+      message: "Failed to fetch tournament squad",
+      error: error.message
+    });
+  }
+};
+
+export const deleteTournamentSquad = async (req, res) => {
+  try {
+    const { tournamentId, teamId } = req.params;
+
+    const tournament = await Tournament.findById(tournamentId);
+    if (!tournament) {
+      return res.status(404).json({ message: "Tournament not found" });
+    }
+
+    tournament.tournamentSquads = tournament.tournamentSquads.filter(
+      s => s.team.toString() !== teamId
+    );
+
+    await tournament.save();
+
+    try {
+      const io = getIO();
+      io.emit("tournament:squadDeleted", { tournamentId, teamId });
+    } catch (socketError) {
+      console.log("Socket not available:", socketError.message);
+    }
+
+    res.status(200).json({ message: "Tournament squad deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting tournament squad:", error);
+    res.status(500).json({
+      message: "Failed to delete tournament squad",
+      error: error.message
+    });
+  }
+};

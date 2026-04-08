@@ -1,23 +1,17 @@
-import { io } from "socket.io-client";
 import { useEffect, useState } from "react";
-
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:5000";
+import { initSocket } from "../services/socket.js";
 
 export default function useLiveMatch(matchId) {
   const [data, setData] = useState(null);
 
   useEffect(() => {
-    const socket = io(SOCKET_URL, {
-      transports: ["websocket", "polling"],
-      reconnection: true,
-    });
-
+    const socket = initSocket();
     socket.emit("join-match", matchId);
     socket.on("ball-update", setData);
 
     return () => {
       socket.off("ball-update");
-      socket.disconnect();
+      socket.emit("leave-match", matchId);
     };
   }, [matchId]);
 

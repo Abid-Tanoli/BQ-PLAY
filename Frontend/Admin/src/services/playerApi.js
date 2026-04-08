@@ -14,7 +14,7 @@ export const createPlayer = (data) =>
   API.post("/", data).then(res => res.data);
 
 export const updatePlayer = (id, data) =>
-  API.put(`//${id}`, data).then(res => res.data);
+  API.put(`/${id}`, data).then(res => res.data);
 
 export const deletePlayer = (id) =>
-  API.delete(`//${id}`).then(res => res.data);
+  API.delete(`/${id}`).then(res => res.data);
