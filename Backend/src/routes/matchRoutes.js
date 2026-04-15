@@ -16,7 +16,7 @@ import {
   setBowlingXI,
   setTeamRoles
 } from "../controllers/matchController.js";
-import { updateScore, endInnings, startNextInnings, reduceOvers, resolveTie, startSuperOverInnings, editCommentary } from "../controllers/scoreController.js";
+import { updateScore, endInnings, startNextInnings, reduceOvers, resolveTie, startSuperOverInnings, editCommentary, handleFieldClick } from "../controllers/scoreController.js";
 
 const router = express.Router();
 
@@ -32,6 +32,7 @@ router.post("/:matchId/reduce-overs", reduceOvers);
 router.post("/:matchId/resolve-tie", resolveTie);
 router.post("/:matchId/start-super-over", startSuperOverInnings);
 router.put("/:matchId/edit-commentary", editCommentary);
+router.post("/:matchId/field-click", handleFieldClick);
 
 router.put("/:id", updateMatch);
 router.put("/:id/status", updateMatchStatus);

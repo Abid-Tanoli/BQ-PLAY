@@ -19,6 +19,7 @@ import bulkImportRoutes from "./routes/bulkImportRoutes.js";
 import rankingsRoutes from "./routes/rankingsRoutes.js";
 import blogRoutes from "./routes/blogRoutes.js";
 import cricketApiRoutes from "./routes/cricketApiRoutes.js";
+import categoryRoutes from "./routes/categoryRoutes.js";
 import cricketPolling from "./services/cricketPolling.js";
 
 dotenv.config();
@@ -67,6 +68,7 @@ app.use("/api/bulk-import", bulkImportRoutes);
 app.use("/api/rankings", rankingsRoutes);
 app.use("/api/blogs", blogRoutes);
 app.use("/api/cricket", cricketApiRoutes);
+app.use("/api/categories", categoryRoutes);
 
 app.get("/api/health", (req, res) => {
   res.json({

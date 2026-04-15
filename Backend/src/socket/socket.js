@@ -113,3 +113,24 @@ export const emitCricketLiveUpdate = (data) => {
     io.emit("cricket:liveUpdate", data);
   }
 };
+
+export const emitFieldClick = (matchId, data) => {
+  if (io) {
+    io.to(matchId).emit("match:fieldClick", data);
+    io.emit("match:fieldClick", data);
+  }
+};
+
+export const emitAICommentary = (matchId, data) => {
+  if (io) {
+    io.to(matchId).emit("match:aiCommentary", data);
+    io.emit("match:aiCommentary", data);
+  }
+};
+
+export const emitBallWithCommentary = (matchId, data) => {
+  if (io) {
+    io.to(matchId).emit("match:ballWithCommentary", data);
+    io.emit("match:ballWithCommentary", data);
+  }
+};

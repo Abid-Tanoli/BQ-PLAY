@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { api } from "../services/api";
-import MatchTabs from "../components/MatchTabs";
+import EnhancedMatchTabs from "../components/EnhancedMatchTabs";
 import { initSocket, joinMatchRoom, leaveMatchRoom } from "../services/socket";
 
 const Match = () => {
@@ -38,7 +38,7 @@ const Match = () => {
     socket.on("match:updated", onMatchUpdated);
     socket.on("match:scoreUpdate", onScoreUpdate);
     socket.on("match:ballUpdate", onBallUpdate);
-    
+
     joinMatchRoom(matchId);
 
     return () => {
@@ -66,7 +66,7 @@ const Match = () => {
     );
   }
 
-  return <MatchTabs matchId={matchId} match={match} />;
+  return <EnhancedMatchTabs matchId={matchId} match={match} />;
 };
 
 export default Match;

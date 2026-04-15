@@ -491,3 +491,56 @@ export const deleteTournamentSquad = async (req, res) => {
     });
   }
 };
+
+export const createTournamentMatch = async (req, res) => {
+  try {
+    const { tournamentId } = req.params;
+    const { team1, team2, venue, startTime, matchType, matchCategory, matchSubcategory } = req.body;
+
+    const tournament = await Tournament.findById(tournamentId);
+    if (!tournament) {
+      return res.status(404).json({ message: "Tournament not found" });
+    }
+
+    if (!team1 || !team2) {
+      return res.status(400).json({ message: "Both teams are required" });
+    }
+
+    const match = new Match({
+      title: `${tournament.name} - Match`,
+      venue: venue || tournament.venue,
+      matchType: matchType || tournament.format || "T20",
+      matchCategory: matchCategory || "league",
+      matchSubcategory: matchSubcategory || tournament.name,
+      tournament: tournamentId,
+      teams: [team1, team2],
+      startAt: startTime || new Date(),
+      status: "upcoming"
+    });
+
+    await match.save();
+    await match.populate("teams", "name shortName logo");
+
+    // Add match to tournament
+    tournament.matches.push(match._id);
+    await tournament.save();
+
+    try {
+      const io = getIO();
+      io.emit("tournament:matchCreated", { tournamentId, match });
+    } catch (socketError) {
+      console.log("Socket not available:", socketError.message);
+    }
+
+    res.status(201).json({
+      match,
+      message: "Match created in tournament successfully"
+    });
+  } catch (error) {
+    console.error("Error creating tournament match:", error);
+    res.status(500).json({
+      message: "Failed to create tournament match",
+      error: error.message
+    });
+  }
+};

@@ -6,6 +6,7 @@ import {
   getPlayer,
   updatePlayer,
   deletePlayer,
+  bulkDeletePlayers,
 } from "../controllers/playerController.js";
 import {
   getBattingRankings,
@@ -27,6 +28,7 @@ router.get("/rankings", getPlayerRankings);
 router.get("/:id", getPlayer);
 
 router.post("/", validate(createPlayerSchema), createPlayer);
+router.post("/bulk-delete", bulkDeletePlayers);
 router.put("/:id", updatePlayer);
 router.delete("/:id", deletePlayer);
 

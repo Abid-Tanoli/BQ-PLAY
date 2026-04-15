@@ -5,7 +5,6 @@ let socket = null;
 export const initSocket = () => {
   if (!socket || !socket.connected) {
     const url = import.meta.env.VITE_SOCKET_URL || "http://localhost:5000";
-    
     socket = io(url, {
       transports: ["websocket", "polling"],
       reconnection: true,
@@ -14,34 +13,28 @@ export const initSocket = () => {
       reconnectionAttempts: 5,
       timeout: 20000,
       autoConnect: true,
-      withCredentials: true
+      withCredentials: true,
     });
 
     socket.on("connect", () => {
       console.log("✅ Socket connected:", socket.id);
     });
-
     socket.on("disconnect", (reason) => {
       console.log("❌ Socket disconnected:", reason);
     });
-
     socket.on("connect_error", (error) => {
       console.error("❌ Socket connection error:", error.message);
     });
-
     socket.on("reconnect", (attemptNumber) => {
       console.log("🔄 Socket reconnected after", attemptNumber, "attempts");
     });
-
     socket.on("reconnect_error", (error) => {
       console.error("❌ Socket reconnection error:", error.message);
     });
-
     socket.on("reconnect_failed", () => {
       console.error("❌ Socket reconnection failed");
     });
   }
-  
   return socket;
 };
 

@@ -13,7 +13,19 @@
       "Bash(netstat *)",
       "Bash(git checkout *)",
       "Bash(npx *)",
-      "Bash(tasklist)"
+      "Bash(tasklist)",
+      "Bash(rmdir *)",
+      "WebFetch(api.github.com)",
+      "WebFetch(raw.githubusercontent.com)",
+      "WebFetch(github.com)",
+      "Bash(mkdir *)",
+      "Bash(echo *)",
+      "Bash(set *)",
+      "Bash(start *)",
+      "Bash(echo.)",
+      "Bash(powershell *)",
+      "Bash(git *)",
+      "Bash(select-object *)"
     ]
   },
   "$version": 3

@@ -4,7 +4,13 @@ import { getIO } from "../socket/socket.js";
 
 export const listTeams = async (req, res) => {
   try {
-    const teams = await Team.find().populate("players");
+    const { type, category } = req.query;
+
+    const filter = {};
+    if (type) filter.type = type;
+    if (category) filter.category = category;
+
+    const teams = await Team.find(filter).populate("players");
     res.status(200).json(teams);
   } catch (error) {
     console.error("Error fetching teams:", error);
@@ -30,7 +36,7 @@ export const getTeam = async (req, res) => {
 
 export const createTeam = async (req, res) => {
   try {
-    const { name, ownername, logo, shortName, players } = req.body;
+    const { name, ownername, logo, shortName, players, type, category, isInternal, tags } = req.body;
 
     // Check if team with same name already exists
     const existingTeam = await Team.findOne({ name });
@@ -43,6 +49,10 @@ export const createTeam = async (req, res) => {
       ownername: ownername || "",
       logo: logo || "",
       shortName: shortName || name.substring(0, 3).toUpperCase(),
+      type: type || "league_team",
+      category: category || "",
+      isInternal: isInternal || false,
+      tags: tags || [],
       players: players || []
     });
 

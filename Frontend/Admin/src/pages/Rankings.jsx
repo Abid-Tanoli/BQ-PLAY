@@ -13,8 +13,8 @@ export default function Rankings() {
     const loadRankings = async () => {
         try {
             const [batRes, bowlRes] = await Promise.all([
-                api.get('/rankings/batting'),
-                api.get('/rankings/bowling')
+                api.get("/rankings/batting"),
+                api.get("/rankings/bowling"),
             ]);
             setBatting(batRes.data);
             setBowling(bowlRes.data);
@@ -27,100 +27,97 @@ export default function Rankings() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <div className="min-h-screen bg-gradient-to-b from-slate-100 to-slate-50 p-6 lg:p-10 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
+                    <p className="mt-4 text-xs font-black text-slate-400 uppercase tracking-widest">
+                        Loading Rankings...
+                    </p>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="space-y-6">
-            <div>
-                <h2 className="text-2xl font-bold text-slate-800">Player Rankings</h2>
-                <p className="text-sm text-slate-500 mt-1">Global standings across all tournaments</p>
+        <div className="min-h-screen bg-gradient-to-b from-slate-100 to-slate-50 p-6 lg:p-10">
+            <div className="mb-10">
+                <h1 className="text-4xl lg:text-5xl font-black text-[#031d44] tracking-tight">
+                    PLAYER RANKINGS
+                </h1>
+                <p className="text-slate-500 mt-2 font-medium">
+                    Global standings across all tournaments
+                </p>
             </div>
 
-            <div className="grid lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Batting Rankings */}
-                <div className="card bg-white shadow-sm rounded-xl overflow-hidden border">
-                    <div className="p-4 bg-slate-50 border-b">
-                        <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                            </svg>
-                            Top Batsmen
-                        </h3>
+                <div className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
+                    <div className="p-6 bg-gradient-to-r from-blue-600 to-blue-800 text-white">
+                        <h2 className="text-sm font-black uppercase tracking-widest">Top Batsmen</h2>
                     </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
-                            <thead className="bg-slate-50 text-slate-500 uppercase text-[11px] font-bold">
-                                <tr>
-                                    <th className="px-4 py-3">Rank</th>
-                                    <th className="px-4 py-3">Player</th>
-                                    <th className="px-4 py-3 text-center">Innings</th>
-                                    <th className="px-4 py-3 text-center">Runs</th>
-                                    <th className="px-4 py-3 text-center">SR</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y">
-                                {batting.map((r, i) => (
-                                    <tr key={i} className="hover:bg-slate-50">
-                                        <td className="px-4 py-4 font-bold text-slate-400">{r.rank}</td>
-                                        <td className="px-4 py-4">
-                                            <div className="flex flex-col">
-                                                <span className="font-bold text-slate-800">{r.player.name}</span>
-                                                <span className="text-[10px] text-slate-500 uppercase">{r.player.team?.shortName}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-4 text-center">{r.innings}</td>
-                                        <td className="px-4 py-4 text-center font-black text-blue-600">{r.runs}</td>
-                                        <td className="px-4 py-4 text-center text-slate-500">{r.strikeRate}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                    <div className="divide-y divide-slate-100">
+                        {batting.slice(0, 10).map((r, i) => (
+                            <div key={r._id || i} className="flex items-center justify-between p-4 hover:bg-slate-50">
+                                <div className="flex items-center gap-4">
+                                    <span className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-sm ${i === 0 ? "bg-yellow-400 text-yellow-900" :
+                                            i === 1 ? "bg-slate-300 text-slate-700" :
+                                                i === 2 ? "bg-amber-600 text-white" :
+                                                    "bg-slate-100 text-slate-500"
+                                        }`}>
+                                        {i + 1}
+                                    </span>
+                                    <div>
+                                        <p className="font-bold text-slate-800">{r.player?.name || "Unknown"}</p>
+                                        <p className="text-xs text-slate-400">{r.player?.team?.name || ""}</p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <p className="font-black text-slate-800">{r.runs || 0}</p>
+                                    <p className="text-xs text-slate-400">SR: {r.strikeRate || 0}</p>
+                                </div>
+                            </div>
+                        ))}
                     </div>
+                    {batting.length === 0 && (
+                        <div className="p-10 text-center">
+                            <p className="text-sm font-black text-slate-300 uppercase tracking-widest">No batting data</p>
+                        </div>
+                    )}
                 </div>
 
                 {/* Bowling Rankings */}
-                <div className="card bg-white shadow-sm rounded-xl overflow-hidden border">
-                    <div className="p-4 bg-slate-50 border-b">
-                        <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                            <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            Top Bowlers
-                        </h3>
+                <div className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
+                    <div className="p-6 bg-gradient-to-r from-green-600 to-green-800 text-white">
+                        <h2 className="text-sm font-black uppercase tracking-widest">Top Bowlers</h2>
                     </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
-                            <thead className="bg-slate-50 text-slate-500 uppercase text-[11px] font-bold">
-                                <tr>
-                                    <th className="px-4 py-3">Rank</th>
-                                    <th className="px-4 py-3">Player</th>
-                                    <th className="px-4 py-3 text-center">Innings</th>
-                                    <th className="px-4 py-3 text-center">Wickets</th>
-                                    <th className="px-4 py-3 text-center">Econ</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y">
-                                {bowling.map((r, i) => (
-                                    <tr key={i} className="hover:bg-slate-50">
-                                        <td className="px-4 py-4 font-bold text-slate-400">{r.rank}</td>
-                                        <td className="px-4 py-4">
-                                            <div className="flex flex-col">
-                                                <span className="font-bold text-slate-800">{r.player.name}</span>
-                                                <span className="text-[10px] text-slate-500 uppercase">{r.player.team?.shortName}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-4 text-center">{r.innings}</td>
-                                        <td className="px-4 py-4 text-center font-black text-red-600">{r.wickets}</td>
-                                        <td className="px-4 py-4 text-center text-slate-500">{r.economy}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                    <div className="divide-y divide-slate-100">
+                        {bowling.slice(0, 10).map((r, i) => (
+                            <div key={r._id || i} className="flex items-center justify-between p-4 hover:bg-slate-50">
+                                <div className="flex items-center gap-4">
+                                    <span className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-sm ${i === 0 ? "bg-yellow-400 text-yellow-900" :
+                                            i === 1 ? "bg-slate-300 text-slate-700" :
+                                                i === 2 ? "bg-amber-600 text-white" :
+                                                    "bg-slate-100 text-slate-500"
+                                        }`}>
+                                        {i + 1}
+                                    </span>
+                                    <div>
+                                        <p className="font-bold text-slate-800">{r.player?.name || "Unknown"}</p>
+                                        <p className="text-xs text-slate-400">{r.player?.team?.name || ""}</p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <p className="font-black text-slate-800">{r.wickets || 0}</p>
+                                    <p className="text-xs text-slate-400">Econ: {r.economy || 0}</p>
+                                </div>
+                            </div>
+                        ))}
                     </div>
+                    {bowling.length === 0 && (
+                        <div className="p-10 text-center">
+                            <p className="text-sm font-black text-slate-300 uppercase tracking-widest">No bowling data</p>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

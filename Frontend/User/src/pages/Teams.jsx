@@ -1,122 +1,161 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Header from "../components/Header";
-import { api } from "../services/api"; // Assuming api service exists or just use fetch
+import { api } from "../services/api";
 import { initAuthFromStorage, getStoredUser, logout as doLogout } from "../pages/auth/auth";
 
+const CATEGORIES = [
+  {
+    key: "international",
+    label: "International Teams",
+    icon: "🌍",
+    description: "Country-based national cricket teams",
+    color: "from-blue-600 to-blue-800",
+    hoverColor: "hover:border-blue-400",
+    path: "/teams/international"
+  },
+  {
+    key: "leagues",
+    label: "International Leagues",
+    icon: "🏆",
+    description: "Professional franchise leagues worldwide (PSL, IPL, BBL, etc.)",
+    color: "from-green-600 to-green-800",
+    hoverColor: "hover:border-green-400",
+    path: "/teams/leagues"
+  },
+  {
+    key: "incubation",
+    label: "Incubation Teams",
+    icon: "🚀",
+    description: "Internal training and development teams",
+    color: "from-purple-600 to-purple-800",
+    hoverColor: "hover:border-purple-400",
+    path: "/teams/incubation"
+  }
+];
+
 export default function Teams() {
-  const [teams, setTeams] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [authUser, setAuthUser] = useState(null);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const user = getStoredUser();
     setAuthUser(user);
-    
-    // Fetch teams
-    fetch(`${import.meta.env.VITE_API_URL}/teams`)
-      .then(res => res.json())
-      .then(data => {
-        setTeams(Array.isArray(data) ? data : []);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error("Failed to fetch teams:", err);
-        setLoading(false);
-      });
+    fetchCategories();
   }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const res = await api.get("/categories");
+      setCategories(res.data.categories || CATEGORIES);
+      setLoading(false);
+    } catch (err) {
+      console.error("Failed to fetch categories:", err);
+      setCategories(CATEGORIES);
+      setLoading(false);
+    }
+  };
 
   const handleLogout = () => { doLogout(); setAuthUser(null); };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans">
+    <div className="min-h-screen bg-[#f8fafc] dark:bg-slate-900 text-slate-900 dark:text-white font-sans">
       <Header
         user={authUser}
-        onShowLogin={() => {}} // Handle these if needed
-        onShowRegister={() => {}}
+        onShowLogin={() => { }}
+        onShowRegister={() => { }}
         onLogout={handleLogout}
       />
 
       {/* Hero Section */}
-      <div className="bg-[#031d44] text-white py-16 relative overflow-hidden">
+      <div className="bg-[#031d44] dark:bg-slate-800 text-white py-16 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/10 rounded-full -mr-48 -mt-48 blur-3xl" />
         <div className="max-w-7xl mx-auto px-4 relative">
-          <h1 className="text-5xl font-black uppercase tracking-tighter italic mb-4">Franchises</h1>
-          <p className="text-blue-200/60 font-black uppercase tracking-widest text-sm">Official Squads and Team Profiles of the League</p>
+          <h1 className="text-5xl font-black uppercase tracking-tighter italic mb-4">Teams & Leagues</h1>
+          <p className="text-blue-200/60 font-black uppercase tracking-widest text-sm">Select a category to explore teams, leagues, and incubation groups</p>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-12">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20">
-             <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4" />
-             <p className="text-slate-400 font-black uppercase tracking-widest text-xs">Loading Franchises...</p>
+            <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4" />
+            <p className="text-slate-400 font-black uppercase tracking-widest text-xs">Loading Categories...</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {teams.map((team) => (
-              <div key={team._id} className="group bg-white rounded-[2rem] shadow-sm hover:shadow-2xl border border-slate-100 overflow-hidden transition-all duration-500">
-                <div className="p-8">
-                  <div className="flex items-center gap-6 mb-8">
-                    <div className="w-20 h-20 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center p-3 group-hover:scale-110 transition-transform duration-500">
-                      {team.logo ? (
-                        <img src={team.logo} alt={team.name} className="w-full h-full object-contain" />
-                      ) : (
-                        <div className="w-full h-full bg-[#031d44] rounded-xl flex items-center justify-center font-black text-white text-2xl italic italic">
-                          {team.shortName || team.name?.substring(0, 2).toUpperCase()}
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-black text-[#031d44] uppercase tracking-tighter italic leading-none mb-2">{team.name}</h3>
-                      <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-full uppercase tracking-wider uppercase tracking-widest leading-none">
-                        {team.shortName || "Franchise"}
-                      </span>
-                    </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {categories.map((cat, idx) => (
+              <div
+                key={cat.key}
+                onClick={() => navigate(cat.path)}
+                className={`group relative bg-white dark:bg-slate-800 rounded-3xl shadow-sm hover:shadow-2xl border-2 border-slate-100 dark:border-slate-700 overflow-hidden transition-all duration-500 cursor-pointer transform hover:-translate-y-2 ${cat.hoverColor}`}
+              >
+                {/* Gradient Header */}
+                <div className={`bg-gradient-to-r ${cat.color} p-8 relative overflow-hidden`}>
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl" />
+                  <div className="relative">
+                    <div className="text-6xl mb-4">{cat.icon}</div>
+                    <h3 className="text-2xl font-black uppercase tracking-tighter italic text-white">
+                      {cat.label}
+                    </h3>
                   </div>
-
-                  <div className="space-y-4 mb-8">
-                     <div className="flex justify-between items-center text-sm border-b border-slate-50 pb-3">
-                        <span className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Total Players</span>
-                        <span className="font-black text-slate-800">{team.players?.length || 0}</span>
-                     </div>
-                     <div className="flex justify-between items-center text-sm border-b border-slate-50 pb-3">
-                        <span className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Owner</span>
-                        <span className="font-black text-slate-800 italic">{team.ownername || "TBA"}</span>
-                     </div>
-                  </div>
-
-                  {/* Player Avatars */}
-                  <div className="flex -space-x-2 mb-8 overflow-hidden">
-                    {team.players?.slice(0, 8).map((p, i) => (
-                      <div key={i} className="w-10 h-10 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-400 grayscale group-hover:grayscale-0 transition-all duration-500">
-                         {p.name?.charAt(0)}
-                      </div>
-                    ))}
-                    {(team.players?.length || 0) > 8 && (
-                      <div className="w-10 h-10 rounded-full border-2 border-white bg-[#031d44] flex items-center justify-center text-[10px] font-black text-white">
-                        +{(team.players?.length || 0) - 8}
-                      </div>
-                    )}
-                  </div>
-
-                  <Link 
-                    to={`/players?team=${team._id}`}
-                    className="block w-full py-4 bg-slate-50 group-hover:bg-[#031d44] group-hover:text-white text-[#031d44] text-center rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-sm"
-                  >
-                    View Roster Profile
-                  </Link>
                 </div>
+
+                {/* Content */}
+                <div className="p-8">
+                  <p className="text-slate-600 dark:text-slate-300 text-sm mb-6">
+                    {cat.description}
+                  </p>
+
+                  {/* Stats */}
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="bg-slate-50 dark:bg-slate-700 rounded-xl p-4 border border-slate-100 dark:border-slate-600">
+                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Total</p>
+                      <p className="text-2xl font-black text-slate-800 dark:text-white">{cat.count || 0}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">
+                        {cat.count === 1 ? 'ITEM' : 'ITEMS'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* CTA Button */}
+                  <div className={`block w-full py-4 bg-gradient-to-r ${cat.color} text-white text-center rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-sm group-hover:shadow-lg`}>
+                    Explore {cat.label} →
+                  </div>
+                </div>
+
+                {/* Hover Indicator */}
+                <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               </div>
             ))}
-
-            {teams.length === 0 && (
-              <div className="col-span-full py-20 text-center">
-                 <p className="text-slate-400 font-black uppercase tracking-widest text-xs italic">No franchises registered yet.</p>
-              </div>
-            )}
           </div>
         )}
+
+        {/* Additional Info Section */}
+        <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-100 dark:border-slate-700">
+            <h4 className="font-black text-slate-800 dark:text-white uppercase tracking-tighter mb-2">🌍 International Teams</h4>
+            <p className="text-sm text-slate-600 dark:text-slate-300">
+              National teams from cricket-playing nations including Pakistan, India, Australia, England, and more.
+            </p>
+          </div>
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-100 dark:border-slate-700">
+            <h4 className="font-black text-slate-800 dark:text-white uppercase tracking-tighter mb-2">🏆 International Leagues</h4>
+            <p className="text-sm text-slate-600 dark:text-slate-300">
+              Franchise-based leagues like PSL, IPL, BBL, CPL featuring top players from around the world.
+            </p>
+          </div>
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-100 dark:border-slate-700">
+            <h4 className="font-black text-slate-800 dark:text-white uppercase tracking-tighter mb-2">🚀 Incubation Teams</h4>
+            <p className="text-sm text-slate-600 dark:text-slate-300">
+              Internal training and development teams for grassroots cricket programs and academies.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

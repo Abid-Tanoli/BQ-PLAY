@@ -193,7 +193,9 @@ export const getEventSquad = async (req, res) => {
     const { eventId, teamId } = req.params;
     const event = await Event.findById(eventId)
       .populate("eventSquads.team", "name shortName logo")
-      .populate("eventSquads.players", "name role playingRole imageUrl battingStyle bowlingStyle");
+      .populate("eventSquads.players", "name role playingRole imageUrl battingStyle bowlingStyle")
+      .populate("eventSquads.playerChanges.outPlayer", "name role playingRole")
+      .populate("eventSquads.playerChanges.inPlayer", "name role playingRole");
 
     if (!event) return res.status(404).json({ message: "Event not found" });
 
@@ -206,6 +208,62 @@ export const getEventSquad = async (req, res) => {
     res.status(200).json(event.eventSquads);
   } catch (error) {
     res.status(500).json({ message: "Failed to fetch event squad", error: error.message });
+  }
+};
+
+// Change a player in an event squad (injury replacement etc.)
+export const changeEventSquadPlayer = async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    const { teamId, outPlayerId, inPlayerId, reason, notes } = req.body;
+
+    if (!teamId || !outPlayerId || !inPlayerId) {
+      return res.status(400).json({ message: "teamId, outPlayerId and inPlayerId are required" });
+    }
+    if (outPlayerId === inPlayerId) {
+      return res.status(400).json({ message: "outPlayer and inPlayer must be different" });
+    }
+
+    const validReasons = ["injury", "illness", "disciplinary", "personal", "other"];
+    const changeReason = validReasons.includes(reason) ? reason : "other";
+
+    const event = await Event.findById(eventId);
+    if (!event) return res.status(404).json({ message: "Event not found" });
+
+    const squadEntry = event.eventSquads.find(s => s.team.toString() === teamId.toString());
+    if (!squadEntry) return res.status(404).json({ message: "Squad not found for this team in event" });
+
+    const outIdx = squadEntry.players.findIndex(p => p.toString() === outPlayerId.toString());
+    if (outIdx === -1) return res.status(400).json({ message: "outPlayer not in current event squad" });
+
+    // Swap the player in the squad array
+    squadEntry.players[outIdx] = inPlayerId;
+
+    // Handle captain/VC/WK role transfer if the outgoing player held a role
+    if (squadEntry.captain?.toString() === outPlayerId.toString()) squadEntry.captain = inPlayerId;
+    if (squadEntry.viceCaptain?.toString() === outPlayerId.toString()) squadEntry.viceCaptain = inPlayerId;
+    const wkIdx = squadEntry.wicketKeepers?.findIndex(w => w.toString() === outPlayerId.toString());
+    if (wkIdx !== undefined && wkIdx !== -1) squadEntry.wicketKeepers[wkIdx] = inPlayerId;
+
+    // Log the change
+    squadEntry.playerChanges.push({
+      outPlayer: outPlayerId,
+      inPlayer: inPlayerId,
+      reason: changeReason,
+      notes: notes || "",
+      changedAt: new Date()
+    });
+
+    await event.save();
+    await event.populate("eventSquads.players", "name role playingRole");
+    await event.populate("eventSquads.playerChanges.outPlayer", "name role playingRole");
+    await event.populate("eventSquads.playerChanges.inPlayer", "name role playingRole");
+
+    try { getIO().emit("event:squadPlayerChanged", { eventId, teamId, outPlayerId, inPlayerId, reason: changeReason }); } catch {}
+
+    res.status(200).json({ message: "Player changed successfully", event });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to change squad player", error: error.message });
   }
 };
 

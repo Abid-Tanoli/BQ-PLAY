@@ -1,476 +1,685 @@
-import React, { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { Link } from "react-router-dom";
-import { fetchMatches } from "../store/slices/matchesSlice";
-import { initSocket } from "../store/socket";
-import api from "../services/api";
+import React, { useEffect, useState, useMemo } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchMatches } from '../store/slices/matchesSlice';
+import { initSocket } from '../store/socket';
+import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import EnhancedScoringPanel from '../components/EnhancedScoringPanel';
+import api from '../services/api';
 
-// Match Categories
-const CATEGORY_FILTERS = [
-  { key: "all", label: "🏏 All Matches", icon: "🏏" },
-  { key: "international", label: "🌍 International", icon: "🌍" },
-  { key: "league", label: "🏆 League/Tournament", icon: "🏆" },
-  { key: "domestic", label: "🏛️ Domestic", icon: "🏛️" },
-  { key: "local-club", label: "🏟️ Local Club", icon: "🏟️" },
-];
-
-// International Subcategories
-const INTERNATIONAL_SUBCATEGORIES = [
-  { key: "all", label: "All International" },
-  { key: "test-championship", label: "Test Championship" },
-  { key: "odi-world-cup", label: "ODI World Cup" },
-  { key: "t20-world-cup", label: "T20 World Cup" },
-  { key: "champions-trophy", label: "Champions Trophy" },
-  { key: "bilateral-test", label: "Bilateral Test" },
-  { key: "bilateral-odi", label: "Bilateral ODI" },
-  { key: "bilateral-t20i", label: "Bilateral T20I" },
-  { key: "asia-cup", label: "Asia Cup" },
-];
-
-// League Subcategories
-const LEAGUE_SUBCATEGORIES = [
-  { key: "all", label: "All Leagues" },
-  { key: "ipl", label: "IPL" },
-  { key: "psl", label: "PSL" },
-  { key: "bbl", label: "BBL" },
-  { key: "cpl", label: "CPL" },
-  { key: "t20-blast", label: "T20 Blast" },
-  { key: "the-hundred", label: "The Hundred" },
-  { key: "other-league", label: "Other League" },
-];
-
-// Domestic Subcategories
-const DOMESTIC_SUBCATEGORIES = [
-  { key: "all", label: "All Domestic" },
-  { key: "national-t20", label: "National T20" },
-  { key: "national-one-day", label: "National One-Day" },
-  { key: "national-first-class", label: "National First-Class" },
-  { key: "regional", label: "Regional" },
-  { key: "departmental", label: "Departmental" },
-];
-
-// Local Club Subcategories
-const LOCAL_CLUB_SUBCATEGORIES = [
-  { key: "all", label: "All Local" },
-  { key: "club-tournament", label: "Club Tournament" },
-  { key: "friendly", label: "Friendly Match" },
-  { key: "tape-ball", label: "Tape Ball" },
-  { key: "hard-ball", label: "Hard Ball" },
-  { key: "corporate", label: "Corporate Match" },
-  { key: "school-college", label: "School/College" },
-];
-
-const FORMAT_FILTERS = [
-  { key: "all", label: "All Formats" },
-  { key: "T20", label: "T20" },
-  { key: "ODI", label: "ODI" },
-  { key: "Test", label: "Test" },
-  { key: "T10", label: "T10" },
-  { key: "Tape Ball", label: "Tape Ball" },
-  { key: "6 Overs", label: "6 Overs" },
-  { key: "8 Overs", label: "8 Overs" },
-];
-
-const STATUS_FILTERS = [
-  { key: "all", label: "All Status" },
-  { key: "live", label: "🔴 Live" },
-  { key: "upcoming", label: "Upcoming" },
-  { key: "completed", label: "Results" },
-];
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export default function LiveScores() {
-  const dispatch = useDispatch();
-  const { matches, loading } = useSelector((state) => state.matches);
-  const [events, setEvents] = useState([]);
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
+    const { matches, loading: matchesLoading } = useSelector((state) => state.matches);
+    const { token } = useSelector((state) => state.auth);
 
-  // Filter States
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [categoryFilter, setCategoryFilter] = useState("all");
-  const [subcategoryFilter, setSubcategoryFilter] = useState("all");
-  const [formatFilter, setFormatFilter] = useState("all");
-  const [dateFilter, setDateFilter] = useState("all");
+    const [view, setView] = useState('all'); // all, result, live, upcoming, score
+    const [selectedMatch, setSelectedMatch] = useState(null);
+    const [scoreMode, setScoreMode] = useState(false);
+    const [loading, setLoading] = useState(false);
 
-  // UI States
-  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
-  const [showSubcategoryDropdown, setShowSubcategoryDropdown] = useState(false);
+    // Scoring state
+    const [currentInnings, setCurrentInnings] = useState(0);
+    const [runs, setRuns] = useState(null);
+    const [extra, setExtra] = useState(null);
+    const [isWicket, setIsWicket] = useState(false);
+    const [dismissalType, setDismissalType] = useState('');
+    const [dismissedPlayer, setDismissedPlayer] = useState('');
+    const [bowler, setBowler] = useState('');
+    const [commentary, setCommentary] = useState('');
 
-  useEffect(() => {
-    dispatch(fetchMatches());
-    loadEvents();
+    // Group matches by series/event
+    const groupedMatches = useMemo(() => {
+        const groups = {};
+        matches.forEach(match => {
+            const key = match.matchSubcategory || match.series || 'Other Matches';
+            if (!groups[key]) {
+                groups[key] = [];
+            }
+            groups[key].push(match);
+        });
+        return groups;
+    }, [matches]);
 
-    const socket = initSocket();
-    socket.on("match:updated", () => dispatch(fetchMatches()));
-    socket.on("match:created", () => dispatch(fetchMatches()));
-    return () => { socket.off("match:updated"); socket.off("match:created"); };
-  }, [dispatch]);
+    // Filter matches by date
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
 
-  const loadEvents = async () => {
-    try { setEvents((await api.get("/events")).data); } catch { }
-  };
-
-  const getEventForMatch = (match) => {
-    if (!match.tournament) return null;
-    return events.find(e => e._id === match.tournament._id || e._id === match.tournament) || null;
-  };
-
-  // Group matches by series
-  const groupMatchesBySeries = (matchList) => {
-    const groups = {};
-    matchList.forEach(m => {
-      const evt = getEventForMatch(m);
-      const key = evt ? `evt_${evt._id}` : "standalone";
-      if (!groups[key]) groups[key] = { event: evt, matches: [] };
-      groups[key].matches.push(m);
+    const todayMatches = matches.filter(m => {
+        const matchDate = new Date(m.startAt);
+        return matchDate >= today && matchDate < tomorrow;
     });
-    return Object.values(groups);
-  };
 
-  // Get subcategories based on selected category
-  const getSubcategories = () => {
-    switch (categoryFilter) {
-      case "international":
-        return INTERNATIONAL_SUBCATEGORIES;
-      case "league":
-        return LEAGUE_SUBCATEGORIES;
-      case "domestic":
-        return DOMESTIC_SUBCATEGORIES;
-      case "local-club":
-        return LOCAL_CLUB_SUBCATEGORIES;
-      default:
-        return [];
-    }
-  };
-
-  // Apply filters
-  const getFilteredMatches = () => {
-    let filtered = [...matches];
-
-    console.log('[LiveScores] Total matches:', matches.length);
-    console.log('[LiveScores] Categories:', matches.map(m => ({ type: m.matchType, category: m.matchCategory, subcategory: m.matchSubcategory })));
-
-    // Category filter
-    if (categoryFilter !== "all") {
-      filtered = filtered.filter(m => m.matchCategory === categoryFilter);
-    }
-
-    // Subcategory filter
-    if (subcategoryFilter !== "all") {
-      filtered = filtered.filter(m => m.matchSubcategory === subcategoryFilter);
-    }
-
-    // Status filter
-    if (statusFilter === "live") filtered = filtered.filter(m => m.status === "live");
-    else if (statusFilter === "upcoming") filtered = filtered.filter(m => m.status === "upcoming" || m.status === "scheduled");
-    else if (statusFilter === "completed") filtered = filtered.filter(m => m.status === "completed" || m.status === "abandoned");
-
-    // Format filter
-    if (formatFilter !== "all") {
-      filtered = filtered.filter(m => m.matchType === formatFilter);
-    }
-
-    // Date filter
-    if (dateFilter !== "all") {
-      const today = new Date(); today.setHours(0, 0, 0, 0);
-      const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
-      const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
-      filtered = filtered.filter(m => {
-        const d = new Date(m.startAt); d.setHours(0, 0, 0, 0);
-        if (dateFilter === "today") return d.getTime() === today.getTime();
-        if (dateFilter === "tomorrow") return d.getTime() === tomorrow.getTime();
-        if (dateFilter === "yesterday") return d.getTime() === yesterday.getTime();
-        return true;
-      });
-    }
-
-    return filtered;
-  };
-
-  const filteredMatches = getFilteredMatches();
-  const seriesGroups = groupMatchesBySeries(filteredMatches);
-
-  // Sort: live first, then by date
-  seriesGroups.forEach(g => {
-    g.matches.sort((a, b) => {
-      if (a.status === "live" && b.status !== "live") return -1;
-      if (b.status === "live" && a.status !== "live") return 1;
-      return new Date(a.startAt) - new Date(b.startAt);
+    const yesterdayMatches = matches.filter(m => {
+        const matchDate = new Date(m.startAt);
+        return matchDate >= yesterday && matchDate < today;
     });
-  });
 
-  // Count matches by category
-  const categoryCounts = {
-    all: matches.length,
-    international: matches.filter(m => m.matchCategory === "international").length,
-    league: matches.filter(m => m.matchCategory === "league").length,
-    domestic: matches.filter(m => m.matchCategory === "domestic").length,
-    "local-club": matches.filter(m => m.matchCategory === "local-club").length,
-  };
+    const tomorrowMatches = matches.filter(m => {
+        const matchDate = new Date(m.startAt);
+        return matchDate >= tomorrow && matchDate < new Date(tomorrow.getTime() + 86400000);
+    });
 
-  return (
-    <div className="min-h-screen bg-[#f4f5f7]">
-      {/* ESPN-Style Header */}
-      <div className="bg-[#031d44] text-white">
-        <div className="max-w-6xl mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <Link to="/admin" className="text-xs text-blue-300 hover:text-white transition-colors">Home</Link>
-              <span className="text-blue-300 mx-2">›</span>
-              <h1 className="text-lg font-black uppercase tracking-tight">Live Cricket Score</h1>
-            </div>
-            <div className="flex gap-2">
-              <Link to="/admin/events" className="text-xs font-bold text-blue-300 hover:text-white bg-white/10 px-3 py-1.5 rounded-full">Events</Link>
-            </div>
-          </div>
-        </div>
-      </div>
+    useEffect(() => {
+        dispatch(fetchMatches());
+        const socket = initSocket();
+        socket.on('match:scoreUpdate', () => dispatch(fetchMatches()));
+        socket.on('match:updated', () => dispatch(fetchMatches()));
+        return () => {
+            socket.off('match:scoreUpdate');
+            socket.off('match:updated');
+        };
+    }, [dispatch]);
 
-      {/* Filter Bar */}
-      <div className="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-4 py-3 space-y-3">
-
-          {/* Row 1: Status + Format + Date */}
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-            {STATUS_FILTERS.map(f => (
-              <button key={f.key} onClick={() => setStatusFilter(f.key)}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${statusFilter === f.key ? "bg-[#031d44] text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>
-                {f.label}
-              </button>
-            ))}
-            <div className="w-px h-5 bg-slate-300 mx-1"></div>
-            {FORMAT_FILTERS.map(f => (
-              <button key={f.key} onClick={() => setFormatFilter(f.key)}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${formatFilter === f.key ? "bg-[#031d44] text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>
-                {f.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Row 2: Category Filters */}
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar border-t border-slate-200 pt-3">
-            {CATEGORY_FILTERS.map(f => (
-              <button key={f.key} onClick={() => { setCategoryFilter(f.key); setSubcategoryFilter("all"); }}
-                className={`px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1 ${categoryFilter === f.key ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md" : "bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100"}`}>
-                <span>{f.icon}</span>
-                <span>{f.label}</span>
-                <span className={`px-1.5 py-0.5 rounded text-[10px] ${categoryFilter === f.key ? "bg-white/20" : "bg-slate-200"}`}>
-                  {categoryCounts[f.key]}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          {/* Row 3: Subcategory Filters (only show if category selected) */}
-          {categoryFilter !== "all" && getSubcategories().length > 0 && (
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar border-t border-slate-200 pt-3">
-              <span className="text-[10px] font-bold text-slate-500 uppercase">Subcategory:</span>
-              {getSubcategories().map(f => (
-                <button key={f.key} onClick={() => setSubcategoryFilter(f.key)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${subcategoryFilter === f.key ? "bg-blue-100 text-blue-700 border border-blue-300" : "bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100"}`}>
-                  {f.label}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Row 4: Date Filter + Reset */}
-          <div className="flex items-center justify-between border-t border-slate-200 pt-3">
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-              {[
-                { key: "all", label: "All Dates" },
-                { key: "yesterday", label: "Yesterday" },
-                { key: "today", label: "Today" },
-                { key: "tomorrow", label: "Tomorrow" }
-              ].map(f => (
-                <button key={f.key} onClick={() => setDateFilter(f.key)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${dateFilter === f.key ? "bg-[#031d44] text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>
-                  {f.label}
-                </button>
-              ))}
-            </div>
-            {(statusFilter !== "all" || formatFilter !== "all" || categoryFilter !== "all" || subcategoryFilter !== "all" || dateFilter !== "all") && (
-              <button onClick={() => { setStatusFilter("all"); setFormatFilter("all"); setCategoryFilter("all"); setSubcategoryFilter("all"); setDateFilter("all"); }}
-                className="px-3 py-1.5 rounded-full text-xs font-bold text-red-600 hover:bg-red-50 whitespace-nowrap flex items-center gap-1">
-                <span>✕</span>
-                <span>Reset All Filters</span>
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-4 py-4">
-        {loading ? (
-          <div className="flex justify-center py-20"><div className="w-8 h-8 border-3 border-[#031d44] border-t-transparent rounded-full animate-spin" /></div>
-        ) : filteredMatches.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-slate-500 font-bold">No matches found</p>
-            <p className="text-xs text-slate-400 mt-1">Try adjusting your filters</p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {seriesGroups.map((group, idx) => (
-              <SeriesSection key={idx} group={group} />
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// Series Section
-function SeriesSection({ group }) {
-  const { event, matches } = group;
-
-  return (
-    <div>
-      {event ? (
-        <div className="flex items-center justify-between py-2 mb-2 border-b border-slate-200">
-          <Link to={`/admin/events/${event._id}`} className="text-sm font-bold text-[#031d44] hover:text-blue-600 transition-colors flex items-center gap-2">
-            {event.logo && <img src={event.logo} alt={event.name} className="w-5 h-5 rounded object-cover" />}
-            {event.name}
-          </Link>
-          <Link to={`/admin/events/${event._id}`} className="text-xs font-bold text-blue-600 hover:text-blue-700">See all →</Link>
-        </div>
-      ) : (
-        <div className="flex items-center justify-between py-2 mb-2 border-b border-slate-200">
-          <span className="text-sm font-bold text-[#031d44]">Other Matches</span>
-        </div>
-      )}
-
-      <div className="space-y-3">
-        {matches.map(m => <MatchCard key={m._id} match={m} />)}
-      </div>
-    </div>
-  );
-}
-
-// Match Card Component
-function MatchCard({ match }) {
-  const team1 = match.teams?.[0] || {};
-  const team2 = match.teams?.[1] || {};
-  const inn1 = match.innings?.[0];
-  const inn2 = match.innings?.[1];
-
-  // Category badge
-  const getCategoryBadge = (category) => {
-    const badges = {
-      "international": { bg: "bg-purple-100", text: "text-purple-700", label: "🌍 International" },
-      "league": { bg: "bg-blue-100", text: "text-blue-700", label: "🏆 League" },
-      "domestic": { bg: "bg-green-100", text: "text-green-700", label: "🏛️ Domestic" },
-      "local-club": { bg: "bg-orange-100", text: "text-orange-700", label: "🏟️ Local Club" },
+    const handleSelectMatch = async (match) => {
+        setSelectedMatch(match);
+        setLoading(true);
+        try {
+            const res = await api.get(`/matches/${match._id}`);
+            setSelectedMatch(res.data);
+            setCurrentInnings(res.data.currentInnings || 0);
+        } catch (err) {
+            console.error('Failed to fetch match:', err);
+        } finally {
+            setLoading(false);
+        }
     };
-    return badges[category] || { bg: "bg-slate-100", text: "text-slate-700", label: "Other" };
-  };
 
-  const categoryBadge = getCategoryBadge(match.matchCategory);
+    const handleSubmitBall = async () => {
+        if (!selectedMatch) return;
+        if (runs === null && !extra && !isWicket) {
+            alert('Select runs, extra, or wicket');
+            return;
+        }
 
-  let statusLabel = "";
-  let statusClass = "";
-  const matchDate = new Date(match.startAt);
-  const now = new Date();
-  const isStarted = matchDate <= now;
+        try {
+            const ballData = {
+                runs: runs || 0,
+                extra,
+                isWicket,
+                dismissalType: isWicket ? dismissalType : null,
+                dismissedPlayer: isWicket ? dismissedPlayer : null,
+                bowler,
+                commentary: commentary || generateAutoCommentary()
+            };
 
-  if (match.status === "live") {
-    statusLabel = "Live";
-    statusClass = "text-red-600 font-black";
-  } else if (match.status === "completed") {
-    statusLabel = "Result";
-    statusClass = "text-slate-800 font-bold";
-  } else if (match.status === "abandoned") {
-    statusLabel = "Abandoned";
-    statusClass = "text-slate-500 font-bold";
-  } else if (match.status === "upcoming" || match.status === "scheduled") {
-    if (isStarted) {
-      statusLabel = `Starts ${matchDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
-    } else {
-      const today = new Date(); today.setHours(0, 0, 0, 0);
-      const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
-      matchDate.setHours(0, 0, 0, 0);
-      if (matchDate.getTime() === today.getTime()) {
-        statusLabel = `Today, ${matchDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
-      } else if (matchDate.getTime() === tomorrow.getTime()) {
-        statusLabel = `Tomorrow, ${matchDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
-      } else {
-        statusLabel = matchDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + `, ${matchDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
-      }
+            const res = await axios.post(
+                `${API_URL}/matches/${selectedMatch._id}/score`,
+                ballData,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setSelectedMatch(res.data.match || res.data);
+            resetBallForm();
+        } catch (err) {
+            alert('Error submitting ball: ' + (err.response?.data?.message || err.message));
+        }
+    };
+
+    const generateAutoCommentary = () => {
+        if (isWicket) return `WICKET! ${dismissalType || 'Wicket falls'}`;
+        if (extra === 'wide') return 'Wide ball!';
+        if (extra === 'noball') return 'No ball!';
+        if (runs === 4) return 'FOUR! Cracking shot!';
+        if (runs === 6) return 'SIX! Massive hit!';
+        if (runs === 0) return 'Dot ball, good delivery';
+        return `${runs} run${runs > 1 ? 's' : ''}`;
+    };
+
+    const resetBallForm = () => {
+        setRuns(null);
+        setExtra(null);
+        setIsWicket(false);
+        setDismissalType('');
+        setDismissedPlayer('');
+        setBowler('');
+        setCommentary('');
+    };
+
+    const handleEndInnings = async () => {
+        if (!selectedMatch) return;
+        if (!window.confirm('End current innings?')) return;
+
+        try {
+            const res = await axios.post(
+                `${API_URL}/matches/${selectedMatch._id}/end-innings`,
+                {},
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setSelectedMatch(res.data.match || res.data);
+        } catch (err) {
+            alert('Error ending innings: ' + (err.response?.data?.message || err.message));
+        }
+    };
+
+    const getCurrentScore = () => {
+        if (!selectedMatch?.innings?.[currentInnings]) return { runs: 0, wickets: 0, overs: '0.0' };
+        const inn = selectedMatch.innings[currentInnings];
+        const balls = inn.balls || 0;
+        const overs = Math.floor(balls / 6);
+        const ballInOver = balls % 6;
+        return {
+            runs: inn.runs || 0,
+            wickets: inn.wickets || 0,
+            overs: `${overs}.${ballInOver}`
+        };
+    };
+
+    const getBattingTeam = () => {
+        if (!selectedMatch?.innings?.[currentInnings]) return null;
+        return selectedMatch.innings[currentInnings].team;
+    };
+
+    const getBowlingTeam = () => {
+        if (!selectedMatch?.innings?.[currentInnings]) return null;
+        const battingTeamId = selectedMatch.innings[currentInnings].team?._id || selectedMatch.innings[currentInnings].team;
+        const otherTeam = selectedMatch.teams?.find(t => t._id !== battingTeamId);
+        return otherTeam;
+    };
+
+    const getCurrentBatsmen = () => {
+        if (!selectedMatch?.innings?.[currentInnings]) return [];
+        const batting = selectedMatch.innings[currentInnings].batting || [];
+        return batting.filter(b => !b.isOut).slice(0, 2);
+    };
+
+    const getCurrentBowler = () => {
+        if (!selectedMatch?.innings?.[currentInnings]) return null;
+        const bowling = selectedMatch.innings[currentInnings].bowling || [];
+        return bowling.length > 0 ? bowling[bowling.length - 1] : null;
+    };
+
+    const formatDate = (date) => {
+        const d = new Date(date);
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    };
+
+    const formatTime = (date) => {
+        const d = new Date(date);
+        return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    };
+
+    if (selectedMatch && scoreMode) {
+        // SCORING INTERFACE
+        return (
+            <div className="min-h-screen bg-gradient-to-b from-slate-100 to-slate-50 p-6 lg:p-10">
+                {/* Match Header */}
+                <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 mb-6">
+                    <div className="flex justify-between items-start mb-4">
+                        <div>
+                            <button
+                                onClick={() => { setSelectedMatch(null); setScoreMode(false); }}
+                                className="mb-3 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-lg transition-colors"
+                            >
+                                ← Back to Live Scores
+                            </button>
+                            <h1 className="text-2xl font-black text-[#031d44]">
+                                {selectedMatch.teams?.[0]?.name || 'Team A'} vs {selectedMatch.teams?.[1]?.name || 'Team B'}
+                            </h1>
+                            <p className="text-sm text-slate-500 mt-1">{selectedMatch.title}</p>
+                            <p className="text-xs text-slate-400 mt-1">{selectedMatch.venue} • {formatDate(selectedMatch.startAt)}</p>
+                        </div>
+                        <span className="px-3 py-1 rounded-lg text-xs font-black uppercase tracking-widest bg-green-100 text-green-700 animate-pulse">
+                            LIVE
+                        </span>
+                    </div>
+
+                    {/* Score Display */}
+                    <div className="bg-gradient-to-r from-[#031d44] to-[#0a2d5e] text-white rounded-xl p-6">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-blue-200 mb-1">
+                                    {getBattingTeam()?.name || 'Batting Team'} Innings
+                                </p>
+                                <p className="text-5xl font-black">
+                                    {getCurrentScore().runs}/{getCurrentScore().wickets}
+                                </p>
+                                <p className="text-sm text-blue-200 mt-2">
+                                    Overs: {getCurrentScore().overs} | CRR: {selectedMatch.innings?.[currentInnings]?.runRate?.toFixed(2) || '0.00'}
+                                </p>
+                            </div>
+                            {selectedMatch.innings?.[currentInnings]?.target && (
+                                <div className="text-right">
+                                    <p className="text-xs text-blue-200 mb-1">Target</p>
+                                    <p className="text-3xl font-black">{selectedMatch.innings[currentInnings].target}</p>
+                                    <p className="text-xs text-blue-200 mt-1">
+                                        Need {selectedMatch.innings[currentInnings].target - getCurrentScore().runs} from {(selectedMatch.totalOvers * 6 - (selectedMatch.innings[currentInnings].balls || 0)) / 6} overs
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Scoring Controls */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Ball Entry */}
+                    <div className="lg:col-span-2 bg-white rounded-2xl shadow-xl border border-slate-100 p-6">
+                        <h2 className="text-lg font-black text-slate-800 uppercase tracking-widest mb-4">Ball Entry</h2>
+
+                        {/* Runs */}
+                        <div className="mb-4">
+                            <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Runs</label>
+                            <div className="flex gap-2">
+                                {[0, 1, 2, 3, 4, 6].map(r => (
+                                    <button
+                                        key={r}
+                                        onClick={() => { setRuns(r); setIsWicket(false); setExtra(null); }}
+                                        className={`flex-1 py-3 rounded-xl font-black text-lg transition-all ${runs === r ? 'bg-[#031d44] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                                    >
+                                        {r}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Extras */}
+                        <div className="mb-4">
+                            <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Extras</label>
+                            <div className="flex gap-2">
+                                {['wide', 'noball', 'bye', 'legbye'].map(e => (
+                                    <button
+                                        key={e}
+                                        onClick={() => { setExtra(e); setRuns(0); setIsWicket(false); }}
+                                        className={`flex-1 py-2 rounded-xl font-bold text-xs uppercase transition-all ${extra === e ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                                    >
+                                        {e}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Wicket */}
+                        <div className="mb-4">
+                            <button
+                                onClick={() => setIsWicket(!isWicket)}
+                                className={`w-full py-3 rounded-xl font-black text-sm uppercase transition-all ${isWicket ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                            >
+                                Wicket
+                            </button>
+                            {isWicket && (
+                                <div className="mt-3 space-y-3">
+                                    <select
+                                        value={dismissalType}
+                                        onChange={(e) => setDismissalType(e.target.value)}
+                                        className="w-full border border-slate-300 rounded-xl px-4 py-3"
+                                    >
+                                        <option value="">Dismissal Type</option>
+                                        <option value="bowled">Bowled</option>
+                                        <option value="caught">Caught</option>
+                                        <option value="lbw">LBW</option>
+                                        <option value="run out">Run Out</option>
+                                        <option value="stumped">Stumped</option>
+                                        <option value="hit wicket">Hit Wicket</option>
+                                    </select>
+                                    <select
+                                        value={dismissedPlayer}
+                                        onChange={(e) => setDismissedPlayer(e.target.value)}
+                                        className="w-full border border-slate-300 rounded-xl px-4 py-3"
+                                    >
+                                        <option value="">Batsman Out</option>
+                                        {getCurrentBatsmen().map(b => (
+                                            <option key={b.player?._id} value={b.player?._id}>{b.player?.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Commentary */}
+                        <div className="mb-4">
+                            <textarea
+                                value={commentary}
+                                onChange={(e) => setCommentary(e.target.value)}
+                                placeholder="Add commentary (optional)..."
+                                className="w-full border border-slate-300 rounded-xl px-4 py-3 h-20 resize-none"
+                            />
+                        </div>
+
+                        {/* Submit Button */}
+                        <button
+                            onClick={handleSubmitBall}
+                            className="w-full bg-[#031d44] hover:bg-slate-800 text-white py-4 rounded-xl font-black text-sm uppercase tracking-widest transition-all"
+                        >
+                            Submit Ball
+                        </button>
+
+                        {/* End Innings */}
+                        <button
+                            onClick={handleEndInnings}
+                            className="w-full mt-3 bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all"
+                        >
+                            End Innings
+                        </button>
+                    </div>
+
+                    {/* Current Players */}
+                    <div className="space-y-6">
+                        {/* Batsmen */}
+                        <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-6">
+                            <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-3">Batsmen</h3>
+                            <div className="space-y-2">
+                                {getCurrentBatsmen().map((b, i) => (
+                                    <div key={i} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
+                                        <span className="font-bold text-sm">{b.player?.name || 'Batsman'}</span>
+                                        <span className="font-black">{b.runs || 0} ({b.balls || 0})</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Bowler */}
+                        <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-6">
+                            <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-3">Bowler</h3>
+                            {getCurrentBowler() ? (
+                                <div className="p-3 bg-slate-50 rounded-lg">
+                                    <p className="font-bold text-sm">{getCurrentBowler().player?.name}</p>
+                                    <p className="text-xs text-slate-500">{getCurrentBowler().overs || 0}-{getCurrentBowler().wickets || 0}/{getCurrentBowler().runs || 0}</p>
+                                </div>
+                            ) : (
+                                <p className="text-sm text-slate-400">No bowler selected</p>
+                            )}
+                        </div>
+
+                        {/* Recent Balls */}
+                        <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-6">
+                            <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-3">Recent Balls</h3>
+                            <div className="flex flex-wrap gap-2">
+                                {selectedMatch?.innings?.[currentInnings]?.oversHistory?.slice(-1).flatMap(over => over.balls || []).slice(-12).map((ball, i) => (
+                                    <div
+                                        key={i}
+                                        className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-sm ${ball.isWicket ? 'bg-red-500 text-white' : ball.runs === 4 || ball.runs === 6 ? 'bg-green-500 text-white' : 'bg-slate-200 text-slate-700'}`}
+                                    >
+                                        {ball.isWicket ? 'W' : ball.runs}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
     }
-    statusClass = "text-slate-500 font-bold";
-  }
 
-  return (
-    <Link to={`/admin/live/${match._id}`} className="block bg-white rounded-lg border border-slate-200 hover:border-blue-300 hover:shadow-md transition-all p-4">
-      {/* Status Label + Badges */}
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          {match.status === "live" && <span className="inline-block w-2 h-2 bg-red-600 rounded-full mr-1 animate-pulse"></span>}
-          <span className={`text-xs ${statusClass}`}>{statusLabel}</span>
-          <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${categoryBadge.bg} ${categoryBadge.text}`}>
-            {categoryBadge.label}
-          </span>
-          {match.matchSubcategory && match.matchSubcategory !== "all" && (
-            <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-slate-100 text-slate-600 uppercase">
-              {match.matchSubcategory.replace(/-/g, ' ')}
-            </span>
-          )}
+    // MAIN LIVE SCORES DASHBOARD (ESPN Style)
+    return (
+        <div className="min-h-screen bg-gradient-to-b from-slate-100 to-slate-50">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-[#031d44] via-[#0a2d5e] to-[#031d44] text-white p-6 lg:p-10">
+                <h1 className="text-4xl lg:text-5xl font-black tracking-tight">LIVE CRICKET SCORES</h1>
+                <p className="text-blue-200 mt-2 font-medium">Real-time match updates and scoring</p>
+            </div>
+
+            {/* Tabs */}
+            <div className="bg-white border-b border-slate-200 sticky top-0 z-40">
+                <div className="max-w-7xl mx-auto px-6 flex gap-2 overflow-x-auto">
+                    {[
+                        { key: 'all', label: 'All Matches' },
+                        { key: 'result', label: 'Results' },
+                        { key: 'live', label: 'Live' },
+                        { key: 'upcoming', label: 'Upcoming' }
+                    ].map(tab => (
+                        <button
+                            key={tab.key}
+                            onClick={() => setView(tab.key)}
+                            className={`px-6 py-4 text-xs font-black uppercase tracking-widest transition-all relative whitespace-nowrap ${view === tab.key ? 'text-[#031d44]' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            {tab.label}
+                            {view === tab.key && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#031d44] rounded-t" />}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Content */}
+            <div className="max-w-7xl mx-auto px-6 py-8">
+                {matchesLoading || loading ? (
+                    <div className="text-center py-20">
+                        <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-[#031d44] border-t-transparent"></div>
+                        <p className="mt-4 text-xs font-black text-slate-400 uppercase tracking-widest">Loading matches...</p>
+                    </div>
+                ) : (
+                    <>
+                        {/* YESTERDAY - RESULTS */}
+                        {(view === 'all' || view === 'result') && yesterdayMatches.filter(m => m.status === 'completed').length > 0 && (
+                            <div className="mb-10">
+                                <h2 className="text-xl font-black text-[#031d44] uppercase tracking-tight mb-4 flex items-center gap-2">
+                                    <span className="w-2 h-6 bg-green-600 rounded-full"></span>
+                                    Yesterday's Results
+                                </h2>
+                                <div className="space-y-3">
+                                    {yesterdayMatches.filter(m => m.status === 'completed').map(match => (
+                                        <div
+                                            key={match._id}
+                                            className="bg-white rounded-xl shadow-md border border-slate-200 hover:shadow-lg transition-all cursor-pointer"
+                                            onClick={() => handleSelectMatch(match)}
+                                        >
+                                            <div className="p-4">
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                                                        {match.matchSubcategory || match.series} • {formatDate(match.startAt)}
+                                                    </span>
+                                                    <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-[9px] font-bold uppercase">
+                                                        Complete
+                                                    </span>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    {match.innings?.map((inn, idx) => {
+                                                        const team = match.teams?.[idx] || {};
+                                                        return (
+                                                            <div key={idx} className="flex items-center justify-between">
+                                                                <div className="flex items-center gap-3">
+                                                                    {team.logo && <img src={team.logo} alt={team.name} className="w-6 h-6 rounded-full object-cover" />}
+                                                                    <span className="font-bold text-sm text-slate-800 uppercase">{team.shortName || team.name}</span>
+                                                                </div>
+                                                                <span className="font-black text-sm text-slate-800">
+                                                                    {inn.runs || 0}/{inn.wickets || 0} <span className="text-xs text-slate-500 font-bold">({inn.overs || 0}.{(inn.balls || 0) % 6})</span>
+                                                                </span>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                                {match.result?.description && (
+                                                    <div className="mt-3 pt-3 border-t border-slate-100">
+                                                        <p className="text-sm font-bold text-green-700">{match.result.description}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* TODAY - LIVE MATCHES */}
+                        {(view === 'all' || view === 'live') && todayMatches.filter(m => m.status === 'live').length > 0 && (
+                            <div className="mb-10">
+                                <h2 className="text-xl font-black text-[#031d44] uppercase tracking-tight mb-4 flex items-center gap-2">
+                                    <span className="w-2 h-6 bg-red-600 rounded-full animate-pulse"></span>
+                                    Live Now
+                                </h2>
+                                <div className="space-y-3">
+                                    {todayMatches.filter(m => m.status === 'live').map(match => (
+                                        <div
+                                            key={match._id}
+                                            className="bg-white rounded-xl shadow-md border-2 border-red-500 hover:shadow-lg transition-all cursor-pointer"
+                                            onClick={() => handleSelectMatch(match)}
+                                        >
+                                            <div className="p-4">
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                                                        {match.matchSubcategory || match.series}
+                                                    </span>
+                                                    <span className="px-2 py-0.5 bg-red-600 text-white rounded-full text-[9px] font-bold uppercase animate-pulse">
+                                                        LIVE
+                                                    </span>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    {match.innings?.map((inn, idx) => {
+                                                        const team = match.teams?.[idx] || {};
+                                                        return (
+                                                            <div key={idx} className="flex items-center justify-between">
+                                                                <div className="flex items-center gap-3">
+                                                                    {team.logo && <img src={team.logo} alt={team.name} className="w-6 h-6 rounded-full object-cover" />}
+                                                                    <span className="font-bold text-sm text-slate-800 uppercase">{team.shortName || team.name}</span>
+                                                                    {match.innings?.[idx]?.batting?.filter(b => !b.isOut).length > 0 && (
+                                                                        <span className="text-[10px] text-blue-600 font-bold">*</span>
+                                                                    )}
+                                                                </div>
+                                                                <span className="font-black text-sm text-slate-800">
+                                                                    {inn.runs || 0}/{inn.wickets || 0} <span className="text-xs text-slate-500 font-bold">({inn.overs || 0}.{(inn.balls || 0) % 6})</span>
+                                                                </span>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                                {match.tossWinner && (
+                                                    <p className="mt-2 text-xs text-slate-500 font-bold">
+                                                        Toss: {match.teams?.find(t => t._id === match.tossWinner)?.shortName || match.tossWinner} elected to {match.tossDecision}
+                                                    </p>
+                                                )}
+                                                <div className="mt-3 flex gap-2">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setSelectedMatch(match);
+                                                            setScoreMode(true);
+                                                        }}
+                                                        className="flex-1 bg-[#031d44] hover:bg-slate-800 text-white py-2 rounded-lg font-black text-xs uppercase tracking-widest"
+                                                    >
+                                                        🏏 Score Match
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            navigate(`/admin/live/${match._id}`);
+                                                        }}
+                                                        className="px-4 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-black text-xs uppercase tracking-widest"
+                                                    >
+                                                        👁️ View
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* TODAY - UPCOMING */}
+                        {(view === 'all' || view === 'upcoming') && todayMatches.filter(m => m.status === 'upcoming' || m.status === 'scheduled').length > 0 && (
+                            <div className="mb-10">
+                                <h2 className="text-xl font-black text-[#031d44] uppercase tracking-tight mb-4 flex items-center gap-2">
+                                    <span className="w-2 h-6 bg-blue-600 rounded-full"></span>
+                                    Today's Upcoming
+                                </h2>
+                                <div className="space-y-3">
+                                    {todayMatches.filter(m => m.status === 'upcoming' || m.status === 'scheduled').map(match => (
+                                        <div
+                                            key={match._id}
+                                            className="bg-white rounded-xl shadow-md border border-slate-200 hover:shadow-lg transition-all"
+                                        >
+                                            <div className="p-4">
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                                                        {match.matchSubcategory || match.series}
+                                                    </span>
+                                                    <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-[9px] font-bold uppercase">
+                                                        {formatTime(match.startAt)}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center justify-center gap-6 py-3">
+                                                    {match.teams?.map((team, idx) => (
+                                                        <div key={idx} className="flex flex-col items-center flex-1">
+                                                            {team.logo && <img src={team.logo} alt={team.name} className="w-12 h-12 rounded-full object-cover mb-2" />}
+                                                            <span className="font-bold text-sm text-slate-800 uppercase text-center">{team.shortName || team.name}</span>
+                                                        </div>
+                                                    ))}
+                                                    <span className="text-2xl font-black text-slate-300">VS</span>
+                                                </div>
+                                                <p className="text-center text-[10px] text-slate-500 font-bold mt-1">
+                                                    {match.venue || 'Venue TBA'} &bull; {match.matchType}
+                                                </p>
+                                                <div className="mt-3 flex gap-2">
+                                                    <button
+                                                        onClick={() => navigate('/admin/score')}
+                                                        className="flex-1 bg-[#031d44] hover:bg-slate-800 text-white py-2 rounded-lg font-black text-xs uppercase tracking-widest"
+                                                    >
+                                                        ⚙️ Manage Match
+                                                    </button>
+                                                    <button
+                                                        onClick={() => navigate('/admin/events')}
+                                                        className="px-4 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-black text-xs uppercase tracking-widest"
+                                                    >
+                                                        📋 Setup
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* TOMORROW */}
+                        {(view === 'all' || view === 'upcoming') && tomorrowMatches.length > 0 && (
+                            <div className="mb-10">
+                                <h2 className="text-xl font-black text-[#031d44] uppercase tracking-tight mb-4 flex items-center gap-2">
+                                    <span className="w-2 h-6 bg-slate-400 rounded-full"></span>
+                                    Tomorrow
+                                </h2>
+                                <div className="space-y-3">
+                                    {tomorrowMatches.map(match => (
+                                        <div
+                                            key={match._id}
+                                            className="bg-white rounded-xl shadow-md border border-slate-200 p-4"
+                                        >
+                                            <div className="flex items-center justify-between mb-3">
+                                                <div>
+                                                    <p className="font-bold text-sm text-slate-800">
+                                                        {match.teams?.[0]?.shortName || 'Team A'} vs {match.teams?.[1]?.shortName || 'Team B'}
+                                                    </p>
+                                                    <p className="text-xs text-slate-500">{match.matchSubcategory || match.series}</p>
+                                                </div>
+                                                <span className="text-xs font-bold text-slate-400">{formatTime(match.startAt)}</span>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => navigate('/admin/score')}
+                                                    className="flex-1 bg-[#031d44] hover:bg-slate-800 text-white py-2 rounded-lg font-black text-xs uppercase tracking-widest"
+                                                >
+                                                    ⚙️ Manage Match
+                                                </button>
+                                                <button
+                                                    onClick={() => navigate('/admin/events')}
+                                                    className="px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-lg font-black text-xs uppercase tracking-widest"
+                                                >
+                                                    📋 Setup
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* NO MATCHES */}
+                        {matches.length === 0 && (
+                            <div className="text-center py-20 bg-white rounded-2xl border border-slate-100">
+                                <p className="text-sm font-black text-slate-300 uppercase tracking-widest">No matches available</p>
+                                <Link to="/admin/events" className="mt-4 inline-block px-6 py-3 bg-[#031d44] hover:bg-slate-800 text-white rounded-xl font-black text-xs uppercase tracking-widest">
+                                    Create Match
+                                </Link>
+                            </div>
+                        )}
+                    </>
+                )}
+            </div>
         </div>
-        {match.matchType && <span className="text-[10px] text-slate-400 font-bold">{match.matchType}</span>}
-      </div>
-
-      {/* Match Meta */}
-      <div className="text-[10px] text-slate-500 font-bold mb-3 flex items-center gap-1">
-        {match.matchNumber && <span>Match {match.matchNumber}</span>}
-        {match.venue && <span>• {match.venue}</span>}
-        {match.tournament?.name && <span>• {match.tournament.name}</span>}
-      </div>
-
-      {/* Team 1 */}
-      <div className="flex items-center justify-between py-1.5">
-        <div className="flex items-center gap-2">
-          {team1.logo && <img src={team1.logo} alt={team1.name} className="w-5 h-5 rounded-full object-cover" />}
-          <span className="text-sm font-bold text-slate-800">{team1.shortName || team1.name}</span>
-        </div>
-        {inn1 && (
-          <span className="text-sm font-black text-slate-900">
-            {inn1.runs}/{inn1.wickets}
-            <span className="text-xs text-slate-500 font-bold ml-1">({inn1.overs}{inn1.balls > 0 ? `.${inn1.balls % 6}` : ''} ov)</span>
-          </span>
-        )}
-      </div>
-
-      {/* Team 2 */}
-      <div className="flex items-center justify-between py-1.5">
-        <div className="flex items-center gap-2">
-          {team2.logo && <img src={team2.logo} alt={team2.name} className="w-5 h-5 rounded-full object-cover" />}
-          <span className="text-sm font-bold text-slate-800">{team2.shortName || team2.name}</span>
-        </div>
-        {inn2 && (
-          <span className="text-sm font-black text-slate-900">
-            {inn2.runs}/{inn2.wickets}
-            <span className="text-xs text-slate-500 font-bold ml-1">({inn2.overs}{inn2.balls > 0 ? `.${inn2.balls % 6}` : ''} ov)</span>
-          </span>
-        )}
-      </div>
-
-      {/* Result / Match State */}
-      {match.result?.description && (
-        <div className="mt-2 pt-2 border-t border-slate-100">
-          <p className="text-xs font-bold text-green-700">{match.result.description}</p>
-        </div>
-      )}
-      {match.status === "upcoming" && !inn1 && (
-        <div className="mt-2 pt-2 border-t border-slate-100">
-          <p className="text-xs text-slate-500 font-bold">Match yet to begin</p>
-        </div>
-      )}
-
-      {/* Action Links */}
-      <div className="mt-2 pt-2 border-t border-slate-100 flex items-center gap-3">
-        <Link to={`/admin/scorecard/${match._id}`} className="text-[10px] font-bold text-blue-600 hover:text-blue-700">Scorecard</Link>
-        <Link to={`/admin/live/${match._id}`} className="text-[10px] font-bold text-blue-600 hover:text-blue-700">Live Blog</Link>
-        <Link to={`/admin/live/${match._id}`} className="text-[10px] font-bold text-blue-600 hover:text-blue-700">Manage</Link>
-      </div>
-    </Link>
-  );
+    );
 }

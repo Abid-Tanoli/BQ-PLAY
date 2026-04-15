@@ -122,6 +122,46 @@ export const deletePlayer = async (req, res) => {
   }
 };
 
+export const bulkDeletePlayers = async (req, res) => {
+  try {
+    const { playerIds } = req.body;
+
+    if (!playerIds || !Array.isArray(playerIds) || playerIds.length === 0) {
+      return res.status(400).json({ message: "Player IDs array is required" });
+    }
+
+    // Get all players to be deleted to find their teams
+    const players = await Player.find({ _id: { $in: playerIds } });
+
+    // Get unique team IDs
+    const teamIds = [...new Set(
+      players
+        .filter(p => p.team)
+        .map(p => p.team.toString())
+    )];
+
+    // Remove players from their teams
+    for (const teamId of teamIds) {
+      await Team.findByIdAndUpdate(
+        teamId,
+        { $pull: { players: { $in: playerIds } } }
+      );
+    }
+
+    // Delete all players
+    const result = await Player.deleteMany({ _id: { $in: playerIds } });
+
+    getIO()?.emit("players:updated");
+    res.json({
+      message: "Players deleted successfully",
+      deletedCount: result.deletedCount
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error deleting players" });
+  }
+};
+
 export const getPlayerRanking = async (req, res) => {
   const players = await Player.find().populate("team", "name");
 

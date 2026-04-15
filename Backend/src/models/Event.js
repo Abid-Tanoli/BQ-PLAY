@@ -37,7 +37,19 @@ const eventSchema = new mongoose.Schema({
     players: [{ type: mongoose.Schema.Types.ObjectId, ref: "Player" }],
     captain: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
     viceCaptain: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
-    wicketKeepers: [{ type: mongoose.Schema.Types.ObjectId, ref: "Player" }]
+    wicketKeepers: [{ type: mongoose.Schema.Types.ObjectId, ref: "Player" }],
+    // Player replacement history for injuries, etc.
+    playerChanges: [{
+      outPlayer: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
+      inPlayer: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
+      reason: {
+        type: String,
+        enum: ["injury", "illness", "disciplinary", "personal", "other"],
+        default: "injury"
+      },
+      notes: { type: String, default: "" },
+      changedAt: { type: Date, default: Date.now }
+    }]
   }],
   // Points table (for tournaments/leagues)
   pointsTable: [{

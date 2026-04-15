@@ -1,7 +1,9 @@
 import Match from "../models/match.js";
 import Player from "../models/Player.js";
-import { getIO } from "../socket/socket.js";
+import { getIO, emitBallWithCommentary } from "../socket/socket.js";
 import { updateTournamentPoints } from "../services/tournamentService.js";
+import fieldPositionMapper from "../services/fieldPositionMapper.js";
+import aiCommentary from "../services/aiCommentary.js";
 
 export const updateScore = async (req, res) => {
   try {
@@ -315,23 +317,61 @@ export const updateScore = async (req, res) => {
 
     // Generate detailed commentary with professional run reporting
     let commentary = commentaryText;
+    let aiGeneratedCommentary = null;
+
     if (!customCommentary || !commentary) {
-      commentary = generateDetailedCommentary({
-        runs: batsmanRuns,
-        isWide,
-        isNoBall,
-        isBye,
-        isLegBye,
-        isWicket,
-        wicketType,
-        batsmanName: batsmanOnStrike?.name || "Batsman",
-        bowlerName: bowlerPlayer?.name || "Bowler",
-        currentScore: innings.runs,
-        currentWickets: innings.wickets,
-        overNumber: currentOverNumber,
-        ballNumber: ballNumberInOver,
-        extraRuns: runs // Pass additional runs
-      });
+      // If field position data is provided, use AI commentary with field mapping
+      if (fieldingZone || (shotPlacement && shotPlacement.position)) {
+        const zone = fieldPositionMapper.getZoneFromCoordinates(
+          shotPlacement?.x || 50,
+          shotPlacement?.y || 50
+        );
+
+        const distanceCategory = fieldPositionMapper.getDistanceCategory(zone.distance);
+
+        aiGeneratedCommentary = aiCommentary.generateBallCommentary({
+          runs: batsmanRuns,
+          isWide,
+          isNoBall,
+          isBye,
+          isLegBye,
+          isWicket,
+          wicketType,
+          batsmanName: batsmanOnStrike?.name || "Batsman",
+          bowlerName: bowlerPlayer?.name || "Bowler",
+          zone: zone.name,
+          distanceCategory,
+          overNumber: currentOverNumber,
+          ballNumber: ballNumberInOver,
+          currentScore: innings.runs,
+          currentWickets: innings.wickets,
+          matchContext: {
+            totalOvers: match.totalOvers,
+            target: innings.target,
+            requiredRunRate: innings.requiredRunRate
+          }
+        });
+
+        commentary = aiGeneratedCommentary;
+      } else {
+        // Fallback to legacy commentary generation
+        commentary = generateDetailedCommentary({
+          runs: batsmanRuns,
+          isWide,
+          isNoBall,
+          isBye,
+          isLegBye,
+          isWicket,
+          wicketType,
+          batsmanName: batsmanOnStrike?.name || "Batsman",
+          bowlerName: bowlerPlayer?.name || "Bowler",
+          currentScore: innings.runs,
+          currentWickets: innings.wickets,
+          overNumber: currentOverNumber,
+          ballNumber: ballNumberInOver,
+          extraRuns: runs
+        });
+      }
     }
 
     // Determine ball notation (e.g., NB+6, 2w)
@@ -477,14 +517,31 @@ export const updateScore = async (req, res) => {
     try {
       const io = getIO();
 
+      // Emit ball update with AI commentary
       io.to(matchId).emit("match:ballUpdate", {
         matchId,
         inningsIndex,
         ball,
         currentOver: currentOver.overNumber,
         ballNumber: ballNumberInOver,
-        isOverComplete
+        isOverComplete,
+        aiGenerated: !!aiGeneratedCommentary
       });
+
+      // Emit enhanced ball with full commentary
+      if (aiGeneratedCommentary) {
+        emitBallWithCommentary(matchId, {
+          matchId,
+          inningsIndex,
+          ball,
+          commentary: aiGeneratedCommentary,
+          fieldingZone,
+          shotPlacement,
+          currentOver: currentOver.overNumber,
+          ballNumber: ballNumberInOver,
+          isOverComplete
+        });
+      }
 
       io.to(matchId).emit("match:scoreUpdate", {
         matchId,
@@ -499,10 +556,19 @@ export const updateScore = async (req, res) => {
       });
 
       if (isOverComplete) {
+        // Generate AI over summary
+        const overSummary = aiCommentary.generateOverSummary({
+          runs: currentOver.runsScored,
+          wickets: currentOver.wickets,
+          balls: currentOver.balls,
+          bowlerName: bowlerPlayer?.name || "Bowler"
+        });
+
         io.to(matchId).emit("match:overComplete", {
           matchId,
           inningsIndex,
-          over: currentOver
+          over: currentOver,
+          summary: overSummary
         });
       }
 
@@ -1109,6 +1175,107 @@ export const editCommentary = async (req, res) => {
     console.error("Error editing commentary:", error);
     res.status(400).json({
       message: "Failed to edit commentary",
+      error: error.message
+    });
+  }
+};
+
+// Handle admin field click and generate AI commentary
+export const handleFieldClick = async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    const { x, y, runs, isWicket, wicketType, overNumber, ballNumber } = req.body;
+
+    const match = await Match.findById(matchId)
+      .populate("teams", "name shortName logo")
+      .populate("innings.team", "name shortName")
+      .populate("innings.currentBatsman1", "name")
+      .populate("innings.currentBatsman2", "name")
+      .populate("innings.currentBowler", "name");
+
+    if (!match) {
+      return res.status(404).json({ message: "Match not found" });
+    }
+
+    const innings = match.innings[match.currentInnings];
+    if (!innings) {
+      return res.status(400).json({ message: "No active innings" });
+    }
+
+    // Get field zone from coordinates
+    const zone = fieldPositionMapper.getZoneFromCoordinates(x, y);
+    const distanceCategory = fieldPositionMapper.getDistanceCategory(zone.distance);
+
+    // Get player names
+    const bowlerName = innings.currentBowler?.name || "Bowler";
+    const batsmanName = innings.onStrikeBatsman?.name ||
+      innings.currentBatsman1?.name ||
+      "Batsman";
+
+    // Generate AI commentary
+    const commentary = aiCommentary.generateBallCommentary({
+      runs: runs || 0,
+      isWide: false,
+      isNoBall: false,
+      isBye: false,
+      isLegBye: false,
+      isWicket: isWicket || false,
+      wicketType: wicketType || "",
+      batsmanName,
+      bowlerName,
+      zone: zone.name,
+      distanceCategory,
+      overNumber: overNumber || Math.floor(innings.balls / 6) + 1,
+      ballNumber: ballNumber || (innings.balls % 6) + 1,
+      currentScore: innings.runs,
+      currentWickets: innings.wickets,
+      matchContext: {
+        totalOvers: match.totalOvers,
+        target: innings.target,
+        requiredRunRate: innings.requiredRunRate
+      }
+    });
+
+    // Emit field click event with generated commentary
+    const io = getIO();
+
+    emitFieldClick(matchId, {
+      matchId,
+      x,
+      y,
+      zone: zone.name,
+      angle: zone.angle,
+      distance: zone.distance,
+      distanceCategory,
+      runs,
+      isWicket,
+      wicketType,
+      commentary,
+      timestamp: new Date().toISOString()
+    });
+
+    emitAICommentary(matchId, {
+      matchId,
+      commentary,
+      zone: zone.name,
+      batsman: batsmanName,
+      bowler: bowlerName,
+      runs,
+      isWicket,
+      timestamp: new Date().toISOString()
+    });
+
+    res.status(200).json({
+      success: true,
+      zone: zone.name,
+      distanceCategory,
+      commentary,
+      angle: zone.angle
+    });
+  } catch (error) {
+    console.error("Error handling field click:", error);
+    res.status(400).json({
+      message: "Failed to process field click",
       error: error.message
     });
   }

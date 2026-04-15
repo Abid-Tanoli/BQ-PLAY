@@ -86,6 +86,20 @@ export const deletePlayer = createAsyncThunk(
   }
 );
 
+export const bulkDeletePlayers = createAsyncThunk(
+  "players/bulkDelete",
+  async (playerIds, thunkAPI) => {
+    try {
+      const res = await api.post("/players/bulk-delete", { playerIds });
+      return res.data;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(
+        err.response?.data?.message || "Failed to bulk delete players"
+      );
+    }
+  }
+);
+
 export const fetchPlayerRankings = createAsyncThunk(
   "players/rankings",
   async (_, thunkAPI) => {
@@ -171,6 +185,19 @@ const playersSlice = createSlice({
       // Delete player
       .addCase(deletePlayer.fulfilled, (state, action) => {
         state.players = state.players.filter((p) => p._id !== action.payload);
+      })
+      // Bulk delete players
+      .addCase(bulkDeletePlayers.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(bulkDeletePlayers.fulfilled, (state, action) => {
+        state.loading = false;
+        state.players = [];
+      })
+      .addCase(bulkDeletePlayers.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });

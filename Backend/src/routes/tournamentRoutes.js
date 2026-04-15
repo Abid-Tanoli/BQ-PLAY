@@ -10,7 +10,8 @@ import {
   getTournamentFixtures,
   setTournamentSquad,
   getTournamentSquad,
-  deleteTournamentSquad
+  deleteTournamentSquad,
+  createTournamentMatch
 } from '../controllers/Tournamentcontroller.js';
 
 const router = express.Router();
@@ -25,6 +26,7 @@ router.get('/:id/squad/:teamId', getTournamentSquad);
 router.post('/', createTournament);
 router.post('/update-points', updatePointsTable);
 router.post('/:tournamentId/squad', setTournamentSquad);
+router.post('/:tournamentId/matches', createTournamentMatch);
 
 router.put('/:id', updateTournament);
 router.delete('/:id', deleteTournament);

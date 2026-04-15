@@ -1,9 +1,10 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
+import ThemeToggle from "./ThemeToggle";
 
 export default function Header({ user, onShowLogin, onShowRegister, onLogout }) {
   const location = useLocation();
-  
+
   const navItems = [
     { name: "Matches", path: "/" },
     { name: "Teams", path: "/teams" },
@@ -15,7 +16,7 @@ export default function Header({ user, onShowLogin, onShowRegister, onLogout }) 
   ];
 
   return (
-    <header className="bg-[#031d44] border-b border-white/10 sticky top-0 z-50 shadow-2xl">
+    <header className="bg-[#031d44] dark:bg-slate-900 border-b border-white/10 dark:border-slate-700 sticky top-0 z-50 shadow-2xl">
       <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
         <div className="flex items-center gap-8">
           <Link to="/" className="text-2xl font-black text-white italic tracking-tighter">
@@ -24,12 +25,11 @@ export default function Header({ user, onShowLogin, onShowRegister, onLogout }) 
           </Link>
           <nav className="hidden lg:flex items-center gap-6">
             {navItems.map(item => (
-              <Link 
-                key={item.name} 
+              <Link
+                key={item.name}
                 to={item.path}
-                className={`text-[10px] font-black uppercase tracking-widest transition-all ${
-                  location.pathname === item.path ? "text-white" : "text-blue-200/40 hover:text-white"
-                }`}
+                className={`text-[10px] font-black uppercase tracking-widest transition-all ${location.pathname === item.path ? "text-white" : "text-blue-200/40 hover:text-white"
+                  }`}
               >
                 {item.name}
               </Link>
@@ -37,7 +37,8 @@ export default function Header({ user, onShowLogin, onShowRegister, onLogout }) 
           </nav>
         </div>
 
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4">
+          <ThemeToggle />
           {user ? (
             <div className="flex items-center gap-4">
               <div className="text-right hidden sm:block">

@@ -156,7 +156,8 @@ const matchSchema = new mongoose.Schema(
         "international",
         "league",
         "domestic",
-        "local-club"
+        "local-club",
+        "incubation"
       ],
       default: "local-club"
     },
