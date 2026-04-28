@@ -1,217 +1,214 @@
-import React, { useState } from "react";
-import CricketFieldMap from "./CricketFieldMap";
+import React, { useState, useEffect } from "react";
 
-export default function EnhancedScoringPanel({ onSubmitBall, currentBatsmen, currentBowler, onWicket, onEndInnings }) {
-  const [runs, setRuns] = useState(null);
-  const [extra, setExtra] = useState(null);
-  const [isWicket, setIsWicket] = useState(false);
-  const [dismissalType, setDismissalType] = useState("");
-  const [dismissedPlayer, setDismissedPlayer] = useState("");
-  const [fieldPosition, setFieldPosition] = useState(null);
-  const [commentary, setCommentary] = useState("");
+export default function EnhancedScoringPanel({ onSubmitBall, onEndInnings, onBack, currentBatsmen, currentBowler, selectedZoneLabel }) {
+    const [runs, setRuns] = useState(0);
+    const [extra, setExtra] = useState(null); // 'WIDE', 'NO BALL', 'BYE', 'LEG BYE'
+    const [wicket, setWicket] = useState(null);
+    const [strikerId, setStrikerId] = useState("");
+    const [nonStrikerId, setNonStrikerId] = useState("");
+    const [bowlerId, setBowlerId] = useState("");
+    const [commentary, setCommentary] = useState("");
 
-  const handleFieldClick = (position) => {
-    setFieldPosition(position);
-  };
+    // Sync IDs when props change
+    useEffect(() => {
+        if (currentBatsmen?.length >= 1 && !strikerId) {
+            setStrikerId(currentBatsmen[0].player?._id || "");
+        }
+        if (currentBatsmen?.length >= 2 && !nonStrikerId) {
+            setNonStrikerId(currentBatsmen[1].player?._id || "");
+        }
+        if (currentBowler && !bowlerId) {
+            setBowlerId(currentBowler.player?._id || "");
+        }
+    }, [currentBatsmen, currentBowler]);
 
-  const handleSubmit = () => {
-    if (runs === null && !extra && !isWicket) {
-      alert("Select runs, extra, or wicket");
-      return;
-    }
+    const handleRunClick = (val) => setRuns(val);
+    const handleExtraClick = (type) => setExtra(extra === type ? null : type);
 
-    const ballData = {
-      runs: runs || 0,
-      isWicket,
-      extra,
-      dismissalType: isWicket ? dismissalType : null,
-      dismissedPlayer: isWicket ? dismissedPlayer : null,
-      shotPlacement: fieldPosition,
-      commentary: commentary || generateAutoCommentary(runs, extra, isWicket, fieldPosition),
+    const handleSubmit = () => {
+        if (!strikerId || !nonStrikerId || !bowlerId) {
+            alert("Please select striker, non-striker, and bowler.");
+            return;
+        }
+
+        const ballData = {
+            runs,
+            isWide: extra === "WIDE",
+            isNoBall: extra === "NO BALL",
+            isBye: extra === "BYE",
+            isLegBye: extra === "LEG BYE",
+            isWicket: !!wicket,
+            wicketType: wicket || "",
+            batsmanOnStrikeId: strikerId,
+            batsmanNonStrikeId: nonStrikerId,
+            bowlerId: bowlerId,
+            commentaryText: commentary,
+            fieldingZone: selectedZoneLabel,
+            customCommentary: !!commentary
+        };
+
+        onSubmitBall(ballData);
+        // Reset local states for next ball
+        setRuns(0);
+        setExtra(null);
+        setWicket(null);
+        setCommentary("");
     };
 
-    onSubmitBall(ballData);
-    resetForm();
-  };
-
-  const generateAutoCommentary = (r, ext, wicket, pos) => {
-    if (wicket) return `WICKET! ${dismissalType || "Caught"} ${pos?.positionLabel ? `at ${pos.positionLabel}` : ""}`;
-    if (ext === "wide") return "Wide ball!";
-    if (ext === "noball") return "No ball!";
-    if (r === 4) return `FOUR! ${pos?.positionLabel ? `Driven through ${pos.positionLabel}` : "Cracking shot!"}`;
-    if (r === 6) return `SIX! ${pos?.positionLabel ? `Over the ${pos.positionLabel} boundary` : "Massive hit!"}`;
-    if (r === 0) return "Dot ball, good delivery";
-    return `Quick ${r} run${r > 1 ? "s" : ""}${pos?.positionLabel ? ` towards ${pos.positionLabel}` : ""}`;
-  };
-
-  const resetForm = () => {
-    setRuns(null);
-    setExtra(null);
-    setIsWicket(false);
-    setDismissalType("");
-    setDismissedPlayer("");
-    setFieldPosition(null);
-    setCommentary("");
-  };
-
-  return (
-    <div className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
-      <div className="p-6 bg-gradient-to-r from-[#031d44] to-slate-800 text-white">
-        <h2 className="text-xl font-black uppercase tracking-widest">Scoring Panel</h2>
-        <p className="text-xs text-slate-300 mt-1">Select runs & field position</p>
-      </div>
-
-      <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Left Column - Controls */}
-        <div className="space-y-6">
-          {/* Current Players */}
-          <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
-            <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-3">On Strike</h3>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-sm font-bold text-slate-800">
-                  {currentBatsmen?.[0]?.name || "Select Batsman"}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span className="text-sm font-bold text-slate-800">
-                  {currentBatsmen?.[1]?.name || "Select Batsman"}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 pt-2 border-t border-slate-200">
-                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                <span className="text-sm font-bold text-slate-800">
-                  {currentBowler?.name || "Select Bowler"}
-                </span>
-              </div>
+    return (
+        <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden">
+            <div className="bg-[#031d44] p-6 text-white flex justify-between items-center">
+                <div>
+                    <h2 className="text-xl font-black uppercase tracking-widest">Scoring Panel</h2>
+                    <p className="text-blue-300 text-[10px] font-bold mt-1 uppercase tracking-widest opacity-80">Select runs & field position</p>
+                </div>
+                <div className="px-3 py-1 bg-blue-500/20 rounded-full border border-blue-500/30">
+                    <span className="text-blue-300 text-[10px] font-black uppercase tracking-[0.2em]">Ball Active</span>
+                </div>
             </div>
-          </div>
 
-          {/* Run Buttons */}
-          <div>
-            <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-3">Runs</h3>
-            <div className="grid grid-cols-3 gap-2">
-              {[0, 1, 2, 3, 4, 6].map((r) => (
-                <button
-                  key={r}
-                  onClick={() => { setRuns(r); setExtra(null); setIsWicket(false); }}
-                  className={`py-3 rounded-xl font-black text-lg transition-all ${
-                    runs === r
-                      ? "bg-[#031d44] text-white shadow-lg"
-                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                  }`}
+            <div className="p-6 space-y-6">
+                {/* On Strike Section */}
+                <div className="space-y-4">
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">On Strike</h3>
+                    <div className="grid grid-cols-1 gap-3">
+                        <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100 focus-within:ring-2 focus-within:ring-green-500/20 transition-all">
+                            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
+                            <select 
+                                value={strikerId} 
+                                onChange={(e) => setStrikerId(e.target.value)}
+                                className="bg-transparent border-none text-sm font-black text-slate-800 focus:ring-0 w-full cursor-pointer"
+                            >
+                                <option value="">Select Striker</option>
+                                {currentBatsmen.map(b => (
+                                    <option key={b.player?._id || b.player} value={b.player?._id || b.player}>{b.player?.name || "Unknown Batsman"}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all">
+                            <div className="w-3 h-3 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.6)]"></div>
+                            <select 
+                                value={nonStrikerId} 
+                                onChange={(e) => setNonStrikerId(e.target.value)}
+                                className="bg-transparent border-none text-sm font-black text-slate-800 focus:ring-0 w-full cursor-pointer"
+                            >
+                                <option value="">Select Non-Striker</option>
+                                {currentBatsmen.map(b => (
+                                    <option key={b.player?._id || b.player} value={b.player?._id || b.player}>{b.player?.name || "Unknown Batsman"}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100 focus-within:ring-2 focus-within:ring-red-500/20 transition-all">
+                            <div className="w-3 h-3 bg-red-500 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.6)]"></div>
+                            <select 
+                                value={bowlerId} 
+                                onChange={(e) => setBowlerId(e.target.value)}
+                                className="bg-transparent border-none text-sm font-black text-slate-800 focus:ring-0 w-full cursor-pointer"
+                            >
+                                <option value="">Select Bowler</option>
+                                {currentBowler && (
+                                    <option value={currentBowler.player?._id || currentBowler.player}>
+                                        {currentBowler.player?.name || "Unknown Bowler"}
+                                    </option>
+                                )}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Runs Section */}
+                <div className="space-y-3">
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Runs Scored</h3>
+                    <div className="grid grid-cols-3 gap-2">
+                        {[0, 1, 2, 3, 4, 6].map((num) => (
+                            <button
+                                key={num}
+                                onClick={() => handleRunClick(num)}
+                                className={`py-4 rounded-xl font-black text-lg transition-all ${
+                                    runs === num 
+                                    ? "bg-[#031d44] text-white scale-105 shadow-lg" 
+                                    : "bg-slate-50 text-slate-800 hover:bg-slate-100"
+                                }`}
+                            >
+                                {num === 0 ? "DOT" : num}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Extras Section */}
+                <div className="space-y-3">
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Extras</h3>
+                    <div className="grid grid-cols-2 gap-2">
+                        {["WIDE", "NO BALL", "BYE", "LEG BYE"].map((type) => (
+                            <button
+                                key={type}
+                                onClick={() => handleExtraClick(type)}
+                                className={`py-3 rounded-xl font-bold text-xs border-2 transition-all ${
+                                    extra === type 
+                                    ? "bg-orange-500 text-white border-orange-600 scale-105 shadow-md shadow-orange-100" 
+                                    : "bg-white text-slate-600 border-slate-100 hover:border-orange-200 hover:text-orange-500"
+                                }`}
+                            >
+                                {type}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Wicket Section */}
+                <div className="space-y-3">
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Dismissal</h3>
+                    <select
+                        value={wicket || ""}
+                        onChange={(e) => setWicket(e.target.value || null)}
+                        className={`w-full p-4 rounded-xl font-black text-sm transition-all border-2 cursor-pointer ${
+                            wicket 
+                            ? "bg-red-600 text-white border-red-700 shadow-md shadow-red-100" 
+                            : "bg-slate-50 text-slate-800 border-slate-100 hover:border-red-100"
+                        }`}
+                    >
+                        <option value="">SELECT WICKET</option>
+                        {["bowled", "caught", "lbw", "run out", "stumped", "hit wicket"].map(type => (
+                            <option key={type} value={type}>{type.toUpperCase()}</option>
+                        ))}
+                    </select>
+                </div>
+
+                {/* Commentary */}
+                <div className="space-y-3">
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Quick Commentary</h3>
+                    <textarea
+                        value={commentary}
+                        onChange={(e) => setCommentary(e.target.value)}
+                        placeholder="AI will generate automatically if blank..."
+                        className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-xs font-medium focus:ring-2 focus:ring-blue-500/20 outline-none h-20 resize-none transition-all"
+                    ></textarea>
+                </div>
+
+                {/* Actions */}
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-50">
+                    <button
+                        onClick={onBack}
+                        className="py-4 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black rounded-2xl uppercase tracking-widest text-xs transition-all active:scale-95"
+                    >
+                        [ BACK ]
+                    </button>
+                    <button
+                        onClick={handleSubmit}
+                        className="py-4 bg-[#ff6b35] hover:bg-[#e85d20] text-white font-black rounded-2xl uppercase tracking-widest text-xs shadow-lg shadow-orange-200 transition-all hover:scale-[1.02] active:scale-95"
+                    >
+                        [ SUBMIT BALL ]
+                    </button>
+                </div>
+                
+                <button 
+                  onClick={onEndInnings}
+                  className="w-full mt-2 text-[10px] font-black text-slate-300 hover:text-red-400 uppercase tracking-[0.3em] transition-colors py-2"
                 >
-                  {r === 0 ? "DOT" : r}
+                    -- End Innings --
                 </button>
-              ))}
             </div>
-          </div>
-
-          {/* Extras */}
-          <div>
-            <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-3">Extras</h3>
-            <div className="grid grid-cols-2 gap-2">
-              {["wide", "noball", "bye", "legbye"].map((ext) => (
-                <button
-                  key={ext}
-                  onClick={() => { setExtra(ext); setRuns(1); setIsWicket(false); }}
-                  className={`py-2 rounded-xl font-bold text-xs uppercase tracking-widest transition-all ${
-                    extra === ext
-                      ? "bg-orange-500 text-white shadow-lg"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                  }`}
-                >
-                  {ext === "noball" ? "No Ball" : ext === "legbye" ? "Leg Bye" : ext}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Wicket */}
-          <div>
-            <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-3">Wicket</h3>
-            <button
-              onClick={() => setIsWicket(!isWicket)}
-              className={`w-full py-3 rounded-xl font-black text-sm uppercase tracking-widest transition-all ${
-                isWicket
-                  ? "bg-red-600 text-white shadow-lg shadow-red-900/30"
-                  : "bg-slate-100 text-slate-700 hover:bg-red-100 hover:text-red-700"
-              }`}
-            >
-              {isWicket ? "WICKET SELECTED" : "Select Wicket"}
-            </button>
-
-            {isWicket && (
-              <div className="mt-3 space-y-3">
-                <select
-                  value={dismissalType}
-                  onChange={(e) => setDismissalType(e.target.value)}
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800"
-                >
-                  <option value="">Dismissal Type</option>
-                  <option value="bowled">Bowled</option>
-                  <option value="caught">Caught</option>
-                  <option value="lbw">LBW</option>
-                  <option value="run_out">Run Out</option>
-                  <option value="stumped">Stumped</option>
-                  <option value="hit_wicket">Hit Wicket</option>
-                </select>
-                <select
-                  value={dismissedPlayer}
-                  onChange={(e) => setDismissedPlayer(e.target.value)}
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800"
-                >
-                  <option value="">Select Dismissed Player</option>
-                  {currentBatsmen?.map((b) => (
-                    <option key={b._id} value={b._id}>{b.name}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-          </div>
-
-          {/* Commentary */}
-          <div>
-            <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-3">Commentary</h3>
-            <textarea
-              value={commentary}
-              onChange={(e) => setCommentary(e.target.value)}
-              placeholder="Auto-generated or enter manually..."
-              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-800 h-20 resize-none"
-            />
-          </div>
         </div>
-
-        {/* Right Column - Field Map */}
-        <div>
-          <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-3">Field Position</h3>
-          <CricketFieldMap onFieldClick={handleFieldClick} selectedZone={fieldPosition?.position} />
-        </div>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="p-6 bg-slate-50 border-t border-slate-200 flex gap-4">
-        <button
-          onClick={handleSubmit}
-          className="flex-1 py-4 bg-[#031d44] hover:bg-slate-800 text-white font-black text-sm uppercase tracking-widest rounded-xl transition-all shadow-lg"
-        >
-          Submit Ball
-        </button>
-        <button
-          onClick={onEndInnings}
-          className="px-6 py-4 bg-red-500 hover:bg-red-600 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-lg"
-        >
-          End Innings
-        </button>
-        <button
-          onClick={resetForm}
-          className="px-6 py-4 bg-slate-200 hover:bg-slate-300 text-slate-700 font-black text-xs uppercase tracking-widest rounded-xl transition-all"
-        >
-          Reset
-        </button>
-      </div>
-    </div>
-  );
+    );
 }

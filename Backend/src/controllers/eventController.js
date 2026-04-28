@@ -133,15 +133,17 @@ export const deleteEvent = async (req, res) => {
     const event = await Event.findById(req.params.id);
     if (!event) return res.status(404).json({ message: "Event not found" });
 
-    // Delete associated matches
+    // Delete matches linked in event.matches array
     if (event.matches && event.matches.length > 0) {
       await Match.deleteMany({ _id: { $in: event.matches } });
     }
+    // Also delete any matches that reference this event as tournament
+    await Match.deleteMany({ tournament: req.params.id });
 
     await Event.findByIdAndDelete(req.params.id);
     try { getIO().emit("event:deleted", { id: req.params.id }); } catch { }
 
-    res.status(200).json({ message: "Event deleted successfully" });
+    res.status(200).json({ message: "Event and associated matches deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: "Failed to delete event", error: error.message });
   }

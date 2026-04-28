@@ -1,9 +1,12 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, Fragment } from 'react';
+import WagonWheel from './WagonWheel';
 
 // Cricinfo-Style Detailed Scorecard
 // Full batting/bowling tables, extras, fall of wickets, yet to bat, match summary
 
 const DetailedScorecard = ({ match }) => {
+  const [selectedPlayerForWheel, setSelectedPlayerForWheel] = useState(null);
+
   if (!match || !match.innings || match.innings.length === 0) {
     return <div className="text-center py-10 text-slate-500">No innings data available.</div>;
   }
@@ -226,6 +229,7 @@ const DetailedScorecard = ({ match }) => {
                         <th className="text-center py-2.5 px-2 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-10">B</th>
                         <th className="text-center py-2.5 px-2 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-10">4s</th>
                         <th className="text-center py-2.5 px-2 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-10">6s</th>
+                        <th className="text-center py-2.5 px-2 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-10">Chart</th>
                         <th className="text-center py-2.5 px-2 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-14">SR</th>
                       </tr>
                     </thead>
@@ -239,36 +243,61 @@ const DetailedScorecard = ({ match }) => {
                         const isNotOut = status === 'not_out';
 
                         return (
-                          <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors">
-                            <td className="py-2.5 pr-3">
-                              <div className="flex items-center gap-1.5">
-                                {isNotOut && (
-                                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full flex-shrink-0 animate-pulse"></span>
-                                )}
-                                <a
-                                  href={`/players/${playerId}`}
-                                  className={`font-semibold hover:text-blue-600 hover:underline transition-colors ${isNotOut ? 'text-[#031d44] dark:text-white' : 'text-slate-700 dark:text-slate-300'}`}
-                                  onClick={(e) => e.preventDefault()}
-                                >
-                                  {playerName}
-                                  {isNotOut && <span className="text-green-600 dark:text-green-400 ml-0.5 font-bold">*</span>}
-                                </a>
-                              </div>
-                              {dismissal && status === 'out' && (
-                                <div className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 ml-3">
-                                  {dismissal}
+                          <Fragment key={idx}>
+                            <tr className="hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors">
+                              <td className="py-2.5 pr-3">
+                                <div className="flex items-center gap-1.5">
+                                  {isNotOut && (
+                                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full flex-shrink-0 animate-pulse"></span>
+                                  )}
+                                  <a
+                                    href={`/players/${playerId}`}
+                                    className={`font-semibold hover:text-blue-600 hover:underline transition-colors ${isNotOut ? 'text-[#031d44] dark:text-white' : 'text-slate-700 dark:text-slate-300'}`}
+                                    onClick={(e) => e.preventDefault()}
+                                  >
+                                    {playerName}
+                                    {isNotOut && <span className="text-green-600 dark:text-green-400 ml-0.5 font-bold">*</span>}
+                                  </a>
                                 </div>
-                              )}
-                              {status === 'yet_to_bat' && (
-                                <div className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 ml-3 italic">yet to bat</div>
-                              )}
-                            </td>
-                            <td className="text-center py-2.5 px-2 font-bold text-slate-900 dark:text-white">{bat.runs}</td>
-                            <td className="text-center py-2.5 px-2 text-slate-500 dark:text-slate-400">{bat.balls || '—'}</td>
-                            <td className="text-center py-2.5 px-2 text-blue-600 dark:text-blue-400 font-medium">{bat.fours || 0}</td>
-                            <td className="text-center py-2.5 px-2 text-purple-600 dark:text-purple-400 font-medium">{bat.sixes || 0}</td>
-                            <td className="text-center py-2.5 px-2 text-slate-500 dark:text-slate-400">{sr}</td>
-                          </tr>
+                                {dismissal && status === 'out' && (
+                                  <div className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 ml-3">
+                                    {dismissal}
+                                  </div>
+                                )}
+                                {status === 'yet_to_bat' && (
+                                  <div className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 ml-3 italic">yet to bat</div>
+                                )}
+                              </td>
+                              <td className="text-center py-2.5 px-2 font-bold text-slate-900 dark:text-white">{bat.runs}</td>
+                              <td className="text-center py-2.5 px-2 text-slate-500 dark:text-slate-400">{bat.balls || '—'}</td>
+                              <td className="text-center py-2.5 px-2 text-blue-600 dark:text-blue-400 font-medium">{bat.fours || 0}</td>
+                              <td className="text-center py-2.5 px-2 text-purple-600 dark:text-purple-400 font-medium">{bat.sixes || 0}</td>
+                              <td className="text-center py-2.5 px-2 text-slate-500 dark:text-slate-400">
+                                <button 
+                                  onClick={() => setSelectedPlayerForWheel(selectedPlayerForWheel === playerId ? null : playerId)}
+                                  className={`p-1.5 rounded-lg transition-all ${selectedPlayerForWheel === playerId ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-blue-50 hover:text-blue-600'}`}
+                                  title="View Wagon Wheel"
+                                >
+                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4"/><path d="M12 16V8"/>
+                                  </svg>
+                                </button>
+                              </td>
+                              <td className="text-center py-2.5 px-2 text-slate-500 dark:text-slate-400">{sr}</td>
+                            </tr>
+                            {selectedPlayerForWheel === playerId && (
+                              <tr className="bg-slate-50/50 dark:bg-slate-900/20">
+                                <td colSpan="8" className="p-4 sm:p-8 animate-in fade-in slide-in-from-top-4 duration-500">
+                                  <div className="max-w-4xl mx-auto">
+                                    <WagonWheel 
+                                      shots={bat.shots || []} 
+                                      playerName={playerName} 
+                                    />
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </Fragment>
                         );
                       })}
                     </tbody>

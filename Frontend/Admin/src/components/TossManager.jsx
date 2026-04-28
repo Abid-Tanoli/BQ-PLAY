@@ -100,7 +100,7 @@ const TossManager = ({ match, onClose, onSuccess }) => {
     const withinWindow = isWithinTossWindow();
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6">
                 {/* Header */}
                 <div className="flex justify-between items-center mb-6">
@@ -136,12 +136,14 @@ const TossManager = ({ match, onClose, onSuccess }) => {
                     </div>
                 )}
 
-                {/* Toss Completed */}
                 {tossCompleted && (
                     <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
                         <p className="font-bold text-green-700">✓ Toss Completed</p>
                         <p className="text-sm text-green-600 mt-1">
-                            {match.teams?.find(t => t._id === tossWinner)?.name || 'Team'} won the toss and elected to {tossDecision}
+                            {(() => {
+                                const winnerId = typeof tossWinner === 'object' ? tossWinner?._id : tossWinner;
+                                return match.teams?.find(t => (t._id || t) === winnerId)?.name || match.tossWinner?.name || "Team";
+                            })()} won the toss and elected to {tossDecision}
                         </p>
                     </div>
                 )}

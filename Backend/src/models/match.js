@@ -18,6 +18,7 @@ const ballSchema = new mongoose.Schema({
   dismissedPlayer: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
   fielder: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
   commentary: { type: String, default: "" },
+  vividCommentary: { type: String, default: "" },
   timestamp: { type: Date, default: Date.now },
   // Shot placement for wagon wheel
   shotPlacement: {
@@ -75,7 +76,9 @@ const bowlerStatsSchema = new mongoose.Schema({
   wides: { type: Number, default: 0 },
   noBalls: { type: Number, default: 0 },
   economy: { type: Number, default: 0 },
-  dotBalls: { type: Number, default: 0 }
+  dotBalls: { type: Number, default: 0 },
+  foursScored: { type: Number, default: 0 },
+  sixesScored: { type: Number, default: 0 }
 });
 
 const partnershipSchema = new mongoose.Schema({
@@ -260,7 +263,29 @@ const matchSchema = new mongoose.Schema(
     seriesStanding: {
       matchesPlayed: { type: Number, default: 0 },
       position: { type: Number }
-    }
+    },
+    winProbabilityHistory: [{
+      ball: { type: Number },
+      over: { type: Number },
+      team1: { type: Number }, // percentage
+      team2: { type: Number }, // percentage
+      timestamp: { type: Date, default: Date.now }
+    }],
+    drsReviews: [{
+      team: { type: mongoose.Schema.Types.ObjectId, ref: "Team" },
+      over: { type: Number },
+      ball: { type: Number },
+      requestedBy: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
+      result: { type: String, enum: ["upheld", "overturned", "umpire_call"] },
+      type: { type: String, enum: ["lbw", "caught", "other"] },
+      timestamp: { type: Date, default: Date.now }
+    }],
+    timeouts: [{
+      team: { type: mongoose.Schema.Types.ObjectId, ref: "Team" },
+      over: { type: Number },
+      type: { type: String, default: "strategic" },
+      timestamp: { type: Date, default: Date.now }
+    }]
   },
   {
     timestamps: true,

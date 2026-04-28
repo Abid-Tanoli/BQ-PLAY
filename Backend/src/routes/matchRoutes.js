@@ -16,7 +16,22 @@ import {
   setBowlingXI,
   setTeamRoles
 } from "../controllers/matchController.js";
-import { updateScore, endInnings, startNextInnings, reduceOvers, resolveTie, startSuperOverInnings, editCommentary, handleFieldClick } from "../controllers/scoreController.js";
+import { 
+  updateScore, 
+  endInnings, 
+  startNextInnings, 
+  reduceOvers, 
+  resolveTie, 
+  startSuperOverInnings, 
+  editCommentary, 
+  handleFieldClick, 
+  revertLastBall, 
+  setBowler,
+  generateAICommentary,
+  useStrategicTimeout,
+  recordDRSReview,
+  resetInnings
+} from "../controllers/scoreController.js";
 
 const router = express.Router();
 
@@ -33,6 +48,12 @@ router.post("/:matchId/resolve-tie", resolveTie);
 router.post("/:matchId/start-super-over", startSuperOverInnings);
 router.put("/:matchId/edit-commentary", editCommentary);
 router.post("/:matchId/field-click", handleFieldClick);
+router.post("/:matchId/revert-ball", revertLastBall);
+router.post("/:matchId/set-bowler", setBowler);
+router.post("/:matchId/ai-commentary", generateAICommentary);
+router.post("/:matchId/timeout", useStrategicTimeout);
+router.post("/:matchId/drs", recordDRSReview);
+router.post("/:matchId/reset-innings", resetInnings);
 
 router.put("/:id", updateMatch);
 router.put("/:id/status", updateMatchStatus);

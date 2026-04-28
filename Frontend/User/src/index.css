@@ -1,7 +1,30 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+
 @import "tailwindcss";
 
 /* Dark mode configuration */
 @custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --cric-bg: #0a0e14;
+  --cric-card: #141b24;
+  --cric-accent: #ff6b35;
+  --cric-blue: #009cff;
+  --cric-gold: #ffb400;
+  --cric-red: #ff3b3b;
+  --cric-text: #e2e8f0;
+  --cric-muted: #64748b;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  @apply bg-slate-50 dark:bg-[#0a0e14] text-slate-900 dark:text-[#e2e8f0];
+}
+
+h1, h2, h3, .font-raj {
+  font-family: 'Rajdhani', sans-serif;
+}
 
 /* Smooth transitions for theme changes */
 * {
@@ -10,18 +33,37 @@
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-    @apply bg-slate-100 dark:bg-slate-800;
+    background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-    @apply bg-slate-400 dark:bg-slate-600 rounded-full;
+    @apply bg-slate-400 dark:bg-slate-700 rounded-full;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    @apply bg-slate-500 dark:bg-slate-500;
+    @apply bg-slate-500 dark:bg-slate-600;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@keyframes draw-path {
+  from { stroke-dashoffset: 1000; }
+  to { stroke-dashoffset: 0; }
+}
+
+.animate-draw-path {
+  stroke-dasharray: 1000;
+  animation: draw-path 3s ease-out forwards;
 }

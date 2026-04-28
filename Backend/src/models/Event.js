@@ -98,7 +98,6 @@ eventSchema.pre('save', async function () {
 });
 
 eventSchema.index({ eventType: 1, status: 1 });
-eventSchema.index({ slug: 1 }, { unique: true, sparse: true });
 eventSchema.index({ teams: 1 });
 
 export default mongoose.model("Event", eventSchema);

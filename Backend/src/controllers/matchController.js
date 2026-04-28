@@ -3,14 +3,45 @@ import Team from "../models/Team.js";
 import Event from "../models/Event.js";
 import { getIO } from "../socket/socket.js";
 
+const populateMatch = (query) => {
+  return query
+    .populate({
+      path: "teams",
+      select: "name shortName logo players",
+      populate: { path: "players", select: "name playingRole role" }
+    })
+    .populate({
+      path: 'tournament',
+      select: 'name shortName pointsTable',
+      populate: { path: 'pointsTable.team', select: 'name shortName logo' }
+    })
+    .populate("innings.team", "name shortName")
+    .populate("innings.batting.player", "name playingRole role")
+    .populate("innings.bowling.player", "name playingRole role")
+    .populate("innings.currentBatsman1", "name playingRole role")
+    .populate("innings.currentBatsman2", "name playingRole role")
+    .populate("innings.onStrikeBatsman", "name playingRole role")
+    .populate("innings.currentBowler", "name playingRole role")
+    .populate("result.winner", "name shortName")
+    .populate("tossWinner", "name shortName")
+    .populate("manOfMatch", "name playingRole role")
+    .populate("playingXI.players", "name playingRole role")
+    .populate("playingXI.team", "name shortName logo")
+    .populate("squad15.players", "name playingRole role")
+    .populate("squad15.team", "name shortName logo")
+    .populate("squad15.captain", "name playingRole role")
+    .populate("squad15.viceCaptain", "name playingRole role")
+    .populate("squad15.wicketKeepers", "name playingRole role")
+    .populate("bowlingXI.players", "name playingRole role")
+    .populate("bowlingXI.team", "name shortName logo")
+    .populate("teamRoles.captain", "name playingRole role")
+    .populate("teamRoles.viceCaptain", "name playingRole role")
+    .populate("teamRoles.wicketKeepers", "name playingRole role");
+};
+
 export const getMatches = async (req, res) => {
   try {
-    const matches = await Match.find()
-      .populate("teams", "name shortName logo")
-      .populate("tournament", "name shortName slug")
-      .populate("innings.team", "name shortName")
-      .populate("result.winner", "name")
-      .populate("manOfMatch", "name")
+    const matches = await populateMatch(Match.find())
       .sort({ startAt: -1 });
 
     res.status(200).json(matches);
@@ -25,14 +56,7 @@ export const getMatches = async (req, res) => {
 
 export const getMatch = async (req, res) => {
   try {
-    const match = await Match.findById(req.params.id)
-      .populate("teams", "name shortName logo")
-      .populate("innings.team", "name shortName")
-      .populate("innings.batting.player", "name playingRole")
-      .populate("innings.bowling.player", "name playingRole")
-      .populate("result.winner", "name shortName")
-      .populate("tossWinner", "name shortName")
-      .populate("manOfMatch", "name playingRole");
+    const match = await populateMatch(Match.findById(req.params.id));
 
     if (!match) {
       return res.status(404).json({ message: "Match not found" });
@@ -416,18 +440,17 @@ export const setPlayingXI = async (req, res) => {
     }
 
     await match.save();
-    await match.populate("playingXI.team", "name shortName logo");
-    await match.populate("playingXI.players", "name role");
+    const updatedMatch = await populateMatch(Match.findById(matchId));
 
     try {
       const io = getIO();
-      io.to(matchId).emit("match:playingXIUpdated", match);
+      io.to(matchId).emit("match:playingXIUpdated", updatedMatch);
     } catch (socketError) {
       console.log("Socket not available:", socketError.message);
     }
 
     res.status(200).json({
-      match,
+      match: updatedMatch,
       message: "Playing XI set successfully"
     });
   } catch (error) {
@@ -467,18 +490,18 @@ export const setOpeners = async (req, res) => {
     }
 
     await match.save();
-    await match.populate("innings.currentBatsman1", "name role");
-    await match.populate("innings.currentBatsman2", "name role");
+    const updatedMatch = await populateMatch(Match.findById(matchId));
 
     try {
       const io = getIO();
       io.to(matchId).emit("match:openersSet", { matchId, inningsIndex });
+      io.to(matchId).emit("match:updated", updatedMatch);
     } catch (socketError) {
       console.log("Socket not available:", socketError.message);
     }
 
     res.status(200).json({
-      match,
+      match: updatedMatch,
       message: "Openers set successfully"
     });
   } catch (error) {
@@ -503,18 +526,47 @@ export const updateToss = async (req, res) => {
     match.tossWinner = tossWinnerId;
     match.tossDecision = decision;
 
+    // Update innings teams based on toss
+    const team1Id = match.teams[0]._id || match.teams[0];
+    const team2Id = match.teams[1]._id || match.teams[1];
+
+    let battingFirst, bowlingFirst;
+    if (String(tossWinnerId) === String(team1Id)) {
+      if (decision === 'bat') {
+        battingFirst = team1Id;
+        bowlingFirst = team2Id;
+      } else {
+        battingFirst = team2Id;
+        bowlingFirst = team1Id;
+      }
+    } else {
+      if (decision === 'bat') {
+        battingFirst = team2Id;
+        bowlingFirst = team1Id;
+      } else {
+        battingFirst = team1Id;
+        bowlingFirst = team2Id;
+      }
+    }
+
+    if (match.innings && match.innings.length >= 2) {
+      match.innings[0].team = battingFirst;
+      match.innings[1].team = bowlingFirst;
+    }
+
     await match.save();
-    await match.populate("tossWinner", "name shortName logo");
+    const updatedMatch = await populateMatch(Match.findById(matchId));
 
     try {
       const io = getIO();
-      io.emit("match:tossUpdated", match);
+      io.emit("match:tossUpdated", updatedMatch);
+      io.emit("match:updated", updatedMatch);
     } catch (socketError) {
       console.log("Socket not available:", socketError.message);
     }
 
     res.status(200).json({
-      match,
+      match: updatedMatch,
       message: "Toss updated successfully"
     });
   } catch (error) {

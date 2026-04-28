@@ -1,0 +1,11 @@
+{
+    "models": [
+        {
+            "title": "Qwen Turbo",
+            "provider": "openai-compatible",
+            "model": "qwen-turbo",
+            "apiKey": "sk-8186f0eb994740f3b9c9e2e6337f7800",
+            "apiBase": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
+        }
+    ]
+}

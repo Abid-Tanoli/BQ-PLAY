@@ -1,140 +1,85 @@
-import React, { useRef, useState } from "react";
+import React from "react";
 
-const FIELD_ZONES = [
-  { id: "slip", label: "Slip", x: 75, y: 20, side: "off" },
-  { id: "gully", label: "Gully", x: 65, y: 25, side: "off" },
-  { id: "point", label: "Point", x: 25, y: 35, side: "off" },
-  { id: "cover", label: "Cover", x: 30, y: 25, side: "off" },
-  { id: "extra_cover", label: "Extra Cover", x: 40, y: 20, side: "off" },
-  { id: "third_man", label: "Third Man", x: 80, y: 30, side: "off" },
-  { id: "deep_point", label: "Deep Point", x: 20, y: 45, side: "off" },
-  { id: "deep_cover", label: "Deep Cover", x: 25, y: 15, side: "off" },
-  { id: "long_off", label: "Long Off", x: 50, y: 8, side: "off" },
-  { id: "mid_off", label: "Mid Off", x: 55, y: 25, side: "off" },
-  { id: "mid_wicket", label: "Mid Wicket", x: 70, y: 45, side: "on" },
-  { id: "deep_mid_wicket", label: "Deep Mid Wicket", x: 75, y: 55, side: "on" },
-  { id: "square_leg", label: "Square Leg", x: 70, y: 55, side: "on" },
-  { id: "fine_leg", label: "Fine Leg", x: 80, y: 40, side: "on" },
-  { id: "deep_square_leg", label: "Deep Square Leg", x: 75, y: 65, side: "on" },
-  { id: "mid_on", label: "Mid On", x: 50, y: 40, side: "on" },
-  { id: "long_on", label: "Long On", x: 50, y: 55, side: "on" },
-  { id: "cow_corner", label: "Cow Corner", x: 65, y: 65, side: "on" },
-  { id: "wide_mid_on", label: "Wide Mid On", x: 40, y: 45, side: "on" },
-  { id: "wide_mid_off", label: "Wide Mid Off", x: 45, y: 20, side: "off" },
-  { id: "short_mid_wicket", label: "Short Mid Wicket", x: 65, y: 40, side: "on" },
-  { id: "short_cover", label: "Short Cover", x: 35, y: 30, side: "off" },
-  { id: "deep_backward_square_leg", label: "Deep Bwd Sq Leg", x: 70, y: 75, side: "on" },
-  { id: "backward_point", label: "Backward Point", x: 30, y: 45, side: "off" },
-  { id: "short_fine_leg", label: "Short Fine Leg", x: 75, y: 35, side: "on" },
+const POSITIONS = [
+    // Off side
+    { id: "slip", label: "Slip", x: 160, y: 280 },
+    { id: "gully", label: "Gully", x: 110, y: 260 },
+    { id: "point", label: "Point", x: 60, y: 200 },
+    { id: "backward_point", label: "Backward Point", x: 50, y: 240 },
+    { id: "cover", label: "Cover", x: 80, y: 150 },
+    { id: "short_cover", label: "Short Cover", x: 140, y: 170 },
+    { id: "extra_cover", label: "Extra Cover", x: 110, y: 100 },
+    { id: "deep_cover", label: "Deep Cover", x: 40, y: 80 },
+    { id: "mid_off", label: "Mid Off", x: 160, y: 130 },
+    { id: "long_off", label: "Long Off", x: 100, y: 30 },
+    { id: "third_man", label: "Third Man", x: 40, y: 340 },
+
+    // Leg side
+    { id: "mid_on", label: "Mid On", x: 240, y: 130 },
+    { id: "long_on", label: "Long On", x: 300, y: 30 },
+    { id: "short_mid_wicket", label: "Short Mid Wicket", x: 260, y: 170 },
+    { id: "mid_wicket", label: "Mid Wicket", x: 320, y: 150 },
+    { id: "cow_corner", label: "Cow Corner", x: 360, y: 100 },
+    { id: "deep_mid_wicket", label: "Deep Mid Wicket", x: 360, y: 60 },
+    { id: "square_leg", label: "Square Leg", x: 340, y: 200 },
+    { id: "deep_square_leg", label: "Deep Square Leg", x: 380, y: 240 },
+    { id: "short_fine_leg", label: "Short Fine Leg", x: 290, y: 260 },
+    { id: "fine_leg", label: "Fine Leg", x: 340, y: 300 },
+    { id: "deep_backward_square_leg", label: "Deep Backward Square Leg", x: 340, y: 360 },
 ];
 
 export default function CricketFieldMap({ onFieldClick, selectedZone }) {
-  const svgRef = useRef(null);
-  const [hoveredZone, setHoveredZone] = useState(null);
+    const handlePosClick = (pos) => {
+        onFieldClick({
+            position: pos.id,
+            positionLabel: pos.label,
+            x: pos.x,
+            y: pos.y
+        });
+    };
 
-  const handleClick = (e) => {
-    if (!svgRef.current) return;
+    return (
+        <div className="flex flex-col items-center gap-4">
+            <div className="relative w-[400px] h-[400px] bg-[#2d6a4f] rounded-full shadow-2xl overflow-hidden border-8 border-[#1b4332]">
+                <svg width="400" height="400" viewBox="0 0 400 400" className="absolute inset-0">
+                    {/* Inner Ring */}
+                    <circle cx="200" cy="200" r="120" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="2" strokeDasharray="5,5" />
+                    
+                    {/* Pitch */}
+                    <rect x="190" y="140" width="20" height="120" fill="#bc8f8f" />
+                    <line x1="190" y1="160" x2="210" y2="160" stroke="white" strokeWidth="1" />
+                    <line x1="190" y1="240" x2="210" y2="240" stroke="white" strokeWidth="1" />
+                    
+                    {/* Bowler/Striker indicators */}
+                    <circle cx="200" cy="145" r="3" fill="white" />
+                    <rect x="197" y="250" width="6" height="2" fill="white" />
+                </svg>
 
-    const rect = svgRef.current.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-
-    // Find nearest zone
-    let nearestZone = null;
-    let nearestDist = Infinity;
-
-    for (const zone of FIELD_ZONES) {
-      const dist = Math.sqrt(Math.pow(x - zone.x, 2) + Math.pow(y - zone.y, 2));
-      if (dist < nearestDist && dist < 15) {
-        nearestDist = dist;
-        nearestZone = zone;
-      }
-    }
-
-    if (nearestZone) {
-      onFieldClick({
-        x: Math.round(x * 100) / 100,
-        y: Math.round(y * 100) / 100,
-        angle: Math.round(Math.atan2(y - 50, x - 50) * (180 / Math.PI)),
-        position: nearestZone.id,
-        positionLabel: nearestZone.label,
-        side: nearestZone.side,
-        distance: nearestDist < 8 ? "infield" : nearestDist < 12 ? "ring" : "deep",
-      });
-    }
-  };
-
-  return (
-    <div className="relative w-full max-w-md mx-auto">
-      <svg
-        ref={svgRef}
-        viewBox="0 0 100 100"
-        className="w-full h-auto rounded-2xl shadow-xl border-2 border-slate-200 cursor-crosshair"
-        onClick={handleClick}
-      >
-        {/* Field background */}
-        <ellipse cx="50" cy="50" rx="48" ry="48" fill="#2d5a27" />
-        <ellipse cx="50" cy="50" rx="45" ry="45" fill="#3a7a32" />
-
-        {/* Pitch */}
-        <rect x="46" y="20" width="8" height="60" rx="1" fill="#d4a76a" opacity="0.9" />
-        <rect x="47" y="22" width="6" height="56" rx="0.5" fill="#c99760" />
-
-        {/* Creases */}
-        <line x1="44" y1="28" x2="56" y2="28" stroke="white" strokeWidth="0.3" />
-        <line x1="44" y1="72" x2="56" y2="72" stroke="white" strokeWidth="0.3" />
-
-        {/* Field zones */}
-        {FIELD_ZONES.map((zone) => (
-          <g key={zone.id}>
-            <circle
-              cx={zone.x}
-              cy={zone.y}
-              r={selectedZone === zone.id ? 4 : 3}
-              fill={
-                selectedZone === zone.id
-                  ? "#3b82f6"
-                  : hoveredZone === zone.id
-                  ? "#60a5fa"
-                  : "rgba(255,255,255,0.3)"
-              }
-              stroke="white"
-              strokeWidth="0.5"
-              className="transition-all duration-150"
-              onMouseEnter={() => setHoveredZone(zone.id)}
-              onMouseLeave={() => setHoveredZone(null)}
-            />
-            <text
-              x={zone.x}
-              y={zone.y - 4}
-              textAnchor="middle"
-              fontSize="2.5"
-              fill="white"
-              fontWeight="bold"
-              style={{ textShadow: "0 0 2px rgba(0,0,0,0.8)" }}
-              className="pointer-events-none select-none"
-            >
-              {zone.label}
-            </text>
-          </g>
-        ))}
-
-        {/* Center circle */}
-        <circle cx="50" cy="50" r="3" fill="none" stroke="white" strokeWidth="0.3" opacity="0.5" />
-
-        {/* Instructions */}
-        <text x="50" y="95" textAnchor="middle" fontSize="2.5" fill="white" opacity="0.7">
-          Click to select field position
-        </text>
-      </svg>
-
-      {selectedZone && (
-        <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-xl">
-          <p className="text-xs font-bold text-blue-900">
-            Selected: <span className="text-blue-600">{selectedZone}</span>
-          </p>
+                {/* Fielding Buttons */}
+                {POSITIONS.map((pos) => (
+                    <button
+                        key={pos.id}
+                        onClick={() => handlePosClick(pos)}
+                        title={pos.label}
+                        className={`absolute w-4 h-4 rounded-full border-2 border-white transition-all transform -translate-x-1/2 -translate-y-1/2 group ${
+                            selectedZone === pos.id 
+                            ? "bg-[#ff6b35] scale-150 shadow-[0_0_15px_#ff6b35]" 
+                            : "bg-white/80 hover:bg-white hover:scale-125"
+                        }`}
+                        style={{ left: pos.x, top: pos.y }}
+                    >
+                        <span className="absolute bottom-5 left-1/2 -translate-x-1/2 bg-black/80 text-white text-[8px] px-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none transition-opacity font-bold">
+                            {pos.label}
+                        </span>
+                    </button>
+                ))}
+            </div>
+            
+            <div className="bg-white/10 backdrop-blur-md border border-white/20 px-6 py-2 rounded-full shadow-lg">
+                <p className="text-sm font-black text-white uppercase tracking-widest">
+                    Selected: <span className="text-[#ff6b35]">{POSITIONS.find(p => p.id === selectedZone)?.label || "None"}</span>
+                </p>
+            </div>
         </div>
-      )}
-    </div>
-  );
+    );
 }
