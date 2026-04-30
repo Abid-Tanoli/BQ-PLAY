@@ -30,7 +30,8 @@ import {
   generateAICommentary,
   useStrategicTimeout,
   recordDRSReview,
-  resetInnings
+  resetInnings,
+  editBall
 } from "../controllers/scoreController.js";
 
 const router = express.Router();
@@ -54,6 +55,7 @@ router.post("/:matchId/ai-commentary", generateAICommentary);
 router.post("/:matchId/timeout", useStrategicTimeout);
 router.post("/:matchId/drs", recordDRSReview);
 router.post("/:matchId/reset-innings", resetInnings);
+router.put("/:matchId/edit-ball", editBall);
 
 router.put("/:id", updateMatch);
 router.put("/:id/status", updateMatchStatus);

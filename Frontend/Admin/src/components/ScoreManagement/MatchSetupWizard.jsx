@@ -1,0 +1,124 @@
+import React from 'react';
+
+const MatchSetupWizard = ({
+    wizardStep,
+    selectedMatch,
+    setSelectedMatch,
+    setupState,
+    setSetupState,
+    handleSavePlayingXI,
+    handleSaveToss,
+    handleSaveOpeners,
+    battingXI,
+    bowlingXI
+}) => {
+    return (
+        <div className="min-h-screen bg-cric-bg text-cric-text transition-colors duration-300 flex flex-col items-center justify-center p-8">
+            <div className="w-full max-w-4xl bg-cric-card rounded-[4rem] border border-cric-border shadow-2xl p-16 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-2 bg-cric-accent"></div>
+
+                <div className="flex justify-between items-center mb-16">
+                    <div className="space-y-2">
+                        <h2 className="text-5xl font-black font-raj italic uppercase tracking-tighter">Match Setup Wizard</h2>
+                        <p className="text-cric-muted font-medium tracking-wide uppercase text-xs">Step {wizardStep} of 3: {wizardStep === 1 ? 'Team Rosters' : wizardStep === 2 ? 'Toss Result' : 'Openers'}</p>
+                    </div>
+                    <button onClick={() => setSelectedMatch(null)} className="text-[10px] font-black text-cric-muted hover:text-cric-text uppercase tracking-widest border border-cric-border px-6 py-3 rounded-full">Exit Setup</button>
+                </div>
+
+                {wizardStep === 1 && (
+                    <div className="space-y-12">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                            {[0, 1].map(idx => (
+                                <div key={idx} className="space-y-6">
+                                    <h4 className="text-sm font-black uppercase text-cric-accent tracking-widest pl-2">{selectedMatch.teams[idx]?.name} Squad</h4>
+                                    <div className="grid grid-cols-1 gap-2 max-h-[400px] overflow-y-auto no-scrollbar pr-2">
+                                        {(selectedMatch.teams[idx]?.players || []).map(p => {
+                                            const pId = p._id || p;
+                                            const isSelected = idx === 0 ? setupState.team1XI.includes(pId) : setupState.team2XI.includes(pId);
+                                            return (
+                                                <button
+                                                    key={pId}
+                                                    onClick={() => {
+                                                        const teamKey = idx === 0 ? 'team1XI' : 'team2XI';
+                                                        const current = setupState[teamKey];
+                                                        setSetupState(s => ({
+                                                            ...s,
+                                                            [teamKey]: isSelected ? current.filter(id => id !== pId) : [...current, pId]
+                                                        }));
+                                                    }}
+                                                    className={`p-4 rounded-2xl border-2 text-left transition-all ${isSelected ? 'bg-cric-accent/10 border-cric-accent text-cric-text' : 'bg-cric-bg border-cric-border text-cric-muted hover:border-cric-border/80'}`}
+                                                >
+                                                    <div className="font-bold">{p.name || `Player ${pId}`}</div>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                    <div className="text-[10px] font-black text-cric-muted uppercase tracking-widest text-center">
+                                        {idx === 0 ? setupState.team1XI.length : setupState.team2XI.length} / 11 Selected
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <button onClick={handleSavePlayingXI} className="w-full py-8 rounded-[2.5rem] bg-cric-accent text-white font-black font-raj text-2xl italic tracking-tighter uppercase shadow-[0_20px_50px_rgba(255,107,53,0.3)] hover:scale-[1.02] transition-all">Save Playing XIs</button>
+                    </div>
+                )}
+
+                {wizardStep === 2 && (
+                    <div className="space-y-12">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="space-y-4">
+                                <label className="text-[10px] font-black text-cric-muted uppercase tracking-[0.3em] pl-4">Toss Winner</label>
+                                <div className="grid grid-cols-1 gap-4">
+                                    {selectedMatch.teams.map(t => (
+                                        <button key={t._id} onClick={() => setSetupState(s => ({ ...s, tossWinner: t._id }))} className={`p-8 rounded-3xl border-2 font-black text-xl italic font-raj transition-all ${setupState.tossWinner === t._id ? 'bg-blue-600/10 border-blue-500 text-blue-500' : 'bg-cric-bg border-cric-border text-cric-muted'}`}>
+                                            {t.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="space-y-4">
+                                <label className="text-[10px] font-black text-cric-muted uppercase tracking-[0.3em] pl-4">Decision</label>
+                                <div className="grid grid-cols-1 gap-4">
+                                    {['bat', 'bowl'].map(d => (
+                                        <button key={d} onClick={() => setSetupState(s => ({ ...s, tossDecision: d }))} className={`p-8 rounded-3xl border-2 font-black text-xl italic font-raj uppercase transition-all ${setupState.tossDecision === d ? 'bg-cric-accent/10 border-cric-accent text-cric-accent' : 'bg-cric-bg border-cric-border text-cric-muted'}`}>
+                                            {d}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                        <button onClick={handleSaveToss} className="w-full py-8 rounded-[2.5rem] bg-cric-accent text-white font-black font-raj text-2xl italic tracking-tighter uppercase shadow-xl hover:scale-105 transition-all">Confirm Toss</button>
+                    </div>
+                )}
+
+                {wizardStep === 3 && (
+                    <div className="space-y-12">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                            <div className="space-y-6">
+                                <h4 className="text-[10px] font-black uppercase text-cric-accent tracking-widest pl-2">Select Batters</h4>
+                                <select value={setupState.strikerId} onChange={(e) => setSetupState(s => ({ ...s, strikerId: e.target.value }))} className="w-full p-6 bg-cric-bg border border-cric-border rounded-3xl text-cric-text font-bold outline-none focus:border-cric-accent">
+                                    <option value="">Select Striker...</option>
+                                    {battingXI.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
+                                </select>
+                                <select value={setupState.nonStrikerId} onChange={(e) => setSetupState(s => ({ ...s, nonStrikerId: e.target.value }))} className="w-full p-6 bg-cric-bg border border-cric-border rounded-3xl text-cric-text font-bold outline-none focus:border-cric-accent">
+                                    <option value="">Select Non-Striker...</option>
+                                    {battingXI.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
+                                </select>
+                            </div>
+                            <div className="space-y-6">
+                                <h4 className="text-[10px] font-black uppercase text-blue-500 tracking-widest pl-2">Select Bowler</h4>
+                                <select value={setupState.bowlerId} onChange={(e) => setSetupState(s => ({ ...s, bowlerId: e.target.value }))} className="w-full p-6 bg-cric-bg border border-cric-border rounded-3xl text-cric-text font-bold outline-none focus:border-blue-500">
+                                    <option value="">Select Opening Bowler...</option>
+                                    {bowlingXI.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
+                                </select>
+                            </div>
+                        </div>
+                        <button onClick={handleSaveOpeners} className="w-full py-8 rounded-[2.5rem] bg-cric-accent text-white font-black font-raj text-2xl italic tracking-tighter uppercase shadow-xl hover:scale-105 transition-all">Start Live Scoring</button>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+export default MatchSetupWizard;

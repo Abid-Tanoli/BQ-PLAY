@@ -2,33 +2,60 @@ import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { useSelector } from 'react-redux';
 import BallByBallFeed from '../components/BallByBallFeed';
+import CricketGround from '../components/CricketGround';
+import MatchSetupWizard from '../components/ScoreManagement/MatchSetupWizard';
+import RightSidebarControls from '../components/ScoreManagement/RightSidebarControls';
+import LiveScoringPanel from '../components/ScoreManagement/LiveScoringPanel';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
-const API_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY || ''; 
+const API_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY || '';
 
 const FIELD_POSITIONS = [
-    { id: 'long_off', name: 'Long Off', x: 140, y: 40 },
-    { id: 'long_on', name: 'Long On', x: 260, y: 40 },
-    { id: 'mid_off', name: 'Mid Off', x: 160, y: 130 },
-    { id: 'mid_on', name: 'Mid On', x: 240, y: 130 },
-    { id: 'cover', name: 'Cover', x: 90, y: 150 },
-    { id: 'point', name: 'Point', x: 60, y: 200 },
-    { id: 'fine_leg', name: 'Fine Leg', x: 280, y: 350 },
-    { id: 'square_leg', name: 'Square Leg', x: 340, y: 200 },
-    { id: 'mid_wicket', name: 'Mid Wicket', x: 300, y: 150 },
-    { id: 'gully', name: 'Gully', x: 100, y: 250 },
-    { id: 'slip', name: 'Slip', x: 140, y: 280 },
-    { id: 'third_man', name: 'Third Man', x: 120, y: 360 },
-    { id: 'short_fine_leg', name: 'Short Fine Leg', x: 250, y: 290 },
-    { id: 'deep_cover', name: 'Deep Cover', x: 40, y: 100 },
-    { id: 'extra_cover', name: 'Extra Cover', x: 110, y: 90 },
-    { id: 'backward_point', name: 'Backward Point', x: 70, y: 240 },
-    { id: 'deep_mid_wicket', name: 'Deep Mid Wicket', x: 350, y: 90 },
-    { id: 'deep_square_leg', name: 'Deep Square Leg', x: 370, y: 230 },
-    { id: 'short_mid_wicket', name: 'Short Mid Wicket', x: 270, y: 180 },
-    { id: 'cow_corner', name: 'Cow Corner', x: 300, y: 60 },
-    { id: 'deep_backward_square_leg', name: 'Deep Backward Square Leg', x: 350, y: 280 },
-    { id: 'short_cover', name: 'Short Cover', x: 150, y: 180 }
+    // Close Infield (radius 50-80px from center)
+    { id: 'wicket_keeper', name: 'Wicket Keeper', x: 200, y: 235 },
+    { id: 'slip_1', name: '1st Slip', x: 170, y: 240 },
+    { id: 'slip_2', name: '2nd Slip', x: 155, y: 245 },
+    { id: 'gully', name: 'Gully', x: 140, y: 230 },
+    { id: 'leg_slip', name: 'Leg Slip', x: 228, y: 240 },
+    { id: 'leg_gully', name: 'Leg Gully', x: 242, y: 228 },
+    { id: 'silly_point', name: 'Silly Point', x: 148, y: 205 },
+    { id: 'silly_mid_on', name: 'Silly Mid On', x: 222, y: 195 },
+    { id: 'silly_mid_off', name: 'Silly Mid Off', x: 178, y: 195 },
+    { id: 'short_leg', name: 'Short Leg', x: 235, y: 210 },
+    { id: 'bat_pad', name: 'Bat Pad (Leg)', x: 215, y: 200 },
+    // Inner Ring / 30-Yard Circle (radius 80-120px)
+    { id: 'point', name: 'Point', x: 110, y: 200 },
+    { id: 'backward_point', name: 'Backward Point', x: 115, y: 225 },
+    { id: 'cover_point', name: 'Cover Point', x: 120, y: 185 },
+    { id: 'cover', name: 'Cover', x: 128, y: 165 },
+    { id: 'extra_cover', name: 'Extra Cover', x: 145, y: 148 },
+    { id: 'mid_off', name: 'Mid Off', x: 170, y: 138 },
+    { id: 'mid_on', name: 'Mid On', x: 230, y: 138 },
+    { id: 'mid_wicket', name: 'Mid Wicket', x: 268, y: 155 },
+    { id: 'square_leg', name: 'Square Leg', x: 288, y: 200 },
+    { id: 'backward_square_leg', name: 'Backward Square Leg', x: 282, y: 222 },
+    { id: 'short_fine_leg', name: 'Short Fine Leg', x: 252, y: 252 },
+    { id: 'forward_short_leg', name: 'Forward Short Leg', x: 245, y: 185 },
+    // Outfield (radius 130-185px from center)
+    { id: 'third_man', name: 'Third Man', x: 122, y: 338 },
+    { id: 'fine_leg', name: 'Fine Leg', x: 272, y: 345 },
+    { id: 'deep_fine_leg', name: 'Deep Fine Leg', x: 258, y: 368 },
+    { id: 'deep_backward_sq', name: 'Deep Backward Sq Leg', x: 348, y: 272 },
+    { id: 'deep_square_leg', name: 'Deep Square Leg', x: 365, y: 205 },
+    { id: 'deep_mid_wicket', name: 'Deep Mid Wicket', x: 355, y: 138 },
+    { id: 'cow_corner', name: 'Cow Corner', x: 328, y: 92 },
+    { id: 'long_on', name: 'Long On', x: 260, y: 52 },
+    { id: 'straight_hit', name: 'Straight Hit', x: 200, y: 35 },
+    { id: 'long_off', name: 'Long Off', x: 138, y: 52 },
+    { id: 'deep_extra_cover', name: 'Deep Extra Cover', x: 70, y: 92 },
+    { id: 'sweeper_cover', name: 'Sweeper Cover', x: 48, y: 138 },
+    { id: 'deep_cover', name: 'Deep Cover', x: 42, y: 175 },
+    { id: 'deep_point', name: 'Deep Point', x: 38, y: 205 },
+    { id: 'deep_backward_point', name: 'Deep Backward Point', x: 48, y: 245 },
+    { id: 'long_stop', name: 'Long Stop', x: 200, y: 375 },
+    // Wide Zones
+    { id: 'wide_off', name: 'Wide (Off Side)', x: 15, y: 200 },
+    { id: 'wide_leg', name: 'Wide (Leg Side)', x: 385, y: 200 },
 ];
 const WICKET_TYPES = ['bowled', 'caught', 'lbw', 'run out', 'stumped', 'hit wicket'];
 
@@ -37,7 +64,7 @@ export default function ManageScore() {
     const [matches, setMatches] = useState([]);
     const [selectedMatch, setSelectedMatch] = useState(null);
     const [loading, setLoading] = useState(false);
-    
+
     const [selectedRuns, setSelectedRuns] = useState(0);
     const [selectedExtra, setSelectedExtra] = useState(null);
     const [selectedWicket, setSelectedWicket] = useState('');
@@ -52,6 +79,7 @@ export default function ManageScore() {
     const [activeTab, setActiveTab] = useState('live');
     const [showSelectionModal, setShowSelectionModal] = useState('');
     const [useAICommentary, setUseAICommentary] = useState(true);
+    const [activeGroundZone, setActiveGroundZone] = useState(null); // { x, y, zone, direction, shotName, autoRuns }
 
     const [setupState, setSetupState] = useState({
         team1XI: [],
@@ -90,12 +118,12 @@ export default function ManageScore() {
 
     const curInn = selectedMatch?.innings[selectedMatch?.currentInnings] || null;
     const battingTeamId = curInn?.team?._id || curInn?.team;
-    
+
     // Win Probability Logic
     const calculateWinProb = () => {
         if (!selectedMatch || !curInn) return { team1: 50, team2: 50 };
         if (selectedMatch.status === 'completed') return { team1: selectedMatch.result.winner === selectedMatch.teams[0]._id ? 100 : 0, team2: selectedMatch.result.winner === selectedMatch.teams[1]._id ? 100 : 0 };
-        
+
         // Simple heuristic for demo: (Required RR vs Current RR)
         if (selectedMatch.currentInnings === 1 && curInn.target > 0) {
             const rrr = curInn.requiredRunRate || 0;
@@ -114,7 +142,7 @@ export default function ManageScore() {
         if (!teamId || !selectedMatch) return [];
         const pxi = selectedMatch.playingXI?.find(p => String(p.team?._id || p.team) === String(teamId));
         if (!pxi || !pxi.players) return [];
-        
+
         // Ensure we return player objects with names
         return pxi.players.map(p => {
             if (typeof p === 'object' && p !== null && p.name) return p;
@@ -132,7 +160,7 @@ export default function ManageScore() {
     const getSquad = (teamId) => {
         if (!teamId || !selectedMatch) return [];
         const squad = selectedMatch.squad15?.find(s => String(s.team?._id || s.team) === String(teamId));
-        
+
         let players = [];
         if (squad && squad.players && squad.players.length > 0) {
             players = squad.players;
@@ -152,7 +180,7 @@ export default function ManageScore() {
                 return typeof p === 'object' ? p : { _id: p, name: `Player ${p}` };
             });
         }
-        
+
         // Final fallback: use all players assigned to the team
         const team = selectedMatch.teams?.find(t => String(t._id) === String(teamId));
         return team?.players || [];
@@ -223,15 +251,15 @@ export default function ManageScore() {
             setLoading(true);
             const res = await axios.get(`${API_URL}/matches/${matchId}`);
             setSelectedMatch(res.data);
-            
-            const t1XI = res.data.playingXI?.find(p => (p.team?._id||p.team) === res.data.teams[0]?._id)?.players?.map(p=>p._id||p) || [];
-            const t2XI = res.data.playingXI?.find(p => (p.team?._id||p.team) === res.data.teams[1]?._id)?.players?.map(p=>p._id||p) || [];
+
+            const t1XI = res.data.playingXI?.find(p => (p.team?._id || p.team) === res.data.teams[0]?._id)?.players?.map(p => p._id || p) || [];
+            const t2XI = res.data.playingXI?.find(p => (p.team?._id || p.team) === res.data.teams[1]?._id)?.players?.map(p => p._id || p) || [];
             const curInn = res.data.innings[res.data.currentInnings];
             const strikeId = curInn?.onStrikeBatsman?._id || curInn?.onStrikeBatsman || '';
             const bat1Id = curInn?.currentBatsman1?._id || curInn?.currentBatsman1 || '';
             const bat2Id = curInn?.currentBatsman2?._id || curInn?.currentBatsman2 || '';
             const nonStrikeId = (bat1Id === strikeId ? bat2Id : bat1Id);
-            
+
             setSetupState(prev => ({
                 ...prev,
                 team1XI: t1XI,
@@ -257,8 +285,8 @@ export default function ManageScore() {
         if (!curInn) return;
 
         // 1. Check Playing XI
-        const team1XI = matchData.playingXI?.find(p => (p.team?._id||p.team) === matchData.teams[0]?._id);
-        const team2XI = matchData.playingXI?.find(p => (p.team?._id||p.team) === matchData.teams[1]?._id);
+        const team1XI = matchData.playingXI?.find(p => (p.team?._id || p.team) === matchData.teams[0]?._id);
+        const team2XI = matchData.playingXI?.find(p => (p.team?._id || p.team) === matchData.teams[1]?._id);
         const hasPlayingXI = team1XI && team2XI && team1XI.players.length === 11 && team2XI.players.length === 11;
 
         // 2. Check Toss
@@ -298,7 +326,7 @@ export default function ManageScore() {
         const b1Id = curInn.currentBatsman1?._id || curInn.currentBatsman1;
         const b2Id = curInn.currentBatsman2?._id || curInn.currentBatsman2;
         const batsmanNonStrike = (String(b1Id) === String(batsmanOnStrike) ? b2Id : b1Id);
-        
+
         let aiLine1 = manualCommentary || "Played securely.";
 
         const ballData = {
@@ -314,7 +342,9 @@ export default function ManageScore() {
             batsmanOnStrikeId: batsmanOnStrike,
             batsmanNonStrikeId: batsmanNonStrike,
             bowlerId: curInn.currentBowler?._id || curInn.currentBowler,
-            fieldingZone: FIELD_POSITIONS.find(p => p.id === fieldPos)?.name || fieldPos,
+            fieldingZone: activeGroundZone?.direction || FIELD_POSITIONS.find(p => p.id === fieldPos)?.name || fieldPos,
+            shotPlacement: activeGroundZone ? { x: activeGroundZone.x, y: activeGroundZone.y, angle: activeGroundZone.angle, distance: activeGroundZone.distance, position: activeGroundZone.direction } : (shotPlacement || null),
+            shotType: activeGroundZone?.shotName || '',
             commentaryText: manualCommentary,
             customCommentary: !useAICommentary && !!manualCommentary,
             nextBatsmanId: setupState.wicketNewBatter || undefined
@@ -324,7 +354,7 @@ export default function ManageScore() {
             const res = await axios.post(`${API_URL}/matches/${selectedMatch._id}/score`, ballData, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            
+
             setToast(res.data.isOverComplete ? "Over Completed!" : "Ball Submitted");
             setSelectedMatch(res.data.match);
             setSelectedRuns(0);
@@ -332,11 +362,12 @@ export default function ManageScore() {
             setSelectedWicket('');
             setFieldPos('');
             setManualCommentary('');
-            
+            setActiveGroundZone(null);
+
             if (res.data.shouldEndInnings) {
                 setToast("Innings should be ended!");
             }
-            
+
             // If there's a new batter selected from the wicket modal, assign them
             if (selectedWicket && setupState.wicketNewBatter) {
                 try {
@@ -382,13 +413,40 @@ export default function ManageScore() {
         if (!window.confirm("Are you sure you want to undo the last ball? All associated stats will be reversed.")) return;
         if (!selectedMatch) return;
         try {
-            const res = await axios.post(`${API_URL}/matches/${selectedMatch._id}/revert-ball`, 
-            { inningsIndex: selectedMatch.currentInnings }, 
-            { headers: { Authorization: `Bearer ${token}` }});
+            const res = await axios.post(`${API_URL}/matches/${selectedMatch._id}/revert-ball`,
+                { inningsIndex: selectedMatch.currentInnings },
+                { headers: { Authorization: `Bearer ${token}` } });
             setSelectedMatch(res.data.match);
             setToast("Reverted successfully");
-        } catch(e) {
+        } catch (e) {
             alert(e.response?.data?.message || e.message);
+        }
+    };
+
+    const handleGroundClick = ({ x, y, angle, distance, direction, shotName, zone, autoRuns }) => {
+        setActiveGroundZone({ x, y, angle, distance, direction, shotName, zone, autoRuns });
+        if (autoRuns === 6) {
+            setSelectedRuns(6);
+            setSelectedExtra(null);
+            setToast('SIX! Click Submit to record.');
+        } else if (autoRuns === 4) {
+            setSelectedRuns(4);
+            setSelectedExtra(null);
+            setToast('FOUR! Click Submit to record.');
+        }
+    };
+
+    const handleEditBall = async (ballData) => {
+        try {
+            const res = await axios.put(
+                `${API_URL}/matches/${selectedMatch._id}/edit-ball`,
+                { inningsIndex: selectedMatch.currentInnings, ...ballData },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setSelectedMatch(res.data.match);
+            setToast('Ball updated successfully!');
+        } catch (err) {
+            alert(err.response?.data?.message || err.message);
         }
     };
 
@@ -409,11 +467,11 @@ export default function ManageScore() {
         try {
             const updated = { ...selectedMatch };
             const curInn = updated.innings[updated.currentInnings];
-            
+
             // To persist, we should hit the API
             if (role === 'striker' || role === 'nonStriker') {
                 const currentStrikerId = curInn.onStrikeBatsman?._id || curInn.onStrikeBatsman;
-                const currentNonStrikerId = (String(curInn.currentBatsman1?._id || curInn.currentBatsman1) === String(currentStrikerId)) 
+                const currentNonStrikerId = (String(curInn.currentBatsman1?._id || curInn.currentBatsman1) === String(currentStrikerId))
                     ? (curInn.currentBatsman2?._id || curInn.currentBatsman2)
                     : (curInn.currentBatsman1?._id || curInn.currentBatsman1);
 
@@ -425,7 +483,7 @@ export default function ManageScore() {
                     b1 = currentStrikerId;
                     b2 = playerId;
                 }
-                
+
                 await axios.put(`${API_URL}/matches/${selectedMatch._id}/openers`, {
                     inningsIndex: selectedMatch.currentInnings,
                     batsman1Id: b1,
@@ -449,7 +507,7 @@ export default function ManageScore() {
             } else if (role === 'bowler') {
                 curInn.currentBowler = playerId;
             }
-            
+
             setSelectedMatch({ ...updated });
             setShowSelectionModal('');
             // Re-fetch to ensure sync with backend
@@ -514,12 +572,12 @@ export default function ManageScore() {
                 batsman1Id: setupState.strikerId,
                 batsman2Id: setupState.nonStrikerId
             }, { headers: { Authorization: `Bearer ${token}` } });
-            
+
             await axios.post(`${API_URL}/matches/${selectedMatch._id}/set-bowler`, {
                 inningsIndex: selectedMatch.currentInnings,
                 bowlerId: setupState.bowlerId
             }, { headers: { Authorization: `Bearer ${token}` } });
-            
+
             setIsPreMatchComplete(true);
             const res = await axios.get(`${API_URL}/matches/${selectedMatch._id}`);
             setSelectedMatch(res.data);
@@ -575,25 +633,25 @@ export default function ManageScore() {
 
     if (!selectedMatch) {
         return (
-            <div className="p-8 max-w-[1200px] mx-auto min-h-screen bg-[#f1f5f9]">
-                <h1 className="text-3xl font-black text-[#0d1b2a] mb-8 uppercase tracking-tight">Select Match to Score</h1>
+            <div className="p-8 max-w-[1200px] mx-auto min-h-screen bg-cric-bg transition-colors duration-300">
+                <h1 className="text-3xl font-black text-cric-text mb-8 uppercase tracking-tight">Select Match to Score</h1>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {matches.map(m => (
-                        <div key={m._id} onClick={() => handleSelectMatch(m._id)} className="bg-white p-8 rounded-3xl shadow-sm border border-transparent hover:border-blue-400 cursor-pointer transition-all relative group overflow-hidden">
-                            <div className="absolute top-0 left-0 w-2 h-full bg-blue-500"></div>
-                            <button 
-                                onClick={(e) => handleDeleteMatch(m._id, e)} 
-                                className="absolute top-4 right-4 w-10 h-10 rounded-full bg-red-50 text-red-400 hover:bg-red-500 hover:text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
+                        <div key={m._id} onClick={() => handleSelectMatch(m._id)} className="bg-cric-card p-8 rounded-3xl shadow-sm border border-cric-border hover:border-cric-accent cursor-pointer transition-all relative group overflow-hidden">
+                            <div className="absolute top-0 left-0 w-2 h-full bg-cric-blue"></div>
+                            <button
+                                onClick={(e) => handleDeleteMatch(m._id, e)}
+                                className="absolute top-4 right-4 w-10 h-10 rounded-full bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
                                 title="Delete match"
                             >
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M18 6L6 18M6 6l12 12" /></svg>
                             </button>
-                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">{m.format} • {m.venue}</div>
-                            <h2 className="text-xl font-black text-[#0d1b2a] leading-tight mb-4 uppercase">{m.teams[0]?.name} <br/><span className="text-blue-500">VS</span><br/> {m.teams[1]?.name}</h2>
+                            <div className="text-[10px] font-black text-cric-muted uppercase tracking-widest mb-2">{m.format} • {m.venue}</div>
+                            <h2 className="text-xl font-black text-cric-text leading-tight mb-4 uppercase">{m.teams[0]?.name} <br /><span className="text-cric-blue">VS</span><br /> {m.teams[1]?.name}</h2>
                             <div className="flex items-center justify-between mt-4">
-                                <span className={`text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest ${m.status === 'live' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'}`}>{m.status}</span>
-                                <div className="text-blue-600 group-hover:translate-x-1 transition-transform">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                                <span className={`text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest ${m.status === 'live' ? 'bg-red-500/20 text-red-500' : 'bg-cric-muted/20 text-cric-muted'}`}>{m.status}</span>
+                                <div className="text-cric-blue group-hover:translate-x-1 transition-transform">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
                                 </div>
                             </div>
                         </div>
@@ -605,120 +663,27 @@ export default function ManageScore() {
 
     if (!isPreMatchComplete) {
         return (
-            <div className="min-h-screen bg-[#0a0e14] text-white flex flex-col items-center justify-center p-8">
-                <div className="w-full max-w-4xl bg-[#141b24] rounded-[4rem] border border-white/5 shadow-2xl p-16 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-2 bg-[#ff6b35]"></div>
-                    
-                    <div className="flex justify-between items-center mb-16">
-                        <div className="space-y-2">
-                            <h2 className="text-5xl font-black font-raj italic uppercase tracking-tighter">Match Setup Wizard</h2>
-                            <p className="text-slate-400 font-medium tracking-wide uppercase text-xs">Step {wizardStep} of 3: {wizardStep === 1 ? 'Team Rosters' : wizardStep === 2 ? 'Toss Result' : 'Openers'}</p>
-                        </div>
-                        <button onClick={() => setSelectedMatch(null)} className="text-[10px] font-black text-slate-500 hover:text-white uppercase tracking-widest border border-white/10 px-6 py-3 rounded-full">Exit Setup</button>
-                    </div>
-
-                    {wizardStep === 1 && (
-                        <div className="space-y-12">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                                {[0, 1].map(idx => (
-                                    <div key={idx} className="space-y-6">
-                                        <h4 className="text-sm font-black uppercase text-[#ff6b35] tracking-widest pl-2">{selectedMatch.teams[idx]?.name} Squad</h4>
-                                        <div className="grid grid-cols-1 gap-2 max-h-[400px] overflow-y-auto no-scrollbar pr-2">
-                                            {(selectedMatch.teams[idx]?.players || []).map(p => {
-                                                const pId = p._id || p;
-                                                const isSelected = idx === 0 ? setupState.team1XI.includes(pId) : setupState.team2XI.includes(pId);
-                                                return (
-                                                    <button 
-                                                        key={pId}
-                                                        onClick={() => {
-                                                            const teamKey = idx === 0 ? 'team1XI' : 'team2XI';
-                                                            const current = setupState[teamKey];
-                                                            setSetupState(s => ({
-                                                                ...s,
-                                                                [teamKey]: isSelected ? current.filter(id => id !== pId) : [...current, pId]
-                                                            }));
-                                                        }}
-                                                        className={`p-4 rounded-2xl border-2 text-left transition-all ${isSelected ? 'bg-[#ff6b35]/10 border-[#ff6b35] text-white' : 'bg-white/2 border-white/5 text-slate-500 hover:border-white/20'}`}
-                                                    >
-                                                        <div className="font-bold">{p.name || `Player ${pId}`}</div>
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-                                        <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">
-                                            {idx === 0 ? setupState.team1XI.length : setupState.team2XI.length} / 11 Selected
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                            <button onClick={handleSavePlayingXI} className="w-full py-8 rounded-[2.5rem] bg-[#ff6b35] text-white font-black font-raj text-2xl italic tracking-tighter uppercase shadow-[0_20px_50px_rgba(255,107,53,0.3)] hover:scale-[1.02] transition-all">Save Playing XIs</button>
-                        </div>
-                    )}
-
-                    {wizardStep === 2 && (
-                        <div className="space-y-12">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div className="space-y-4">
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] pl-4">Toss Winner</label>
-                                    <div className="grid grid-cols-1 gap-4">
-                                        {selectedMatch.teams.map(t => (
-                                            <button key={t._id} onClick={() => setSetupState(s => ({ ...s, tossWinner: t._id }))} className={`p-8 rounded-3xl border-2 font-black text-xl italic font-raj transition-all ${setupState.tossWinner === t._id ? 'bg-blue-600/10 border-blue-500 text-blue-500' : 'bg-white/2 border-white/5 text-slate-500'}`}>
-                                                {t.name}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                                <div className="space-y-4">
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] pl-4">Decision</label>
-                                    <div className="grid grid-cols-1 gap-4">
-                                        {['bat', 'bowl'].map(d => (
-                                            <button key={d} onClick={() => setSetupState(s => ({ ...s, tossDecision: d }))} className={`p-8 rounded-3xl border-2 font-black text-xl italic font-raj uppercase transition-all ${setupState.tossDecision === d ? 'bg-[#ff6b35]/10 border-[#ff6b35] text-[#ff6b35]' : 'bg-white/2 border-white/5 text-slate-500'}`}>
-                                                {d}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                            <button onClick={handleSaveToss} className="w-full py-8 rounded-[2.5rem] bg-[#ff6b35] text-white font-black font-raj text-2xl italic tracking-tighter uppercase shadow-xl hover:scale-105 transition-all">Confirm Toss</button>
-                        </div>
-                    )}
-
-                    {wizardStep === 3 && (
-                        <div className="space-y-12">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                                <div className="space-y-6">
-                                    <h4 className="text-[10px] font-black uppercase text-[#ff6b35] tracking-widest pl-2">Select Batters</h4>
-                                    <select value={setupState.strikerId} onChange={(e) => setSetupState(s => ({ ...s, strikerId: e.target.value }))} className="w-full p-6 bg-black/40 border border-white/10 rounded-3xl text-white font-bold outline-none focus:border-[#ff6b35]">
-                                        <option value="">Select Striker...</option>
-                                        {battingXI.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
-                                    </select>
-                                    <select value={setupState.nonStrikerId} onChange={(e) => setSetupState(s => ({ ...s, nonStrikerId: e.target.value }))} className="w-full p-6 bg-black/40 border border-white/10 rounded-3xl text-white font-bold outline-none focus:border-[#ff6b35]">
-                                        <option value="">Select Non-Striker...</option>
-                                        {battingXI.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
-                                    </select>
-                                </div>
-                                <div className="space-y-6">
-                                    <h4 className="text-[10px] font-black uppercase text-blue-500 tracking-widest pl-2">Select Bowler</h4>
-                                    <select value={setupState.bowlerId} onChange={(e) => setSetupState(s => ({ ...s, bowlerId: e.target.value }))} className="w-full p-6 bg-black/40 border border-white/10 rounded-3xl text-white font-bold outline-none focus:border-blue-500">
-                                        <option value="">Select Opening Bowler...</option>
-                                        {bowlingXI.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
-                                    </select>
-                                </div>
-                            </div>
-                            <button onClick={handleSaveOpeners} className="w-full py-8 rounded-[2.5rem] bg-[#ff6b35] text-white font-black font-raj text-2xl italic tracking-tighter uppercase shadow-xl hover:scale-105 transition-all">Start Live Scoring</button>
-                        </div>
-                    )}
-                </div>
-            </div>
+            <MatchSetupWizard
+                wizardStep={wizardStep}
+                selectedMatch={selectedMatch}
+                setSelectedMatch={setSelectedMatch}
+                setupState={setupState}
+                setSetupState={setSetupState}
+                handleSavePlayingXI={handleSavePlayingXI}
+                handleSaveToss={handleSaveToss}
+                handleSaveOpeners={handleSaveOpeners}
+                battingXI={battingXI}
+                bowlingXI={bowlingXI}
+            />
         );
     }
 
     return (
-        <div className="flex flex-col lg:flex-row min-h-screen bg-[#0a0e14] text-white p-4 lg:p-8 gap-8">
+        <div className="flex flex-col lg:flex-row min-h-screen bg-cric-bg text-cric-text p-4 lg:p-8 gap-8 transition-colors duration-300">
             {/* MAIN CONTENT (Left) */}
             <div className="flex-1 flex flex-col min-w-0">
                 {/* Header / Match Info */}
-                <div className="bg-[#141b24] rounded-[2.5rem] p-8 border border-white/5 shadow-xl mb-6">
+                <div className="bg-cric-card rounded-[2.5rem] p-8 border border-cric-border shadow-xl mb-6">
                     <div className="flex justify-between items-center mb-6">
                         <div className="flex items-center gap-4">
                             <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
@@ -726,7 +691,7 @@ export default function ManageScore() {
                         </div>
                         <div className="text-[10px] font-black tracking-[0.3em] uppercase text-[#ff6b35]">Match ID: {selectedMatch._id.slice(-6)}</div>
                     </div>
-                    
+
                     <div className="flex justify-between items-end">
                         <div className="space-y-2">
                             <h1 className="text-5xl font-black font-raj italic tracking-tighter uppercase leading-none">
@@ -744,12 +709,12 @@ export default function ManageScore() {
                 </div>
 
                 {/* Tab Navigation */}
-                <div className="flex bg-[#141b24] rounded-full p-1 border border-white/5 mb-6 overflow-x-auto no-scrollbar">
+                <div className="flex bg-cric-card rounded-full p-1 border border-cric-border mb-6 overflow-x-auto no-scrollbar">
                     {tabs.map(tab => (
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className={`flex-1 flex items-center justify-center gap-2 py-4 px-6 rounded-full transition-all whitespace-nowrap ${activeTab === tab.id ? 'bg-[#ff6b35] text-white shadow-lg shadow-[#ff6b35]/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                            className={`flex-1 flex items-center justify-center gap-2 py-4 px-6 rounded-full transition-all whitespace-nowrap ${activeTab === tab.id ? 'bg-cric-accent text-white shadow-lg shadow-cric-accent/20' : 'text-cric-muted hover:text-cric-text hover:bg-black/5 dark:hover:bg-white/5'}`}
                         >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d={tab.icon} />
@@ -760,125 +725,33 @@ export default function ManageScore() {
                 </div>
 
                 {/* Tab Content Area */}
-                <div className="flex-1 bg-[#141b24] rounded-[3.5rem] border border-white/5 shadow-2xl p-8 overflow-y-auto no-scrollbar min-h-[600px]">
+                <div className="flex-1 bg-cric-card rounded-[3.5rem] border border-cric-border shadow-2xl p-8 overflow-y-auto no-scrollbar min-h-[600px]">
                     {activeTab === 'live' && (
-                        <div className="space-y-8 animate-fadeIn">
-                            {/* Score Overlays, Batsmen, Bowlers */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {/* Batsmen Card */}
-                                <div className="bg-black/20 rounded-[2.5rem] p-8 border border-white/5">
-                                    <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6">Current Batters</h3>
-                                    <div className="space-y-6">
-                                        <div className="flex justify-between items-center">
-                                            <div>
-                                                <div className="text-xl font-black text-white flex items-center gap-2">
-                                                    {battingXI.find(p => String(p._id) === String(strikerId))?.name || 'Waiting...'}
-                                                    <span className="text-[#ff6b35]">*</span>
-                                                </div>
-                                                <div className="text-[10px] font-bold text-slate-500 uppercase mt-1">Striker</div>
-                                            </div>
-                                            <div className="text-right">
-                                                <div className="text-2xl font-black text-white">{Math.max(0, strikerStats?.runs || 0)} ({Math.max(0, strikerStats?.balls || 0)})</div>
-                                                <div className="text-[10px] font-bold text-slate-500 uppercase mt-1">4s: {strikerStats?.fours || 0} | 6s: {strikerStats?.sixes || 0}</div>
-                                            </div>
-                                        </div>
-                                        <div className="h-px bg-white/5" />
-                                        <div className="flex justify-between items-center opacity-60">
-                                            <div>
-                                                <div className="text-xl font-black text-white">{battingXI.find(p => String(p._id) === String(nonStrikerId))?.name || 'Waiting...'}</div>
-                                                <div className="text-[10px] font-bold text-slate-500 uppercase mt-1">Non-Striker</div>
-                                            </div>
-                                            <div className="text-right">
-                                                <div className="text-2xl font-black text-white">{Math.max(0, nonStrikerStats?.runs || 0)} ({Math.max(0, nonStrikerStats?.balls || 0)})</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Bowler Card */}
-                                <div className="bg-black/20 rounded-[2.5rem] p-8 border border-white/5">
-                                    <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6">Active Bowler</h3>
-                                    <div className="flex justify-between items-center">
-                                        <div>
-                                            <div className="text-xl font-black text-blue-400">
-                                                {bowlingXI.find(p => String(p._id) === String(bowlerId))?.name || 'Waiting...'}
-                                            </div>
-                                            <div className="text-[10px] font-bold text-slate-500 uppercase mt-1">Currently Bowling</div>
-                                        </div>
-                                        <div className="text-right">
-                                            <div className="text-2xl font-black text-white">
-                                                {activeBowlerStats?.wickets || 0}/{activeBowlerStats?.runs || 0}
-                                            </div>
-                                            <div className="text-[10px] font-bold text-slate-500 uppercase mt-1">
-                                                OVERS: {formatOvers(activeBowlerStats?.balls || 0)}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    {/* Win Probability Heuristic Visual */}
-                                    <div className="mt-8 pt-8 border-t border-white/5">
-                                        <div className="flex justify-between text-[10px] font-black uppercase mb-2">
-                                            <span>{selectedMatch.teams[0].name} {Math.round(winProb.team1)}%</span>
-                                            <span>{selectedMatch.teams[1].name} {Math.round(winProb.team2)}%</span>
-                                        </div>
-                                        <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden flex">
-                                            <div className="h-full bg-[#ff6b35]" style={{ width: `${winProb.team1}%` }} />
-                                            <div className="h-full bg-blue-500" style={{ width: `${winProb.team2}%` }} />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Recent Balls */}
-                            <div className="bg-black/20 rounded-[2.5rem] p-8 border border-white/5">
-                                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6">Recent Balls</h3>
-                                <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
-                                    {formattedHistory.slice(-12).reverse().map((ball, idx) => (
-                                        <div key={idx} className="flex flex-col items-center gap-2 min-w-[60px]">
-                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-sm border-2 ${ball.isWicket ? 'bg-red-600 border-red-400 text-white animate-pulse' : ball.notation?.includes('4') || ball.runs === 4 ? 'bg-blue-600 border-blue-400 text-white' : ball.notation?.includes('6') || ball.runs === 6 ? 'bg-purple-600 border-purple-400 text-white' : 'bg-white/5 border-white/10 text-slate-300'}`}>
-                                                {ball.notation || (ball.isWicket ? 'W' : ball.runs)}
-                                            </div>
-                                            <div className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">
-                                                {formatOvers(ball.ballNumber)}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Last Ball Analysis */}
-                            <div className="bg-black/20 rounded-[2.5rem] p-8 border border-white/5">
-                                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6">Last Ball Analysis</h3>
-                                {formattedHistory.length > 0 ? (
-                                    <div className="space-y-4">
-                                        <div className="flex gap-4 items-start">
-                                            <div className="text-xl font-black text-[#ff6b35] whitespace-nowrap">{formatOvers(formattedHistory[formattedHistory.length-1].ballNumber)}</div>
-                                            <div className="space-y-2">
-                                                <div className="text-lg font-bold text-white leading-tight">
-                                                    {formattedHistory[formattedHistory.length-1].bowlerName} to {formattedHistory[formattedHistory.length-1].batsmanName}, {formattedHistory[formattedHistory.length-1].notation || (formattedHistory[formattedHistory.length-1].runs + (formattedHistory[formattedHistory.length-1].extraRuns || 0))}
-                                                </div>
-                                                <div className="text-slate-400 text-sm italic font-medium leading-relaxed">
-                                                    {formattedHistory[formattedHistory.length-1].commentary}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="text-slate-500 italic text-sm">Waiting for the first ball to be bowled...</div>
-                                )}
-                            </div>
-                        </div>
+                        <LiveScoringPanel
+                            battingXI={battingXI}
+                            bowlingXI={bowlingXI}
+                            strikerId={strikerId}
+                            nonStrikerId={nonStrikerId}
+                            bowlerId={bowlerId}
+                            strikerStats={strikerStats}
+                            nonStrikerStats={nonStrikerStats}
+                            activeBowlerStats={activeBowlerStats}
+                            winProb={winProb}
+                            selectedMatch={selectedMatch}
+                            formattedHistory={formattedHistory}
+                            formatOvers={formatOvers}
+                        />
                     )}
 
                     {activeTab === 'scorecard' && (
                         <div className="space-y-12 animate-fadeIn">
                             {/* Batting Scorecard */}
                             <div className="space-y-4">
-                                <h3 className="text-xl font-black font-raj italic uppercase text-[#ff6b35] tracking-tight">{battingTeamTeam?.name} Innings</h3>
+                                <h3 className="text-xl font-black font-raj italic uppercase text-cric-accent tracking-tight">{battingTeamTeam?.name} Innings</h3>
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left">
                                         <thead>
-                                            <tr className="border-b border-white/5 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                            <tr className="border-b border-cric-border text-[10px] font-black text-slate-500 uppercase tracking-widest">
                                                 <th className="pb-4 pl-4">Batter</th>
                                                 <th className="pb-4">Dismissal</th>
                                                 <th className="pb-4 text-right">R</th>
@@ -888,16 +761,16 @@ export default function ManageScore() {
                                                 <th className="pb-4 text-right pr-4">SR</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-white/5">
+                                        <tbody className="divide-y divide-cric-border">
                                             {(curInn?.batting || []).map((b, idx) => (
-                                                <tr key={idx} className="group hover:bg-white/2">
-                                                    <td className="py-4 pl-4 font-bold text-white">{b.player?.name || "Player"}</td>
+                                                <tr key={idx} className="group hover:bg-black/5 dark:hover:bg-white/5">
+                                                    <td className="py-4 pl-4 font-bold text-cric-text">{b.player?.name || "Player"}</td>
                                                     <td className="py-4 text-xs text-slate-400 italic">{b.howOut || (b.isOut ? 'Dismissed' : 'not out')}</td>
-                                                    <td className="py-4 text-right font-black">{b.runs}</td>
+                                                    <td className="py-4 text-right font-black text-cric-text">{b.runs}</td>
                                                     <td className="py-4 text-right text-slate-400">{b.balls}</td>
                                                     <td className="py-4 text-right text-slate-400">{b.fours}</td>
                                                     <td className="py-4 text-right text-slate-400">{b.sixes}</td>
-                                                    <td className="py-4 text-right text-[#ff6b35] pr-4 font-bold">{(b.runs / (b.balls || 1) * 100).toFixed(1)}</td>
+                                                    <td className="py-4 text-right text-cric-accent pr-4 font-bold">{(b.runs / (b.balls || 1) * 100).toFixed(1)}</td>
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -907,11 +780,11 @@ export default function ManageScore() {
 
                             {/* Bowling Scorecard */}
                             <div className="space-y-4">
-                                <h3 className="text-xl font-black font-raj italic uppercase text-blue-400 tracking-tight">{bowlingTeamTeam?.name} Bowling</h3>
+                                <h3 className="text-xl font-black font-raj italic uppercase text-blue-500 tracking-tight">{bowlingTeamTeam?.name} Bowling</h3>
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left">
                                         <thead>
-                                            <tr className="border-b border-white/5 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                            <tr className="border-b border-cric-border text-[10px] font-black text-slate-500 uppercase tracking-widest">
                                                 <th className="pb-4 pl-4">Bowler</th>
                                                 <th className="pb-4 text-right">O</th>
                                                 <th className="pb-4 text-right">M</th>
@@ -920,14 +793,14 @@ export default function ManageScore() {
                                                 <th className="pb-4 text-right pr-4">ECON</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-white/5">
+                                        <tbody className="divide-y divide-cric-border">
                                             {(curInn?.bowling || []).map((b, idx) => (
-                                                <tr key={idx} className="group hover:bg-white/2">
-                                                    <td className="py-4 pl-4 font-bold text-white">{b.player?.name || "Player"}</td>
-                                                    <td className="py-4 text-right font-black">{formatOvers(b.balls)}</td>
+                                                <tr key={idx} className="group hover:bg-black/5 dark:hover:bg-white/5">
+                                                    <td className="py-4 pl-4 font-bold text-cric-text">{b.player?.name || "Player"}</td>
+                                                    <td className="py-4 text-right font-black text-cric-text">{formatOvers(b.balls)}</td>
                                                     <td className="py-4 text-right text-slate-400">{b.maidens || 0}</td>
                                                     <td className="py-4 text-right text-slate-400">{b.runs}</td>
-                                                    <td className="py-4 text-right text-blue-400 font-black">{b.wickets}</td>
+                                                    <td className="py-4 text-right text-blue-500 font-black">{b.wickets}</td>
                                                     <td className="py-4 text-right text-slate-400 pr-4">{(b.runs / ((b.balls || 1) / 6)).toFixed(2)}</td>
                                                 </tr>
                                             ))}
@@ -940,27 +813,20 @@ export default function ManageScore() {
 
                     {activeTab === 'commentary' && (
                         <div className="space-y-6 animate-fadeIn">
-                            <h3 className="text-xl font-black font-raj italic uppercase text-[#ff6b35] tracking-tight">Ball by Ball Commentary</h3>
-                            <div className="space-y-8">
-                                {formattedHistory.slice().reverse().map((ball, idx) => (
-                                    <div key={idx} className="flex gap-6 items-start group">
-                                        <div className="w-16 flex flex-col items-center">
-                                            <div className="text-lg font-black text-[#ff6b35]">{formatOvers(ball.ballNumber)}</div>
-                                            <div className={`mt-2 w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-black ${ball.isWicket ? 'bg-red-600 text-white' : 'bg-white/5 text-slate-500'}`}>
-                                                {ball.isWicket ? 'W' : ball.runs}
-                                            </div>
-                                        </div>
-                                        <div className="flex-1 pb-8 border-b border-white/5 group-last:border-0">
-                                            <div className="text-white font-bold text-lg mb-2">
-                                                {ball.bowlerName} to {ball.batsmanName}, {ball.runs} {ball.runs === 1 ? 'run' : 'runs'}
-                                            </div>
-                                            <p className="text-slate-400 italic text-sm leading-relaxed">
-                                                {ball.commentary || 'A solid defensive stroke played towards the covers.'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                ))}
+                            <div className="flex items-center justify-between mb-2">
+                                <h3 className="text-xl font-black font-raj italic uppercase text-cric-accent tracking-tight">Ball by Ball Commentary</h3>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                                    <span className="text-[9px] font-black uppercase text-slate-500 tracking-widest">Live</span>
+                                </div>
                             </div>
+                            <BallByBallFeed
+                                history={formattedHistory}
+                                overs={curInn?.oversHistory || []}
+                                onEdit={handleEditBall}
+                                onSwitchTab={setActiveTab}
+                                compact={false}
+                            />
                         </div>
                     )}
 
@@ -986,7 +852,7 @@ export default function ManageScore() {
                                 <div className="bg-black/20 rounded-[2.5rem] p-8 border border-white/5">
                                     <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-6 text-center">Partnership Growth</h4>
                                     <div className="h-64 flex items-end justify-between gap-1">
-                                        {Array.from({length: 15}).map((_, i) => (
+                                        {Array.from({ length: 15 }).map((_, i) => (
                                             <div key={i} className="flex-1 bg-blue-500/20 rounded-t-lg" style={{ height: `${Math.random() * 80 + 20}%` }}></div>
                                         ))}
                                     </div>
@@ -1039,7 +905,7 @@ export default function ManageScore() {
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-all"></div>
                                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100">
                                             <div className="w-12 h-12 rounded-full bg-[#ff6b35] flex items-center justify-center">
-                                                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                                                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
                                             </div>
                                         </div>
                                         {/* Dynamic placeholder text */}
@@ -1055,139 +921,42 @@ export default function ManageScore() {
             </div>
 
             {/* PERMANENT MANAGEMENT PANEL (Right Sidebar) */}
-            <div className="lg:w-[500px] shrink-0 sticky top-32 h-[calc(100vh-160px)] flex flex-col bg-[#141b24] rounded-[3.5rem] border border-white/5 shadow-2xl p-12 overflow-y-auto no-scrollbar">
-                <div className="mb-12 flex justify-between items-start">
-                    <div>
-                        <h2 className="text-3xl font-black font-raj tracking-tighter italic text-white uppercase">Management Panel</h2>
-                        <div className="text-[10px] font-black text-[#ff6b35] uppercase tracking-[0.3em] mt-1">Live Scoring Control</div>
-                    </div>
-                    <div className="flex gap-2">
-                         <button onClick={handleResetInnings} className="text-[9px] font-black text-[#ff6b35] border border-[#ff6b35]/30 px-3 py-1 rounded-full hover:bg-[#ff6b35] hover:text-white transition-all uppercase tracking-widest">Reset</button>
-                         <button onClick={handleEndInnings} className="text-[9px] font-black text-red-500 border border-red-500/30 px-3 py-1 rounded-full hover:bg-red-500 hover:text-white transition-all uppercase tracking-widest">End Innings</button>
-                         {curInn?.target > 0 && <button onClick={handleStartNext} className="text-[9px] font-black text-green-500 border border-green-500/30 px-3 py-1 rounded-full hover:bg-green-500 hover:text-white transition-all uppercase tracking-widest">Next Innings</button>}
-                    </div>
-                </div>
-
-                <div className="space-y-12">
-                    {/* Role Selectors Section */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <h4 className="text-[9px] font-black uppercase text-slate-500 tracking-widest pl-2">On Strike (*)</h4>
-                            <button onClick={() => setShowSelectionModal('striker')} className="w-full p-6 bg-white/2 rounded-3xl border border-white/5 text-left font-black font-raj text-lg italic hover:bg-white/5 transition-all text-[#ff6b35]">
-                                {battingXI.find(p => String(p._id) === String(strikerId))?.name || 'SELECT STRIKER'}
-                            </button>
-                        </div>
-                        <div className="space-y-2">
-                            <h4 className="text-[9px] font-black uppercase text-slate-500 tracking-widest pl-2">Non-Strike</h4>
-                            <button onClick={() => setShowSelectionModal('nonStriker')} className="w-full p-6 bg-white/2 rounded-3xl border border-white/5 text-left font-black font-raj text-lg italic hover:bg-white/5 transition-all opacity-60">
-                                {battingXI.find(p => String(p._id) === String(nonStrikerId))?.name || 'SELECT NON-STRIKER'}
-                            </button>
-                        </div>
-                        <div className="space-y-2 md:col-span-2">
-                            <h4 className="text-[9px] font-black uppercase text-slate-500 tracking-widest pl-2">Active Bowler</h4>
-                            <button onClick={() => setShowSelectionModal('bowler')} className="w-full p-6 bg-white/2 rounded-3xl border border-white/5 text-left font-black font-raj text-lg italic hover:bg-white/5 transition-all text-blue-500">
-                                {bowlingXI.find(p => String(p._id) === String(bowlerId))?.name || 'SELECT BOWLER'}
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Scoring Buttons Section */}
-                    <div className="space-y-8">
-                        <div className="grid grid-cols-4 gap-4">
-                            {[0, 1, 2, 3, 4, 6].map(num => (
-                                <button 
-                                    key={num}
-                                    onClick={() => setSelectedRuns(num)}
-                                    className={`h-20 rounded-3xl font-black font-raj text-2xl transition-all ${selectedRuns === num ? 'bg-[#ff6b35] text-white shadow-[0_15px_30px_rgba(255,107,53,0.3)] scale-110 z-10' : 'bg-white/5 text-white hover:bg-white/10'}`}
-                                >
-                                    {num === 0 ? 'DOT' : num}
-                                </button>
-                            ))}
-                            <button onClick={handleRevert} className="h-20 rounded-3xl bg-white/2 text-slate-500 hover:text-white transition-all">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="mx-auto"><path d="M9 14L4 9l5-5M4 9h12a5 5 0 015 5v3"/></svg>
-                            </button>
-                        </div>
-
-                        <div className="grid grid-cols-4 gap-4">
-                            {['WIDE', 'NO BALL', 'BYE', 'LEG BYE'].map(type => (
-                                <button 
-                                    key={type}
-                                    onClick={() => setSelectedExtra(selectedExtra === type ? null : type)}
-                                    className={`py-4 rounded-2xl text-[10px] font-black tracking-widest transition-all ${selectedExtra === type ? 'bg-blue-600 text-white shadow-lg' : 'bg-white/2 text-slate-500 hover:text-white border border-transparent hover:border-white/5'}`}
-                                >
-                                    {type}
-                                </button>
-                            ))}
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4 pt-6">
-                            <button 
-                                onClick={() => setShowSelectionModal('wicket')}
-                                className={`py-8 rounded-[2rem] font-black uppercase tracking-[0.2em] text-[11px] relative overflow-hidden transition-all h-32 ${selectedWicket ? 'bg-red-600 text-white shadow-xl' : 'bg-red-600/10 text-red-500 border-2 border-red-500/20 hover:bg-red-600/20 font-raj text-2xl italic'}`}
-                            >
-                                <div className="relative z-10">
-                                    {selectedWicket ? `OUT: ${selectedWicket}` : 'FALLEN WICKET'}
-                                </div>
-                            </button>
-                            <button 
-                                onClick={submitBall} 
-                                className="py-8 rounded-[2rem] bg-green-600 text-white font-black font-raj text-3xl italic tracking-tighter shadow-[0_20px_50px_rgba(22,163,74,0.3)] hover:scale-105 active:scale-95 transition-all uppercase h-32"
-                            >
-                                Submit Ball
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Map & Commentary Section */}
-                    <div className="space-y-6">
-                        <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-[0.3em] pl-2 mb-4">Shot Direction</h4>
-                        <div className="bg-black/40 rounded-[3rem] p-8 flex justify-center border border-white/5 relative group">
-                            <svg width="240" height="240" viewBox="0 0 400 400" className="drop-shadow-2xl">
-                                <defs>
-                                    <radialGradient id="fieldGradPro" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-                                        <stop offset="0%" stopColor="#1e293b" />
-                                        <stop offset="100%" stopColor="#0a0e14" />
-                                    </radialGradient>
-                                </defs>
-                                <circle cx="200" cy="200" r="195" fill="url(#fieldGradPro)" stroke="#ffffff10" strokeWidth="4" />
-                                <circle cx="200" cy="200" r="110" fill="none" stroke="#ffffff08" strokeWidth="2" strokeDasharray="10 5" />
-                                <rect x="188" y="140" width="24" height="120" fill="#cc9b6d10" rx="4" />
-                                {FIELD_POSITIONS.map(pos => {
-                                    const isActive = fieldPos === pos.id;
-                                    return (
-                                        <g key={pos.id} className="cursor-pointer" onClick={() => setFieldPos(isActive ? '' : pos.id)}>
-                                            <circle cx={pos.x} cy={pos.y} r={isActive ? 12 : 6} fill={isActive ? '#ff6b35' : '#ffffff10'} className="transition-all duration-300" />
-                                            {isActive && <circle cx={pos.x} cy={pos.y} r="20" fill="none" stroke="#ff6b35" strokeWidth="1" className="animate-ping" />}
-                                        </g>
-                                    );
-                                })}
-                            </svg>
-                            <div className="absolute bottom-6 right-8 text-[11px] font-black font-raj italic text-[#ff6b35] uppercase tracking-tighter">
-                                {fieldPos ? FIELD_POSITIONS.find(p=>p.id===fieldPos)?.name : 'Select Zone'}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="mt-auto pt-12 text-center opacity-30 text-[9px] font-black tracking-[0.5em] uppercase">
-                    Cricinfo Elite Scoring Engine 2026
-                </div>
-            </div>
+            <RightSidebarControls
+                curInn={curInn}
+                handleResetInnings={handleResetInnings}
+                handleEndInnings={handleEndInnings}
+                handleStartNext={handleStartNext}
+                setShowSelectionModal={setShowSelectionModal}
+                battingXI={battingXI}
+                bowlingXI={bowlingXI}
+                strikerId={strikerId}
+                nonStrikerId={nonStrikerId}
+                bowlerId={bowlerId}
+                selectedRuns={selectedRuns}
+                setSelectedRuns={setSelectedRuns}
+                handleRevert={handleRevert}
+                selectedExtra={selectedExtra}
+                setSelectedExtra={setSelectedExtra}
+                selectedWicket={selectedWicket}
+                submitBall={submitBall}
+                activeGroundZone={activeGroundZone}
+                handleGroundClick={handleGroundClick}
+            />
 
             {/* Selection Modals */}
             {showSelectionModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm">
-                    <div className="bg-[#141b24] w-full max-w-4xl rounded-[3.5rem] border border-white/10 shadow-2xl overflow-hidden animate-zoomIn">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 dark:bg-black/90 backdrop-blur-sm">
+                    <div className="bg-cric-card w-full max-w-4xl rounded-[3.5rem] border border-cric-border shadow-2xl overflow-hidden animate-zoomIn">
                         <div className="p-12">
                             <div className="flex justify-between items-center mb-12">
-                                <h3 className="text-4xl font-black font-raj italic uppercase tracking-tighter text-white">
+                                <h3 className="text-4xl font-black font-raj italic uppercase tracking-tighter text-cric-text">
                                     {showSelectionModal === 'wicket' ? 'DISMISSAL DETAILS' :
-                                     showSelectionModal === 'striker' ? 'SELECT NEW STRIKER' :
-                                     showSelectionModal === 'nonStriker' ? 'SELECT NEW NON-STRIKER' :
-                                     showSelectionModal === 'bowler' ? 'CHANGE BOWLER' : 'SELECTION'}
+                                        showSelectionModal === 'striker' ? 'SELECT NEW STRIKER' :
+                                            showSelectionModal === 'nonStriker' ? 'SELECT NEW NON-STRIKER' :
+                                                showSelectionModal === 'bowler' ? 'CHANGE BOWLER' : 'SELECTION'}
                                 </h3>
-                                <button onClick={() => setShowSelectionModal('')} className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center hover:bg-red-500 transition-all text-white">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                                <button onClick={() => setShowSelectionModal('')} className="w-12 h-12 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center hover:bg-red-500 transition-all text-cric-text hover:text-white">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M18 6L6 18M6 6l12 12" /></svg>
                                 </button>
                             </div>
 
@@ -1195,7 +964,7 @@ export default function ManageScore() {
                                 <div className="space-y-8">
                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                         {WICKET_TYPES.map(type => (
-                                            <button key={type} onClick={() => setSelectedWicket(type)} className={`p-6 rounded-3xl border-2 font-black uppercase text-xs tracking-widest transition-all ${selectedWicket === type ? 'bg-red-600 border-red-400 text-white shadow-lg' : 'bg-white/2 border-white/5 text-slate-500 hover:border-white/20'}`}>
+                                            <button key={type} onClick={() => setSelectedWicket(type)} className={`p-6 rounded-3xl border-2 font-black uppercase text-xs tracking-widest transition-all ${selectedWicket === type ? 'bg-red-600 border-red-400 text-white shadow-lg' : 'bg-black/5 dark:bg-white/2 border-cric-border text-slate-500 hover:border-cric-border/80'}`}>
                                                 {type}
                                             </button>
                                         ))}
@@ -1203,7 +972,7 @@ export default function ManageScore() {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest pl-2">Next Batsman</label>
-                                            <select value={setupState.wicketNewBatter} onChange={(e) => setSetupState(s => ({ ...s, wicketNewBatter: e.target.value }))} className="w-full p-6 bg-black/40 border border-white/10 rounded-3xl text-white font-black">
+                                            <select value={setupState.wicketNewBatter} onChange={(e) => setSetupState(s => ({ ...s, wicketNewBatter: e.target.value }))} className="w-full p-6 bg-cric-bg border border-cric-border rounded-3xl text-cric-text font-black outline-none focus:border-red-500">
                                                 <option value="">Select Next In...</option>
                                                 {battingXI.filter(p => ![strikerId, nonStrikerId].includes(p._id)).map(p => (
                                                     <option key={p._id} value={p._id}>{p.name}</option>
@@ -1212,7 +981,7 @@ export default function ManageScore() {
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest pl-2">Fielder Involved</label>
-                                            <select value={setupState.wicketFielder} onChange={(e) => setSetupState(s => ({ ...s, wicketFielder: e.target.value }))} className="w-full p-6 bg-black/40 border border-white/10 rounded-3xl text-white font-black">
+                                            <select value={setupState.wicketFielder} onChange={(e) => setSetupState(s => ({ ...s, wicketFielder: e.target.value }))} className="w-full p-6 bg-cric-bg border border-cric-border rounded-3xl text-cric-text font-black outline-none focus:border-red-500">
                                                 <option value="">Select Fielder...</option>
                                                 {bowlingXI.map(p => (
                                                     <option key={p._id} value={p._id}>{p.name}</option>
@@ -1227,8 +996,8 @@ export default function ManageScore() {
                             {(showSelectionModal === 'striker' || showSelectionModal === 'nonStriker') && (
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                     {battingXI.map(p => (
-                                        <button key={p._id} onClick={() => setRole(p._id, showSelectionModal)} className="p-8 rounded-[2rem] bg-white/5 border border-white/10 hover:border-[#ff6b35] hover:bg-[#ff6b35]/5 transition-all text-left">
-                                            <div className="text-xl font-black text-white">{p.name}</div>
+                                        <button key={p._id} onClick={() => setRole(p._id, showSelectionModal)} className="p-8 rounded-[2rem] bg-black/5 dark:bg-white/5 border border-cric-border hover:border-cric-accent hover:bg-cric-accent/5 transition-all text-left">
+                                            <div className="text-xl font-black text-cric-text">{p.name}</div>
                                             <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-2 select-none">Select Batter</div>
                                         </button>
                                     ))}
@@ -1238,8 +1007,8 @@ export default function ManageScore() {
                             {showSelectionModal === 'bowler' && (
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                     {bowlingXI.map(p => (
-                                        <button key={p._id} onClick={() => setRole(p._id, 'bowler')} className="p-8 rounded-[2rem] bg-white/5 border border-white/10 hover:border-blue-500 hover:bg-blue-500/5 transition-all text-left">
-                                            <div className="text-xl font-black text-white">{p.name}</div>
+                                        <button key={p._id} onClick={() => setRole(p._id, 'bowler')} className="p-8 rounded-[2rem] bg-black/5 dark:bg-white/5 border border-cric-border hover:border-blue-500 hover:bg-blue-500/5 transition-all text-left">
+                                            <div className="text-xl font-black text-cric-text">{p.name}</div>
                                             <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-2 select-none">Select Bowler</div>
                                         </button>
                                     ))}

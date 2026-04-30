@@ -15,12 +15,12 @@ const menuItems = [
 
 export default function Sidebar({ onClose }) {
   return (
-    <aside className="w-64 bg-white border-r border-slate-200 flex flex-col h-full">
-      <div className="p-6 border-b border-slate-200">
-        <h1 className="text-xl font-black text-[#031d44]">BQ-PLAY</h1>
-        <p className="text-xs text-slate-500 mt-1">Admin Panel</p>
+    <aside className="w-64 bg-cric-card border-r border-cric-border flex flex-col h-full transition-colors duration-300">
+      <div className="p-6 border-b border-cric-border">
+        <h1 className="text-xl font-black font-raj text-cric-accent tracking-tight">BQ-PLAY</h1>
+        <p className="text-xs text-cric-muted mt-1 uppercase tracking-widest font-bold">Admin Panel</p>
       </div>
-      <nav className="flex-1 p-4 overflow-y-auto">
+      <nav className="flex-1 p-4 overflow-y-auto no-scrollbar">
         <ul className="space-y-1">
           {menuItems.map((item) => (
             <li key={item.to}>
@@ -29,9 +29,9 @@ export default function Sidebar({ onClose }) {
                 end={item.to === "/admin"}
                 onClick={onClose}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${isActive
-                    ? "bg-blue-50 text-blue-700"
-                    : "text-slate-700 hover:bg-slate-100"
+                  `flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all duration-200 ${isActive
+                    ? "bg-cric-accent text-white shadow-md shadow-cric-accent/20"
+                    : "text-cric-muted hover:bg-cric-bg hover:text-cric-text"
                   }`
                 }
               >
