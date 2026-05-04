@@ -4,6 +4,7 @@ import CricketGround from '../CricketGround';
 const RightSidebarControls = ({
     curInn,
     handleResetInnings,
+    handleResetMatch,
     handleEndInnings,
     handleStartNext,
     setShowSelectionModal,
@@ -29,10 +30,15 @@ const RightSidebarControls = ({
                     <h2 className="text-3xl font-black font-raj tracking-tighter italic text-cric-text uppercase">Management Panel</h2>
                     <div className="text-[10px] font-black text-cric-accent uppercase tracking-[0.3em] mt-1">Live Scoring Control</div>
                 </div>
-                <div className="flex gap-2">
-                    <button onClick={handleResetInnings} className="text-[9px] font-black text-cric-accent border border-cric-accent/30 px-3 py-1 rounded-full hover:bg-cric-accent hover:text-white transition-all uppercase tracking-widest">Reset</button>
-                    <button onClick={handleEndInnings} className="text-[9px] font-black text-red-500 border border-red-500/30 px-3 py-1 rounded-full hover:bg-red-500 hover:text-white transition-all uppercase tracking-widest">End Innings</button>
-                    {curInn?.target > 0 && <button onClick={handleStartNext} className="text-[9px] font-black text-green-500 border border-green-500/30 px-3 py-1 rounded-full hover:bg-green-500 hover:text-white transition-all uppercase tracking-widest">Next Innings</button>}
+                <div className="flex flex-col items-end gap-2">
+                    <div className="flex gap-2">
+                        <button onClick={handleResetInnings} className="text-[9px] font-black text-cric-accent border border-cric-accent/30 px-3 py-1 rounded-full hover:bg-cric-accent hover:text-white transition-all uppercase tracking-widest whitespace-nowrap">Reset Innings</button>
+                        <button onClick={handleEndInnings} className="text-[9px] font-black text-red-500 border border-red-500/30 px-3 py-1 rounded-full hover:bg-red-500 hover:text-white transition-all uppercase tracking-widest whitespace-nowrap">End Innings</button>
+                    </div>
+                    <div className="flex gap-2">
+                        <button onClick={handleResetMatch} className="text-[9px] font-black text-white bg-red-600 px-3 py-1 rounded-full hover:bg-red-700 transition-all uppercase tracking-widest whitespace-nowrap shadow-lg shadow-red-500/30">Reset Match</button>
+                        {curInn?.target > 0 && <button onClick={handleStartNext} className="text-[9px] font-black text-green-500 border border-green-500/30 px-3 py-1 rounded-full hover:bg-green-500 hover:text-white transition-all uppercase tracking-widest whitespace-nowrap">Next Innings</button>}
+                    </div>
                 </div>
             </div>
 
@@ -111,7 +117,7 @@ const RightSidebarControls = ({
                     <div className="flex items-center justify-between">
                         <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-[0.3em]">Shot Direction</h4>
                         <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">
-                            {activeGroundZone ? `→ ${activeGroundZone.direction}` : 'Click the ground'}
+                            {activeGroundZone ? '✓ Position Selected' : 'Click the ground'}
                         </span>
                     </div>
                     <CricketGround

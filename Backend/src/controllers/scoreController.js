@@ -7,49 +7,91 @@ import fieldPositionMapper from "../services/fieldPositionMapper.js";
 import aiCommentary from "../services/aiCommentary.js";
 
 const calculateWinProbability = (match) => {
-    if (!match || !match.innings || match.innings.length === 0) return { team1: 50, team2: 50 };
-    if (match.status === 'completed') {
-        const winnerId = match.result?.winner?.toString();
-        const team1Id = match.teams[0]?._id?.toString() || match.teams[0]?.toString();
-        return winnerId === team1Id ? { team1: 100, team2: 0 } : { team1: 0, team2: 100 };
-    }
+  if (!match || !match.innings || match.innings.length === 0) return { team1: 50, team2: 50 };
+  if (match.status === 'completed') {
+    const winnerId = match.result?.winner?.toString();
+    const team1Id = match.teams[0]?._id?.toString() || match.teams[0]?.toString();
+    return winnerId === team1Id ? { team1: 100, team2: 0 } : { team1: 0, team2: 100 };
+  }
 
-    const currentInnIdx = match.currentInnings;
-    const innings = match.innings[currentInnIdx];
-    
-    // First Innings: Based on projected score vs average
-    if (currentInnIdx === 0) {
-        const crr = innings.runRate || 0;
-        const projected = crr * match.totalOvers;
-        // Simple heuristic: 180 is parity
-        const diff = projected - 180;
-        const p1 = Math.max(10, Math.min(90, 50 + (diff / 2)));
-        return { team1: p1, team2: 100 - p1 };
-    }
+  const currentInnIdx = match.currentInnings;
+  const innings = match.innings[currentInnIdx];
 
-    // Second Innings: Target vs RRR/CRR
-    if (currentInnIdx === 1) {
-        const target = innings.target || 0;
-        if (target === 0) return { team1: 50, team2: 50 };
-        
-        const runsToGet = target - innings.runs;
-        const totalBalls = match.totalOvers * 6;
-        const ballsRemaining = totalBalls - innings.balls;
-        
-        if (runsToGet <= 0) return { team1: 0, team2: 100 };
-        if (ballsRemaining <= 0) return { team1: 100, team2: 0 };
-        
-        const rrr = (runsToGet / ballsRemaining) * 6;
-        const wicketsLeft = 10 - innings.wickets;
-        
-        // Base probability on RRR vs a "standard" difficult RRR of 10
-        let p2 = 50 + (6 - rrr) * 5 + (wicketsLeft - 5) * 5;
-        p2 = Math.max(5, Math.min(95, p2));
-        
-        return { team1: 100 - p2, team2: p2 };
-    }
+  // First Innings: Based on projected score vs average
+  if (currentInnIdx === 0) {
+    const crr = innings.runRate || 0;
+    const projected = crr * match.totalOvers;
+    // Simple heuristic: 180 is parity
+    const diff = projected - 180;
+    const p1 = Math.max(10, Math.min(90, 50 + (diff / 2)));
+    return { team1: p1, team2: 100 - p1 };
+  }
 
-    return { team1: 50, team2: 50 };
+  // Second Innings: Target vs RRR/CRR
+  if (currentInnIdx === 1) {
+    const target = innings.target || 0;
+    if (target === 0) return { team1: 50, team2: 50 };
+
+    const runsToGet = target - innings.runs;
+    const totalBalls = match.totalOvers * 6;
+    const ballsRemaining = totalBalls - innings.balls;
+
+    if (runsToGet <= 0) return { team1: 0, team2: 100 };
+    if (ballsRemaining <= 0) return { team1: 100, team2: 0 };
+
+    const rrr = (runsToGet / ballsRemaining) * 6;
+    const wicketsLeft = 10 - innings.wickets;
+
+    // Base probability on RRR vs a "standard" difficult RRR of 10
+    let p2 = 50 + (6 - rrr) * 5 + (wicketsLeft - 5) * 5;
+    p2 = Math.max(5, Math.min(95, p2));
+
+    return { team1: 100 - p2, team2: p2 };
+  }
+
+  return { team1: 50, team2: 50 };
+};
+
+const populateFullMatch = async (match) => {
+  await match.populate([
+    {
+      path: "teams",
+      select: "name shortName logo players",
+      populate: { path: "players", select: "name playingRole role" }
+    },
+    { path: "innings.team", select: "name shortName" },
+    { path: "innings.batting.player", select: "name role playingRole" },
+    { path: "innings.bowling.player", select: "name role playingRole" },
+    { path: "innings.currentBatsman1", select: "name role playingRole" },
+    { path: "innings.currentBatsman2", select: "name role playingRole" },
+    { path: "innings.onStrikeBatsman", select: "name role playingRole" },
+    { path: "innings.currentBowler", select: "name role playingRole" },
+    { path: "innings.oversHistory.balls.batsmanOnStrike", select: "name" },
+    { path: "innings.oversHistory.balls.batsmanNonStrike", select: "name" },
+    { path: "innings.oversHistory.balls.bowler", select: "name" },
+    { path: "innings.oversHistory.bowler", select: "name" },
+    { path: "playingXI.players", select: "name role playingRole" },
+    { path: "playingXI.team", select: "name shortName logo" },
+    { path: "squad15.players", select: "name role playingRole" },
+    { path: "result.winner", select: "name shortName logo" },
+    { path: "tossWinner", select: "name shortName" }
+  ]);
+
+  // Post-population fix for missing names in older balls
+  match.innings.forEach(inn => {
+    inn.oversHistory.forEach(over => {
+      over.balls.forEach(ball => {
+        if (!ball.batsmanName && ball.batsmanOnStrike) {
+          ball.batsmanName = ball.batsmanOnStrike.name || "Batsman";
+        }
+        if (!ball.bowlerName && ball.bowler) {
+          ball.bowlerName = ball.bowler.name || "Bowler";
+        }
+      });
+    });
+  });
+
+  return match;
 };
 
 export const updateScore = async (req, res) => {
@@ -136,6 +178,8 @@ export const updateScore = async (req, res) => {
         summary: ""
       };
       innings.oversHistory.push(currentOver);
+      // Re-fetch from the array to ensure we are working with the Mongoose subdocument
+      currentOver = innings.oversHistory[innings.oversHistory.length - 1];
     }
 
     // Count legal balls already recorded in this over to get correct ball number for THIS ball
@@ -174,20 +218,26 @@ export const updateScore = async (req, res) => {
     const bowlerPlayer = await Player.findById(bowlerId);
 
     let batsmanOnStrikeStats = innings.batting.find(
-      b => (b.player?._id || b.player).toString() === batsmanOnStrikeId.toString()
+      b => {
+        const pid = b.player?._id || b.player;
+        return pid && pid.toString() === batsmanOnStrikeId.toString();
+      }
     );
 
     if (!batsmanOnStrikeStats) {
-      batsmanOnStrikeStats = {
+      innings.batting.push({
         player: batsmanOnStrikeId,
         runs: 0,
         balls: 0,
         fours: 0,
         sixes: 0,
         strikeRate: 0,
-        isOut: false
-      };
-      innings.batting.push(batsmanOnStrikeStats);
+        isOut: false,
+        dotBalls: 0,
+        shots: []
+      });
+      // Get the newly pushed subdocument to ensure Mongoose tracking
+      batsmanOnStrikeStats = innings.batting[innings.batting.length - 1];
     }
 
     if (!isWide) {
@@ -241,11 +291,14 @@ export const updateScore = async (req, res) => {
     }
 
     let bowlerStats = innings.bowling.find(
-      b => (b.player?._id || b.player).toString() === bowlerId.toString()
+      b => {
+        const pid = b.player?._id || b.player;
+        return pid && pid.toString() === bowlerId.toString();
+      }
     );
 
     if (!bowlerStats) {
-      bowlerStats = {
+      innings.bowling.push({
         player: bowlerId,
         overs: 0,
         balls: 0,
@@ -254,9 +307,12 @@ export const updateScore = async (req, res) => {
         wickets: 0,
         wides: 0,
         noBalls: 0,
-        economy: 0
-      };
-      innings.bowling.push(bowlerStats);
+        economy: 0,
+        dotBalls: 0,
+        foursScored: 0,
+        sixesScored: 0
+      });
+      bowlerStats = innings.bowling[innings.bowling.length - 1];
     }
 
     bowlerStats.runs += batsmanRuns + extraRuns;
@@ -332,7 +388,7 @@ export const updateScore = async (req, res) => {
     if (isWicket) {
       // Cricket Rule: On a No Ball, only certain wickets allowed
       const isNoBallWicketAllowed = ["run out", "obstructing the field", "handled ball"].includes(wicketType?.toLowerCase());
-      
+
       if (isNoBall && !isNoBallWicketAllowed) {
         isWicket = false;
       } else {
@@ -397,16 +453,16 @@ export const updateScore = async (req, res) => {
     let commentary = commentaryText;
     let aiGeneratedCommentary = null;
 
+    let vividCommentary = null;
     if (!customCommentary || !commentary) {
-      // If field position data is provided, use AI commentary with field mapping
-      if (fieldingZone || (shotPlacement && shotPlacement.position)) {
-        const zone = fieldPositionMapper.getZoneFromCoordinates(
-          shotPlacement?.x || 50,
-          shotPlacement?.y || 50
-        );
+      // PROACTIVELY attempt AI commentary for every ball to maintain the professional two-line format
+      const zone = (fieldingZone || (shotPlacement && shotPlacement.position))
+        ? fieldPositionMapper.getZoneFromCoordinates(shotPlacement?.x || 50, shotPlacement?.y || 50)
+        : { name: "an open area" };
 
-        const distanceCategory = fieldPositionMapper.getDistanceCategory(zone.distance);
+      const distanceCategory = zone.distance ? fieldPositionMapper.getDistanceCategory(zone.distance) : "";
 
+      try {
         aiGeneratedCommentary = await aiCommentary.generateBallCommentary({
           runs: batsmanRuns,
           isWide,
@@ -434,12 +490,16 @@ export const updateScore = async (req, res) => {
           }
         });
 
-        // Use the short summary as the primary commentary field (for backward compatibility)
-        // Store the full AI object if needed, or just the concat
-        commentary = aiGeneratedCommentary.short;
-        var vividCommentary = aiGeneratedCommentary.vivid;
-      } else {
-        // Fallback to legacy commentary generation
+        if (aiGeneratedCommentary && aiGeneratedCommentary.short) {
+          commentary = aiGeneratedCommentary.short;
+          vividCommentary = aiGeneratedCommentary.vivid;
+        }
+      } catch (aiErr) {
+        console.error("AI Commentary Error:", aiErr);
+      }
+
+      // Fallback if AI fails or was not thorough
+      if (!commentary) {
         commentary = generateDetailedCommentary({
           runs: batsmanRuns,
           isWide,
@@ -450,12 +510,13 @@ export const updateScore = async (req, res) => {
           wicketType,
           batsmanName: batsmanOnStrike?.name || "Batsman",
           bowlerName: bowlerPlayer?.name || "Bowler",
-          currentScore: innings.runs,
-          currentWickets: innings.wickets,
+          currentScore: (innings.runs || 0),
+          currentWickets: (innings.wickets || 0),
           overNumber: currentOverNumber,
           ballNumber: ballNumberInOver,
           extraRuns: runs
         });
+        vividCommentary = `The delivery was bowled and played toward the ${shotPlacement?.position || fieldingZone || "fielding area"}. ${batsmanOnStrike?.name || "The batsman"} managed to pick up ${runs} run${runs !== 1 ? "s" : ""}.`;
       }
     }
 
@@ -483,7 +544,9 @@ export const updateScore = async (req, res) => {
       dismissedPlayer: dismissedPlayerId,
       fielder: fielderId,
       commentary,
-      vividCommentary: (aiGeneratedCommentary && typeof aiGeneratedCommentary === 'object') ? aiGeneratedCommentary.vivid : null,
+      vividCommentary: (aiGeneratedCommentary && typeof aiGeneratedCommentary === 'object') ? aiGeneratedCommentary.vivid : vividCommentary,
+      batsmanName: batsmanOnStrike?.name || "Batsman",
+      bowlerName: bowlerPlayer?.name || "Bowler",
       notation: ballNotation,
       isFreeHit: innings.isFreeHit || false,
       timestamp: new Date(),
@@ -502,8 +565,6 @@ export const updateScore = async (req, res) => {
 
     currentOver.balls.push(ball);
 
-    innings.currentBatsman1 = batsmanOnStrikeId;
-    innings.currentBatsman2 = batsmanNonStrikeId;
     innings.currentBowler = bowlerId;
 
     // Update partnership tracking
@@ -605,27 +666,18 @@ export const updateScore = async (req, res) => {
     // Update Win Probability History
     const winProb = calculateWinProbability(match);
     match.winProbabilityHistory.push({
-        ball: innings.balls,
-        over: currentOverNumber,
-        team1: winProb.team1,
-        team2: winProb.team2,
-        timestamp: new Date()
+      ball: innings.balls,
+      over: currentOverNumber,
+      team1: winProb.team1,
+      team2: winProb.team2,
+      timestamp: new Date()
     });
 
+    match.markModified('innings');
+    match.markModified('winProbabilityHistory');
     await match.save();
 
-    await match.populate([
-      { path: "innings.batting.player", select: "name role" },
-      { path: "innings.bowling.player", select: "name role" },
-      { path: "innings.currentBatsman1", select: "name" },
-      { path: "innings.currentBatsman2", select: "name" },
-      { path: "innings.onStrikeBatsman", select: "name" },
-      { path: "innings.currentBowler", select: "name" },
-      { path: "innings.oversHistory.balls.batsmanOnStrike", select: "name" },
-      { path: "innings.oversHistory.balls.batsmanNonStrike", select: "name" },
-      { path: "innings.oversHistory.balls.bowler", select: "name" },
-      { path: "innings.oversHistory.bowler", select: "name" }
-    ]);
+    await populateFullMatch(match);
 
     try {
       const io = getIO();
@@ -685,7 +737,7 @@ export const updateScore = async (req, res) => {
           totalOvers: match.totalOvers,
           target: innings.target,
           remainingRuns: innings.target ? innings.target - innings.runs : null,
-          remainingBalls: innings.target ? ((match.totalOvers - innings.overs - (innings.balls%6)/6)*6|0) : null,
+          remainingBalls: innings.target ? ((match.totalOvers - innings.overs - (innings.balls % 6) / 6) * 6 | 0) : null,
           rrr: innings.requiredRunRate,
           crr: innings.runRate,
           batter1: batsmanOnStrikeStats || {},
@@ -694,7 +746,7 @@ export const updateScore = async (req, res) => {
 
         currentOver.summary = overSummary;
         // Save again if you want it persisted directly now
-        Match.findByIdAndUpdate(matchId, { $set: { [`innings.${inningsIndex}.oversHistory.${innings.oversHistory.length-1}.summary`]: overSummary } }).exec();
+        Match.findByIdAndUpdate(matchId, { $set: { [`innings.${inningsIndex}.oversHistory.${innings.oversHistory.length - 1}.summary`]: overSummary } }).exec();
 
         io.to(matchId).emit("match:overComplete", {
           matchId,
@@ -827,11 +879,7 @@ export const endInnings = async (req, res) => {
 
     await match.save();
 
-    await match.populate([
-      { path: "innings.batting.player", select: "name role" },
-      { path: "innings.bowling.player", select: "name role" },
-      { path: "result.winner", select: "name shortName logo" }
-    ]);
+    await populateFullMatch(match);
 
     try {
       const io = getIO();
@@ -903,6 +951,7 @@ export const reduceOvers = async (req, res) => {
     }
 
     await match.save();
+    await populateFullMatch(match);
 
     try {
       const io = getIO();
@@ -948,6 +997,7 @@ export const startNextInnings = async (req, res) => {
       match.status = "live";
 
       await match.save();
+      await populateFullMatch(match);
 
       try {
         const io = getIO();
@@ -992,8 +1042,6 @@ function generateDetailedCommentary({
   ballNumber,
   extraRuns = 0
 }) {
-  const prefix = `${overNumber}.${ballNumber}`;
-
   if (isWicket) {
     const wicketCommentaries = {
       "bowled": [
@@ -1026,7 +1074,7 @@ function generateDetailedCommentary({
     const comments = wicketCommentaries[wicketType] || [
       `OUT! ${batsmanName} has to go! ${bowlerName} strikes!`
     ];
-    return `${prefix}\n${comments[Math.floor(Math.random() * comments.length)]}`;
+    return comments[Math.floor(Math.random() * comments.length)];
   }
 
   if (isWide) {
@@ -1039,7 +1087,7 @@ function generateDetailedCommentary({
     if (runs > 0) {
       comment += ` They run ${runs} additional ${runs === 1 ? 'run' : 'runs'}${runs === 4 ? ' - it goes to the boundary!' : '.'}`;
     }
-    return `${prefix}\n${comment}`;
+    return comment;
   }
 
   if (isNoBall) {
@@ -1048,6 +1096,7 @@ function generateDetailedCommentary({
       `NO BALL! That's a big overstep from ${bowlerName}.`,
       `No ball! ${bowlerName} will have to bowl that again.`
     ];
+    let comment = noballs[Math.floor(Math.random() * noballs.length)];
     if (extraRuns > 0) {
       const runComments = {
         1: "They take a single.",
@@ -1060,15 +1109,15 @@ function generateDetailedCommentary({
     } else {
       comment += " Just the one run from the extra.";
     }
-    return `${prefix}\n${comment}`;
+    return comment;
   }
 
   if (isBye) {
-    return `${prefix}\n${runs} ${runs === 1 ? 'bye' : 'byes'}! The keeper couldn't collect. ${bowlerName} won't be happy.`;
+    return `${runs} ${runs === 1 ? 'bye' : 'byes'}! The keeper couldn't collect. ${bowlerName} won't be happy.`;
   }
 
   if (isLegBye) {
-    return `${prefix}\n${runs} leg ${runs === 1 ? 'bye' : 'byes'}! Off the pads and away.`;
+    return `${runs} leg ${runs === 1 ? 'bye' : 'byes'}! Off the pads and away.`;
   }
 
   const runCommentaries = {
@@ -1112,7 +1161,8 @@ function generateDetailedCommentary({
   };
 
   const comments = runCommentaries[runs] || [`${runs} runs scored.`];
-  return `${prefix}\n${bowlerName} to ${batsmanName}, ${comments[Math.floor(Math.random() * comments.length)]}`;
+  const summary = `${bowlerName} to ${batsmanName}, ${comments[Math.floor(Math.random() * comments.length)]}`;
+  return summary;
 }
 
 function generateOverSummary(over) {
@@ -1156,10 +1206,12 @@ export const resolveTie = async (req, res) => {
       match.tieResolution = "declared_tie";
       match.result.description = "Match ended in a tie";
       await match.save();
+      await populateFullMatch(match);
     } else if (resolution === "super_over") {
       match.tieResolution = "super_over";
       // We don't change match status yet, it stays pending until players are selected or startSuperOver is called
       await match.save();
+      await populateFullMatch(match);
     } else {
       return res.status(400).json({ message: "Invalid resolution type" });
     }
@@ -1241,6 +1293,7 @@ export const startSuperOverInnings = async (req, res) => {
     }
 
     await match.save();
+    await populateFullMatch(match);
 
     try {
       const io = getIO();
@@ -1285,6 +1338,7 @@ export const editCommentary = async (req, res) => {
 
     ball.commentary = newCommentary;
     await match.save();
+    await populateFullMatch(match);
 
     try {
       const io = getIO();
@@ -1346,7 +1400,7 @@ export const handleFieldClick = async (req, res) => {
       "Batsman";
 
     // Generate AI commentary
-    const commentary = aiCommentary.generateBallCommentary({
+    const commentary = await aiCommentary.generateBallCommentary({
       runs: runs || 0,
       isWide: false,
       isNoBall: false,
@@ -1446,7 +1500,7 @@ export const revertLastBall = async (req, res) => {
     const batsmanRuns = ball.runs || 0;
     let extraRuns = 0;
     if (ball.isWide) extraRuns = 1 + ball.runs;
-    else if (ball.isNoBall) extraRuns = 1; 
+    else if (ball.isNoBall) extraRuns = 1;
     else if (ball.isBye || ball.isLegBye) extraRuns = ball.runs;
 
     innings.runs -= (batsmanRuns + extraRuns);
@@ -1512,7 +1566,7 @@ export const revertLastBall = async (req, res) => {
       innings.fallOfWickets.pop();
       if (innings.partnerships.length > 1) {
         innings.partnerships.pop(); // Remove the new placeholder partnership
-        
+
         // Restore the previous partnership state
         const restoredPartnership = innings.partnerships[innings.partnerships.length - 1];
         if (restoredPartnership) {
@@ -1551,7 +1605,7 @@ export const revertLastBall = async (req, res) => {
     // 9. Recalculate runRate and requiredRunRate
     const totalOvers = innings.overs + (innings.balls % 6) / 6;
     innings.runRate = totalOvers > 0 ? (innings.runs / totalOvers).toFixed(2) : 0;
-    
+
     if (inningsIndex === 1 && match.innings[0]) {
       const remainingRuns = innings.target - innings.runs;
       const remainingOvers = match.totalOvers - totalOvers;
@@ -1559,6 +1613,7 @@ export const revertLastBall = async (req, res) => {
     }
 
     await match.save();
+    await populateFullMatch(match);
 
     try {
       const io = getIO();
@@ -1587,12 +1642,12 @@ export const setBowler = async (req, res) => {
     innings.currentBowler = bowlerId;
     await match.save();
 
-    await match.populate("innings.currentBowler", "name role");
+    await populateFullMatch(match);
 
     try {
       const io = getIO();
       io.to(matchId).emit("match:bowlerSet", { matchId, inningsIndex, bowlerId });
-    } catch (err) {}
+    } catch (err) { }
 
     res.status(200).json({ match, message: "Bowler set successfully" });
   } catch (error) {
@@ -1612,10 +1667,10 @@ LINE2: [vivid detailed commentary]
 Context: Batsman: ${batsman}, Bowler: ${bowler}, Runs: ${runs}, Extras: ${extras}, Wicket: ${wicket}, Field Position: ${fieldPosition}, Ball info: ${ballNotation}`;
 
     if (!process.env.ANTHROPIC_API_KEY) {
-        return res.status(200).json({
-            line1: `${ballNotation} ${batsman} to ${bowler}, ${runs} runs`,
-            line2: `The ball was played towards ${fieldPosition}.`
-        });
+      return res.status(200).json({
+        line1: `${ballNotation} ${batsman} to ${bowler}, ${runs} runs`,
+        line2: `The ball was played towards ${fieldPosition}.`
+      });
     }
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -1634,14 +1689,14 @@ Context: Batsman: ${batsman}, Bowler: ${bowler}, Runs: ${runs}, Extras: ${extras
 
     const data = await response.json();
     if (!data.content || !data.content[0]) {
-        throw new Error("Invalid response from Anthropic");
+      throw new Error("Invalid response from Anthropic");
     }
-    
+
     const content = data.content[0].text;
     const lines = content.split('\n');
     let line1 = "";
     let line2 = "";
-    
+
     lines.forEach(l => {
       if (l.toUpperCase().startsWith("LINE1:")) line1 = l.substring(6).trim();
       if (l.toUpperCase().startsWith("LINE2:")) line2 = l.substring(6).trim();
@@ -1650,9 +1705,9 @@ Context: Batsman: ${batsman}, Bowler: ${bowler}, Runs: ${runs}, Extras: ${extras
     res.status(200).json({ line1, line2 });
   } catch (error) {
     console.error("AI Commentary Error:", error);
-    res.status(200).json({ 
-      line1: `${req.body.runs} runs to ${req.body.batsman}`, 
-      line2: `The ball was played towards ${req.body.fieldPosition}.` 
+    res.status(200).json({
+      line1: `${req.body.runs} runs to ${req.body.batsman}`,
+      line2: `The ball was played towards ${req.body.fieldPosition}.`
     });
   }
 };
@@ -1687,7 +1742,7 @@ export const useStrategicTimeout = async (req, res) => {
       const io = getIO();
       io.to(matchId).emit("match:timeout", { matchId, teamId, over: overNumber });
       io.emit("match:updated", match);
-    } catch (err) {}
+    } catch (err) { }
 
     res.status(200).json({ match, message: "Strategic Timeout recorded" });
   } catch (error) {
@@ -1725,7 +1780,7 @@ export const recordDRSReview = async (req, res) => {
       const io = getIO();
       io.to(matchId).emit("match:drsUpdate", { matchId, drs: match.drsReviews[match.drsReviews.length - 1] });
       io.emit("match:updated", match);
-    } catch (err) {}
+    } catch (err) { }
 
     res.status(200).json({ match, message: "DRS Review recorded" });
   } catch (error) {
@@ -1757,7 +1812,7 @@ export const resetInnings = async (req, res) => {
     innings.partnerships = [];
     innings.battingOrder = [];
     innings.runRate = 0;
-    
+
     // Clear current player assignments to force re-selection or handle cleanly
     innings.onStrikeBatsman = null;
     innings.currentBatsman1 = null;
@@ -1765,22 +1820,75 @@ export const resetInnings = async (req, res) => {
     innings.currentBowler = null;
 
     await match.save();
+    await populateFullMatch(match);
 
     try {
       const io = getIO();
       io.to(matchId).emit("match:reset", { matchId, inningsIndex });
       io.emit("match:updated", match);
-    } catch (err) {}
+    } catch (err) { }
 
     res.status(200).json({ match, message: "Innings reset successfully" });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 };
+
+export const resetMatch = async (req, res) => {
+  try {
+    const { matchId } = req.params;
+
+    const match = await Match.findById(matchId);
+    if (!match) return res.status(404).json({ message: "Match not found" });
+
+    // Reset both innings
+    match.innings.forEach(innings => {
+      innings.runs = 0;
+      innings.wickets = 0;
+      innings.balls = 0;
+      innings.overs = 0;
+      innings.extras = { wides: 0, noBalls: 0, byes: 0, legByes: 0, penalties: 0, total: 0 };
+      innings.batting = [];
+      innings.bowling = [];
+      innings.oversHistory = [];
+      innings.fallOfWickets = [];
+      innings.partnerships = [];
+      innings.battingOrder = [];
+      innings.runRate = 0;
+      innings.status = "upcoming";
+      innings.onStrikeBatsman = null;
+      innings.currentBatsman1 = null;
+      innings.currentBatsman2 = null;
+      innings.currentBowler = null;
+    });
+
+    match.currentInnings = 0;
+    match.status = "upcoming";
+    match.tossWinner = null;
+    match.tossDecision = null;
+    match.result = { winner: null, resultType: "normal", description: "" };
+    match.highlights = [];
+    match.winProbabilityHistory = [];
+
+    await match.save();
+    await populateFullMatch(match);
+
+    try {
+      const io = getIO();
+      io.to(matchId).emit("match:reset", { matchId, isMatchReset: true });
+      io.emit("match:updated", match);
+    } catch (err) { }
+
+    res.status(200).json({ match, message: "Match reset successfully" });
+  } catch (error) {
+    console.error("Reset Match Error:", error);
+    res.status(400).json({ message: error.message });
+  }
+};
 export const editBall = async (req, res) => {
   try {
     const { matchId } = req.params;
-    const { inningsIndex, overNumber, ballNumber, runs = 0, isWide = false, isNoBall = false, isBye = false, isLegBye = false, isWicket = false, wicketType = '' } = req.body;
+    const { inningsIndex, overNumber, ballNumber, runs = 0, isWide = false, isNoBall = false, isBye = false, isLegBye = false, isWicket = false, wicketType = '', commentary: manualSummary, vividCommentary: manualVivid } = req.body;
     const match = await Match.findById(matchId);
     if (!match) return res.status(404).json({ message: 'Match not found' });
     const innings = match.innings[inningsIndex];
@@ -1797,89 +1905,111 @@ export const editBall = async (req, res) => {
     else if (oldBall.isBye || oldBall.isLegBye) oldExtraRuns = oldBall.runs || 0;
     innings.runs = Math.max(0, innings.runs - oldBatsmanRuns - oldExtraRuns);
     over.runsScored = Math.max(0, (over.runsScored || 0) - oldBatsmanRuns - oldExtraRuns);
-    if (oldBall.isWide) innings.extras.wides = Math.max(0, (innings.extras.wides||0)-(1+(oldBall.runs||0)));
-    else if (oldBall.isNoBall) innings.extras.noBalls = Math.max(0, (innings.extras.noBalls||0)-1);
-    else if (oldBall.isBye) innings.extras.byes = Math.max(0, (innings.extras.byes||0)-(oldBall.runs||0));
-    else if (oldBall.isLegBye) innings.extras.legByes = Math.max(0, (innings.extras.legByes||0)-(oldBall.runs||0));
+    if (oldBall.isWide) innings.extras.wides = Math.max(0, (innings.extras.wides || 0) - (1 + (oldBall.runs || 0)));
+    else if (oldBall.isNoBall) innings.extras.noBalls = Math.max(0, (innings.extras.noBalls || 0) - 1);
+    else if (oldBall.isBye) innings.extras.byes = Math.max(0, (innings.extras.byes || 0) - (oldBall.runs || 0));
+    else if (oldBall.isLegBye) innings.extras.legByes = Math.max(0, (innings.extras.legByes || 0) - (oldBall.runs || 0));
     const oldBatId = (oldBall.batsmanOnStrike?._id || oldBall.batsmanOnStrike)?.toString();
     const oldBowlId = (oldBall.bowler?._id || oldBall.bowler)?.toString();
-    const oldBatStats = innings.batting.find(b => (b.player?._id||b.player)?.toString() === oldBatId);
-    if (oldBatStats && !oldBall.isWide) { oldBatStats.balls=Math.max(0,(oldBatStats.balls||0)-1); oldBatStats.runs=Math.max(0,(oldBatStats.runs||0)-oldBatsmanRuns); if(oldBatsmanRuns===4)oldBatStats.fours=Math.max(0,(oldBatStats.fours||0)-1); if(oldBatsmanRuns===6)oldBatStats.sixes=Math.max(0,(oldBatStats.sixes||0)-1); }
-    const oldBowlStats = innings.bowling.find(b => (b.player?._id||b.player)?.toString() === oldBowlId);
-    if (oldBowlStats) { oldBowlStats.runs=Math.max(0,(oldBowlStats.runs||0)-oldBatsmanRuns-oldExtraRuns); if(oldBall.isWide)oldBowlStats.wides=Math.max(0,(oldBowlStats.wides||0)-1); if(oldBall.isNoBall)oldBowlStats.noBalls=Math.max(0,(oldBowlStats.noBalls||0)-1); if(!oldBall.isWide&&!oldBall.isNoBall)oldBowlStats.balls=Math.max(0,(oldBowlStats.balls||0)-1); }
-    if (oldBall.isWicket) { innings.wickets=Math.max(0,innings.wickets-1); over.wickets=Math.max(0,(over.wickets||0)-1); if(oldBowlStats)oldBowlStats.wickets=Math.max(0,(oldBowlStats.wickets||0)-1); }
-    const newBatsmanRuns = (isBye||isLegBye) ? 0 : runs;
+    const oldBatStats = innings.batting.find(b => (b.player?._id || b.player)?.toString() === oldBatId);
+    if (oldBatStats && !oldBall.isWide) { oldBatStats.balls = Math.max(0, (oldBatStats.balls || 0) - 1); oldBatStats.runs = Math.max(0, (oldBatStats.runs || 0) - oldBatsmanRuns); if (oldBatsmanRuns === 4) oldBatStats.fours = Math.max(0, (oldBatStats.fours || 0) - 1); if (oldBatsmanRuns === 6) oldBatStats.sixes = Math.max(0, (oldBatStats.sixes || 0) - 1); }
+    const oldBowlStats = innings.bowling.find(b => (b.player?._id || b.player)?.toString() === oldBowlId);
+    if (oldBowlStats) { oldBowlStats.runs = Math.max(0, (oldBowlStats.runs || 0) - oldBatsmanRuns - oldExtraRuns); if (oldBall.isWide) oldBowlStats.wides = Math.max(0, (oldBowlStats.wides || 0) - 1); if (oldBall.isNoBall) oldBowlStats.noBalls = Math.max(0, (oldBowlStats.noBalls || 0) - 1); if (!oldBall.isWide && !oldBall.isNoBall) oldBowlStats.balls = Math.max(0, (oldBowlStats.balls || 0) - 1); }
+    if (oldBall.isWicket) { innings.wickets = Math.max(0, innings.wickets - 1); over.wickets = Math.max(0, (over.wickets || 0) - 1); if (oldBowlStats) oldBowlStats.wickets = Math.max(0, (oldBowlStats.wickets || 0) - 1); }
+    const newBatsmanRuns = (isBye || isLegBye) ? 0 : runs;
     let newExtraRuns = 0;
-    if (isWide) newExtraRuns=1+runs; else if(isNoBall)newExtraRuns=1; else if(isBye||isLegBye)newExtraRuns=runs;
+    if (isWide) newExtraRuns = 1 + runs; else if (isNoBall) newExtraRuns = 1; else if (isBye || isLegBye) newExtraRuns = runs;
     innings.runs += newBatsmanRuns + newExtraRuns;
     over.runsScored += newBatsmanRuns + newExtraRuns;
-    if(isWide)innings.extras.wides=(innings.extras.wides||0)+1+runs;
-    else if(isNoBall)innings.extras.noBalls=(innings.extras.noBalls||0)+1;
-    else if(isBye)innings.extras.byes=(innings.extras.byes||0)+runs;
-    else if(isLegBye)innings.extras.legByes=(innings.extras.legByes||0)+runs;
-    innings.extras.total=(innings.extras.wides||0)+(innings.extras.noBalls||0)+(innings.extras.byes||0)+(innings.extras.legByes||0);
-    if(oldBatStats&&!isWide){oldBatStats.balls+=1;oldBatStats.runs+=newBatsmanRuns;if(newBatsmanRuns===4)oldBatStats.fours=(oldBatStats.fours||0)+1;if(newBatsmanRuns===6)oldBatStats.sixes=(oldBatStats.sixes||0)+1;oldBatStats.strikeRate=oldBatStats.balls>0?((oldBatStats.runs/oldBatStats.balls)*100).toFixed(2):0;}
-    if(oldBowlStats){oldBowlStats.runs+=newBatsmanRuns+newExtraRuns;if(isWide)oldBowlStats.wides=(oldBowlStats.wides||0)+1;if(isNoBall)oldBowlStats.noBalls=(oldBowlStats.noBalls||0)+1;if(!isWide&&!isNoBall)oldBowlStats.balls=(oldBowlStats.balls||0)+1;oldBowlStats.overs=Math.floor(oldBowlStats.balls/6);const bOv=oldBowlStats.overs+(oldBowlStats.balls%6)/6;oldBowlStats.economy=bOv>0?(oldBowlStats.runs/bOv).toFixed(2):0;}
-    if(isWicket){innings.wickets+=1;over.wickets=(over.wickets||0)+1;if(oldBowlStats)oldBowlStats.wickets=(oldBowlStats.wickets||0)+1;}
-    let newNotation='';
-    if(isWicket) newNotation='W';
-    else if(isWide) newNotation=`${1+runs}w`;
-    else if(isNoBall) newNotation=runs>0 ? `NB+${runs}` : 'NB';
-    else if(isBye) newNotation=`${runs}b`;
-    else if(isLegBye) newNotation=`${runs}lb`;
-    else newNotation=runs===0 ? '•' : runs.toString();
-    over.balls[ballIdx]={...((oldBall.toObject)?oldBall.toObject():oldBall),runs:newBatsmanRuns,isWide,isNoBall,isBye,isLegBye,isWicket,wicketType:isWicket?wicketType:'',notation:newNotation,editedAt:new Date()};
-    let totalLegal=0;
-    innings.oversHistory.forEach(ov=>{(ov.balls||[]).forEach(b=>{if(!b.isWide&&!b.isNoBall)totalLegal++;});});
-    innings.balls=totalLegal;innings.overs=Math.floor(totalLegal/6);
-    const totOvFloat=innings.overs+(innings.balls%6)/6;
-    innings.runRate=totOvFloat>0?(innings.runs/totOvFloat).toFixed(2):0;
+    if (isWide) innings.extras.wides = (innings.extras.wides || 0) + 1 + runs;
+    else if (isNoBall) innings.extras.noBalls = (innings.extras.noBalls || 0) + 1;
+    else if (isBye) innings.extras.byes = (innings.extras.byes || 0) + runs;
+    else if (isLegBye) innings.extras.legByes = (innings.extras.legByes || 0) + runs;
+    innings.extras.total = (innings.extras.wides || 0) + (innings.extras.noBalls || 0) + (innings.extras.byes || 0) + (innings.extras.legByes || 0);
+    if (oldBatStats && !isWide) { oldBatStats.balls += 1; oldBatStats.runs += newBatsmanRuns; if (newBatsmanRuns === 4) oldBatStats.fours = (oldBatStats.fours || 0) + 1; if (newBatsmanRuns === 6) oldBatStats.sixes = (oldBatStats.sixes || 0) + 1; oldBatStats.strikeRate = oldBatStats.balls > 0 ? ((oldBatStats.runs / oldBatStats.balls) * 100).toFixed(2) : 0; }
+    if (oldBowlStats) { oldBowlStats.runs += newBatsmanRuns + newExtraRuns; if (isWide) oldBowlStats.wides = (oldBowlStats.wides || 0) + 1; if (isNoBall) oldBowlStats.noBalls = (oldBowlStats.noBalls || 0) + 1; if (!isWide && !isNoBall) oldBowlStats.balls = (oldBowlStats.balls || 0) + 1; oldBowlStats.overs = Math.floor(oldBowlStats.balls / 6); const bOv = oldBowlStats.overs + (oldBowlStats.balls % 6) / 6; oldBowlStats.economy = bOv > 0 ? (oldBowlStats.runs / bOv).toFixed(2) : 0; }
+    if (isWicket) { innings.wickets += 1; over.wickets = (over.wickets || 0) + 1; if (oldBowlStats) oldBowlStats.wickets = (oldBowlStats.wickets || 0) + 1; }
+    let newNotation = '';
+    if (isWicket) newNotation = 'W';
+    else if (isWide) newNotation = `${1 + runs}w`;
+    else if (isNoBall) newNotation = runs > 0 ? `NB+${runs}` : 'NB';
+    else if (isBye) newNotation = `${runs}b`;
+    else if (isLegBye) newNotation = `${runs}lb`;
+    else newNotation = runs === 0 ? '•' : runs.toString();
+    over.balls[ballIdx] = {
+      ...((oldBall.toObject) ? oldBall.toObject() : oldBall),
+      runs: newBatsmanRuns,
+      isWide,
+      isNoBall,
+      isBye,
+      isLegBye,
+      isWicket,
+      wicketType: isWicket ? wicketType : '',
+      notation: newNotation,
+      commentary: manualSummary !== undefined ? manualSummary : oldBall.commentary,
+      vividCommentary: manualVivid !== undefined ? manualVivid : oldBall.vividCommentary,
+      editedAt: new Date()
+    };
+    let totalLegal = 0;
+    innings.oversHistory.forEach(ov => { (ov.balls || []).forEach(b => { if (!b.isWide && !b.isNoBall) totalLegal++; }); });
+    innings.balls = totalLegal; innings.overs = Math.floor(totalLegal / 6);
+    const totOvFloat = innings.overs + (innings.balls % 6) / 6;
+    innings.runRate = totOvFloat > 0 ? (innings.runs / totOvFloat).toFixed(2) : 0;
     await match.save();
-    try{const io=getIO();io.to(matchId).emit('match:ballEdited',{matchId,inningsIndex,overNumber,ballNumber});io.emit('match:updated',match);}catch(err){}
-    res.status(200).json({match,message:'Ball updated successfully'});
+    await populateFullMatch(match);
 
-    // Fire off async task to regenerate commentary for the edited ball
-    setImmediate(async () => {
-      try {
-        const m = await Match.findById(matchId).populate("innings.batting.player innings.bowling.player");
-        const inn = m.innings[inningsIndex];
-        const ov = inn.oversHistory.find(o => o.overNumber === overNumber);
-        const b = ov.balls.find(x => x.ballNumber === ballNumber);
+    try { const io = getIO(); io.to(matchId).emit('match:ballEdited', { matchId, inningsIndex, overNumber, ballNumber }); io.emit('match:updated', match); } catch (err) { }
+    res.status(200).json({ match, message: 'Ball updated successfully' });
 
-        const oldBatId = oldBall.batsmanOnStrike?._id || oldBall.batsmanOnStrike;
-        const oldBatName = m.innings[inningsIndex].batting.find(x => x.player?._id?.toString() === oldBatId?.toString())?.player?.name || "Batsman";
-        const oldBowlId = oldBall.bowler?._id || oldBall.bowler;
-        const oldBowlName = m.innings[inningsIndex].bowling.find(x => x.player?._id?.toString() === oldBowlId?.toString())?.player?.name || "Bowler";
+    // Fire off async task to regenerate commentary for the edited ball ONLY if not manually provided
+    if (manualSummary === undefined) {
+      setImmediate(async () => {
+        try {
+          const m = await Match.findById(matchId).populate("innings.batting.player innings.bowling.player");
+          const inn = m.innings[inningsIndex];
+          const ov = inn.oversHistory.find(o => o.overNumber === overNumber);
+          const b = ov.balls.find(x => x.ballNumber === ballNumber);
 
-        const aiComm = await aiCommentary.regenerateEditedBallCommentary({
-          overNumber, ballNumber,
-          oldType: oldBall.isWide ? 'wide' : oldBall.isNoBall ? 'no_ball' : oldBall.isBye ? 'bye' : oldBall.isLegBye ? 'leg_bye' : 'normal',
-          oldRuns: oldBall.runs,
-          oldDirection: oldBall.shotPlacement?.position || oldBall.fieldingZone || '',
-          newType: b.isWide ? 'wide' : b.isNoBall ? 'no_ball' : b.isBye ? 'bye' : b.isLegBye ? 'leg_bye' : 'normal',
-          newRuns: b.runs,
-          newDirection: b.shotPlacement?.position || b.fieldingZone || '',
-          bowlerName: oldBowlName,
-          batsmanName: oldBatName,
-          isWide: b.isWide,
-          isNoBall: b.isNoBall,
-          isWicket: b.isWicket,
-          wicketType: b.wicketType
-        });
+          const oldBatId = oldBall.batsmanOnStrike?._id || oldBall.batsmanOnStrike;
+          const oldBatName = m.innings[inningsIndex].batting.find(x => x.player?._id?.toString() === oldBatId?.toString())?.player?.name || "Batsman";
+          const oldBowlId = oldBall.bowler?._id || oldBall.bowler;
+          const oldBowlName = m.innings[inningsIndex].bowling.find(x => x.player?._id?.toString() === oldBowlId?.toString())?.player?.name || "Bowler";
 
-        if (aiComm) {
-          b.commentary = aiComm;
-          await m.save();
-          try {
-             const io = getIO();
-             io.to(matchId).emit("match:ballEdited", { matchId, inningsIndex, overNumber, ballNumber, newCommentary: aiComm });
-             io.emit("match:updated", m);
-          } catch(e) {}
+          const aiComm = await aiCommentary.regenerateEditedBallCommentary({
+            overNumber, ballNumber,
+            oldType: oldBall.isWide ? 'wide' : oldBall.isNoBall ? 'no_ball' : oldBall.isBye ? 'bye' : oldBall.isLegBye ? 'leg_bye' : 'normal',
+            oldRuns: oldBall.runs,
+            oldDirection: oldBall.shotPlacement?.position || oldBall.fieldingZone || '',
+            newType: b.isWide ? 'wide' : b.isNoBall ? 'no_ball' : b.isBye ? 'bye' : b.isLegBye ? 'leg_bye' : 'normal',
+            newRuns: b.runs,
+            newDirection: b.shotPlacement?.position || b.fieldingZone || '',
+            bowlerName: oldBowlName,
+            batsmanName: oldBatName,
+            isWide: b.isWide,
+            isNoBall: b.isNoBall,
+            isWicket: b.isWicket,
+            wicketType: b.wicketType
+          });
+
+          if (aiComm && aiComm.short) {
+            b.commentary = aiComm.short;
+            b.vividCommentary = aiComm.vivid || "";
+            await m.save();
+            try {
+              const io = getIO();
+              io.to(matchId).emit("match:ballEdited", {
+                matchId, inningsIndex, overNumber, ballNumber,
+                newCommentary: aiComm.short,
+                newVividCommentary: aiComm.vivid
+              });
+              io.emit("match:updated", m);
+            } catch (e) { }
+          }
+        } catch (e) {
+          console.error("Async Commentary Regen Error:", e);
         }
-      } catch(e) {
-         console.error("Async Commentary Regen Error:", e);
-      }
-    });
+      });
+    }
 
-  }catch(error){console.error('Edit Ball Error:',error);res.status(400).json({message:error.message});}
+  } catch (error) { console.error('Edit Ball Error:', error); res.status(400).json({ message: error.message }); }
 };

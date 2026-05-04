@@ -13,9 +13,9 @@ function BallBadge({ ball, small = false }) {
     const color = isWicket
         ? "bg-red-600 text-white shadow-red-500/40"
         : isSix ? "bg-purple-600 text-white shadow-purple-500/40"
-        : isFour ? "bg-blue-600 text-white shadow-blue-500/40"
-        : (isWide || isNoBall) ? "bg-amber-500 text-white shadow-amber-500/40"
-        : "bg-white/10 text-slate-300 shadow-white/5";
+            : isFour ? "bg-blue-600 text-white shadow-blue-500/40"
+                : (isWide || isNoBall) ? "bg-amber-500 text-white shadow-amber-500/40"
+                    : "bg-white/10 text-slate-300 shadow-white/5";
 
     return (
         <div className={`${base} ${color} rounded-lg flex items-center justify-center font-black shrink-0 shadow`}>
@@ -37,13 +37,13 @@ function BallHeader({ ball, overNum, ballNum, onEdit }) {
     const typeLabel = ball.isWicket
         ? ball.wicketType?.toUpperCase() || "WICKET"
         : ball.isWide ? `${ball.runs + 1} WIDE`
-        : ball.isNoBall ? `NB+${ball.runs}`
-        : ball.isBye ? `${ball.runs} BYE`
-        : ball.isLegBye ? `${ball.runs} LEG BYE`
-        : ball.runs === 4 ? "FOUR"
-        : ball.runs === 6 ? "SIX"
-        : ball.runs === 0 ? "DOT"
-        : `${ball.runs} RUN${ball.runs !== 1 ? "S" : ""}`;
+            : ball.isNoBall ? `NB+${ball.runs}`
+                : ball.isBye ? `${ball.runs} BYE`
+                    : ball.isLegBye ? `${ball.runs} LEG BYE`
+                        : ball.runs === 4 ? "FOUR"
+                            : ball.runs === 6 ? "SIX"
+                                : ball.runs === 0 ? "DOT"
+                                    : `${ball.runs} RUN${ball.runs !== 1 ? "S" : ""}`;
 
     return (
         <div className="flex items-center gap-3 group">
@@ -53,21 +53,20 @@ function BallHeader({ ball, overNum, ballNum, onEdit }) {
                     <span className="text-slate-500 font-black text-[11px] tabular-nums shrink-0">
                         {overNum}.{ballNum}
                     </span>
-                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 ${
-                        ball.isWicket ? "bg-red-500/20 text-red-400" :
-                        ball.runs === 6 ? "bg-purple-500/20 text-purple-400" :
-                        ball.runs === 4 ? "bg-blue-500/20 text-blue-400" :
-                        (ball.isWide || ball.isNoBall) ? "bg-amber-500/20 text-amber-400" :
-                        "bg-white/5 text-slate-500"
-                    }`}>
-                        {typeLabel}
-                    </span>
-                    <span className="text-white font-bold text-sm truncate">
-                        {ball.bowlerName || "Bowler"}{" "}
-                        <span className="text-slate-500 font-normal">to</span>{" "}
-                        {ball.batsmanName || "Batsman"}
+                    {!ball.commentary && (
+                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 ${ball.isWicket ? "bg-red-500/20 text-red-400" :
+                            ball.runs === 6 ? "bg-purple-500/20 text-purple-400" :
+                                ball.runs === 4 ? "bg-blue-500/20 text-blue-400" :
+                                    (ball.isWide || ball.isNoBall) ? "bg-amber-500/20 text-amber-400" :
+                                        "bg-white/5 text-slate-500"
+                            }`}>
+                            {typeLabel}
+                        </span>
+                    )}
+                    <span className="text-slate-900 font-bold text-sm leading-tight">
+                        {ball.commentary || `${ball.bowlerName || 'Bowler'} to ${ball.batsmanName || 'Batsman'}`}
                         {ball.isWicket && (
-                            <span className="text-red-400 font-black"> — OUT!</span>
+                            <span className="text-red-600 font-black"> — OUT!</span>
                         )}
                     </span>
                 </div>
@@ -152,7 +151,14 @@ function OverBlock({ over, balls, onEdit, showReadMore, onReadMore, allPlayers }
                             ballNum={ball.ballNumber}
                             onEdit={onEdit}
                         />
-                        <CommentaryLine text={ball.commentary} />
+                        {ball.vividCommentary && ball.vividCommentary !== ball.commentary && (
+                            <div className="ml-12 mt-3 p-3 bg-black/[0.03] rounded-xl border-l-2 border-cric-accent/40">
+                                <span className="text-[9px] font-black uppercase text-cric-accent tracking-[0.2em] block mb-1 opacity-80">Detailed Analysis</span>
+                                <p className="text-[12px] text-slate-600 italic leading-relaxed">
+                                    {ball.vividCommentary}
+                                </p>
+                            </div>
+                        )}
                     </div>
                 ))}
             </div>
@@ -171,11 +177,8 @@ function OverBlock({ over, balls, onEdit, showReadMore, onReadMore, allPlayers }
 
 // Edit Ball Modal
 function EditBallModal({ ball, overNum, ballNum, onSave, onClose }) {
-    const [runs, setRuns] = useState(ball.runs ?? 0);
-    const [extra, setExtra] = useState(
-        ball.isWide ? "WIDE" : ball.isNoBall ? "NO BALL" : ball.isBye ? "BYE" : ball.isLegBye ? "LEG BYE" : ""
-    );
-    const [wicket, setWicket] = useState(ball.isWicket ? (ball.wicketType || "caught") : "");
+    const [commentary, setCommentary] = useState(ball.commentary ?? "");
+    const [vividCommentary, setVividCommentary] = useState(ball.vividCommentary ?? "");
     const [saving, setSaving] = useState(false);
 
     const handleSave = async () => {
@@ -190,14 +193,16 @@ function EditBallModal({ ball, overNum, ballNum, onSave, onClose }) {
             isLegBye: extra === "LEG BYE",
             isWicket: !!wicket,
             wicketType: wicket,
+            commentary,
+            vividCommentary
         });
         setSaving(false);
         onClose();
     };
 
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-            <div className="bg-[#141b24] rounded-[2.5rem] border border-white/10 p-8 w-full max-w-lg shadow-2xl">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
+            <div className="bg-[#141b24] rounded-[2.5rem] border border-white/10 p-8 w-full max-w-lg shadow-2xl my-auto">
                 <div className="flex justify-between items-center mb-6">
                     <h3 className="text-2xl font-black font-raj italic uppercase text-white">
                         Edit Ball {overNum}.{ballNum}
@@ -208,43 +213,51 @@ function EditBallModal({ ball, overNum, ballNum, onSave, onClose }) {
                 </div>
 
                 <div className="space-y-6">
-                    {/* Runs */}
-                    <div>
-                        <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-2 block">Runs</label>
-                        <div className="grid grid-cols-7 gap-2">
-                            {[0, 1, 2, 3, 4, 5, 6].map(r => (
-                                <button key={r} onClick={() => setRuns(r)}
-                                    className={`h-12 rounded-xl font-black text-lg transition-all ${runs === r ? "bg-[#ff6b35] text-white" : "bg-white/5 text-slate-400 hover:bg-white/10"}`}>
-                                    {r}
-                                </button>
-                            ))}
+                    {/* Runs & Extras */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-2 block">Runs</label>
+                            <select value={runs} onChange={e => setRuns(Number(e.target.value))} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white font-bold outline-none">
+                                {[0, 1, 2, 3, 4, 5, 6].map(r => <option key={r} value={r} className="bg-[#141b24]">{r}</option>)}
+                            </select>
                         </div>
-                    </div>
-
-                    {/* Extras */}
-                    <div>
-                        <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-2 block">Extra</label>
-                        <div className="grid grid-cols-4 gap-2">
-                            {["", "WIDE", "NO BALL", "BYE", "LEG BYE"].map(e => (
-                                <button key={e} onClick={() => setExtra(extra === e ? "" : e)}
-                                    className={`py-2 rounded-xl text-[10px] font-black uppercase transition-all ${extra === e ? "bg-blue-600 text-white" : "bg-white/5 text-slate-400 hover:bg-white/10"}`}>
-                                    {e || "None"}
-                                </button>
-                            ))}
+                        <div>
+                            <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-2 block">Extra</label>
+                            <select value={extra} onChange={e => setExtra(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white font-bold outline-none uppercase">
+                                {["", "WIDE", "NO BALL", "BYE", "LEG BYE"].map(e => <option key={e} value={e} className="bg-[#141b24]">{e || "None"}</option>)}
+                            </select>
                         </div>
                     </div>
 
                     {/* Wicket */}
                     <div>
                         <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-2 block">Wicket</label>
-                        <div className="grid grid-cols-3 gap-2">
-                            {["", "bowled", "caught", "lbw", "run out", "stumped", "hit wicket"].map(w => (
-                                <button key={w} onClick={() => setWicket(wicket === w ? "" : w)}
-                                    className={`py-2 rounded-xl text-[10px] font-black uppercase transition-all ${wicket === w ? "bg-red-600 text-white" : "bg-white/5 text-slate-400 hover:bg-white/10"}`}>
-                                    {w || "No Wicket"}
-                                </button>
-                            ))}
-                        </div>
+                        <select value={wicket} onChange={e => setWicket(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white font-bold outline-none uppercase">
+                            {["", "bowled", "caught", "lbw", "run out", "stumped", "hit wicket"].map(w => <option key={w} value={w} className="bg-[#141b24]">{w || "No Wicket"}</option>)}
+                        </select>
+                    </div>
+
+                    {/* Commentary Fields */}
+                    <div>
+                        <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-2 block">Broadcast Line (Main)</label>
+                        <textarea
+                            value={commentary}
+                            onChange={e => setCommentary(e.target.value)}
+                            rows={2}
+                            placeholder="Bowler to Batsman, Result..."
+                            className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm outline-none focus:border-[#ff6b35] transition-all resize-none"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-2 block">Technical Analysis (Next line)</label>
+                        <textarea
+                            value={vividCommentary}
+                            onChange={e => setVividCommentary(e.target.value)}
+                            rows={3}
+                            placeholder="Detailed technical description here..."
+                            className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm outline-none focus:border-[#ff6b35] transition-all resize-none"
+                        />
                     </div>
 
                     <button
@@ -252,7 +265,7 @@ function EditBallModal({ ball, overNum, ballNum, onSave, onClose }) {
                         disabled={saving}
                         className="w-full py-5 rounded-2xl bg-[#ff6b35] text-white font-black font-raj text-xl italic uppercase shadow-xl hover:scale-105 transition-all disabled:opacity-50"
                     >
-                        {saving ? "Saving..." : "Save Changes"}
+                        {saving ? "Saving..." : "Update Ball & Commentary"}
                     </button>
                 </div>
             </div>
@@ -299,7 +312,12 @@ export default function BallByBallFeed({ history = [], overs = [], onEdit, onSwi
     });
 
     // Sort overs newest first
-    const sortedOvers = Object.values(groupedOvers).sort((a, b) => b.overNumber - a.overNumber);
+    let sortedOvers = Object.values(groupedOvers).sort((a, b) => b.overNumber - a.overNumber);
+
+    // If compact (like on the live page), only show the last 4 overs as requested
+    if (compact) {
+        sortedOvers = sortedOvers.slice(0, 4);
+    }
 
     const handleEdit = (ball) => {
         setEditingBall(ball);

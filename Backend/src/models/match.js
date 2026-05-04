@@ -19,6 +19,8 @@ const ballSchema = new mongoose.Schema({
   fielder: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
   commentary: { type: String, default: "" },
   vividCommentary: { type: String, default: "" },
+  batsmanName: { type: String, default: "" },
+  bowlerName: { type: String, default: "" },
   timestamp: { type: Date, default: Date.now },
   // Shot placement for wagon wheel
   shotPlacement: {
@@ -201,7 +203,7 @@ const matchSchema = new mongoose.Schema(
       description: { type: String },
       resultType: {
         type: String,
-        enum: ["normal", "tie", "no result", "abandoned", "super_over"]
+        enum: ["normal", "tie", "draw", "no result", "abandoned", "super_over"]
       }
     },
     tieResolution: {

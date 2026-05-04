@@ -16,21 +16,22 @@ import {
   setBowlingXI,
   setTeamRoles
 } from "../controllers/matchController.js";
-import { 
-  updateScore, 
-  endInnings, 
-  startNextInnings, 
-  reduceOvers, 
-  resolveTie, 
-  startSuperOverInnings, 
-  editCommentary, 
-  handleFieldClick, 
-  revertLastBall, 
+import {
+  updateScore,
+  endInnings,
+  startNextInnings,
+  reduceOvers,
+  resolveTie,
+  startSuperOverInnings,
+  editCommentary,
+  handleFieldClick,
+  revertLastBall,
   setBowler,
   generateAICommentary,
   useStrategicTimeout,
   recordDRSReview,
   resetInnings,
+  resetMatch,
   editBall
 } from "../controllers/scoreController.js";
 
@@ -55,6 +56,7 @@ router.post("/:matchId/ai-commentary", generateAICommentary);
 router.post("/:matchId/timeout", useStrategicTimeout);
 router.post("/:matchId/drs", recordDRSReview);
 router.post("/:matchId/reset-innings", resetInnings);
+router.post("/:matchId/reset-match", resetMatch);
 router.put("/:matchId/edit-ball", editBall);
 
 router.put("/:id", updateMatch);

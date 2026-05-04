@@ -423,17 +423,8 @@ export default function ManageScore() {
         }
     };
 
-    const handleGroundClick = ({ x, y, angle, distance, direction, shotName, zone, autoRuns }) => {
-        setActiveGroundZone({ x, y, angle, distance, direction, shotName, zone, autoRuns });
-        if (autoRuns === 6) {
-            setSelectedRuns(6);
-            setSelectedExtra(null);
-            setToast('SIX! Click Submit to record.');
-        } else if (autoRuns === 4) {
-            setSelectedRuns(4);
-            setSelectedExtra(null);
-            setToast('FOUR! Click Submit to record.');
-        }
+    const handleGroundClick = (data) => {
+        setActiveGroundZone(data);
     };
 
     const handleEditBall = async (ballData) => {
@@ -462,6 +453,22 @@ export default function ManageScore() {
             alert(err.response?.data?.message || err.message);
         }
     };
+
+    const handleResetMatch = async () => {
+        if (!window.confirm("FATAL: This will reset the ENTIRE match (Both innings, toss, and status). All data will be lost. Proceed?")) return;
+        try {
+            const res = await axios.post(`${API_URL}/matches/${selectedMatch._id}/reset-match`, {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setSelectedMatch(res.data.match);
+            setIsPreMatchComplete(false); // Go back to setup wizard
+            setWizardStep(1);
+            setToast("Match Reset Successfully");
+        } catch (err) {
+            alert(err.response?.data?.message || err.message);
+        }
+    };
+
 
     const setRole = async (playerId, role) => {
         try {
@@ -700,7 +707,7 @@ export default function ManageScore() {
                             <div className="text-slate-400 font-medium">{selectedMatch.venue} • {selectedMatch.format}</div>
                         </div>
                         <div className="text-right">
-                            <div className="text-6xl font-black font-raj italic text-white leading-none">
+                            <div className="text-6xl font-black font-raj italic text-black leading-none">
                                 {curInn?.runs}/{curInn?.wickets}
                             </div>
                             <div className="text-xl font-bold text-slate-500 mt-2">OVERS {formatOvers(curInn?.balls)}</div>
@@ -727,20 +734,40 @@ export default function ManageScore() {
                 {/* Tab Content Area */}
                 <div className="flex-1 bg-cric-card rounded-[3.5rem] border border-cric-border shadow-2xl p-8 overflow-y-auto no-scrollbar min-h-[600px]">
                     {activeTab === 'live' && (
-                        <LiveScoringPanel
-                            battingXI={battingXI}
-                            bowlingXI={bowlingXI}
-                            strikerId={strikerId}
-                            nonStrikerId={nonStrikerId}
-                            bowlerId={bowlerId}
-                            strikerStats={strikerStats}
-                            nonStrikerStats={nonStrikerStats}
-                            activeBowlerStats={activeBowlerStats}
-                            winProb={winProb}
-                            selectedMatch={selectedMatch}
-                            formattedHistory={formattedHistory}
-                            formatOvers={formatOvers}
-                        />
+                        <div className="space-y-12 animate-fadeIn">
+                            <LiveScoringPanel
+                                battingXI={battingXI}
+                                bowlingXI={bowlingXI}
+                                strikerId={strikerId}
+                                nonStrikerId={nonStrikerId}
+                                bowlerId={bowlerId}
+                                strikerStats={strikerStats}
+                                nonStrikerStats={nonStrikerStats}
+                                activeBowlerStats={activeBowlerStats}
+                                winProb={winProb}
+                                selectedMatch={selectedMatch}
+                                formattedHistory={formattedHistory}
+                                formatOvers={formatOvers}
+                            />
+
+                            {/* Live Commentary Feed Integrated into Live Page */}
+                            <div className="pt-8 border-t border-cric-border">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h3 className="text-xl font-black font-raj italic uppercase text-cric-accent tracking-tight">Recent Live Commentary</h3>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                                        <span className="text-[9px] font-black uppercase text-slate-500 tracking-widest">Live Feed</span>
+                                    </div>
+                                </div>
+                                <BallByBallFeed
+                                    history={formattedHistory}
+                                    overs={curInn?.oversHistory || []}
+                                    onEdit={handleEditBall}
+                                    onSwitchTab={setActiveTab}
+                                    compact={true}
+                                />
+                            </div>
+                        </div>
                     )}
 
                     {activeTab === 'scorecard' && (
@@ -924,6 +951,7 @@ export default function ManageScore() {
             <RightSidebarControls
                 curInn={curInn}
                 handleResetInnings={handleResetInnings}
+                handleResetMatch={handleResetMatch}
                 handleEndInnings={handleEndInnings}
                 handleStartNext={handleStartNext}
                 setShowSelectionModal={setShowSelectionModal}

@@ -12,49 +12,49 @@ const CLOSE_INFIELD_RADIUS = 50; // close infield / pitch zone
 // ─── EXACT FIELD POSITIONS (400x400, off side = left x<200, leg = right x>200) ──
 const FIELD_POSITIONS = [
     // Close Infield
-    { id: 'wicket_keeper',       name: 'Wicket Keeper',         x: 200, y: 235 },
-    { id: 'slip_1',              name: '1st Slip',              x: 170, y: 240 },
-    { id: 'slip_2',              name: '2nd Slip',              x: 155, y: 245 },
-    { id: 'gully',               name: 'Gully',                 x: 140, y: 230 },
-    { id: 'leg_slip',            name: 'Leg Slip',              x: 228, y: 240 },
-    { id: 'leg_gully',           name: 'Leg Gully',             x: 242, y: 228 },
-    { id: 'silly_point',         name: 'Silly Point',           x: 148, y: 205 },
-    { id: 'silly_mid_on',        name: 'Silly Mid On',          x: 222, y: 195 },
-    { id: 'silly_mid_off',       name: 'Silly Mid Off',         x: 178, y: 195 },
-    { id: 'short_leg',           name: 'Short Leg',             x: 235, y: 210 },
-    { id: 'bat_pad',             name: 'Bat Pad (Leg)',         x: 215, y: 200 },
+    { id: 'wicket_keeper', name: 'Wicket Keeper', x: 200, y: 235 },
+    { id: 'slip_1', name: '1st Slip', x: 170, y: 240 },
+    { id: 'slip_2', name: '2nd Slip', x: 155, y: 245 },
+    { id: 'gully', name: 'Gully', x: 140, y: 230 },
+    { id: 'leg_slip', name: 'Leg Slip', x: 228, y: 240 },
+    { id: 'leg_gully', name: 'Leg Gully', x: 242, y: 228 },
+    { id: 'silly_point', name: 'Silly Point', x: 148, y: 205 },
+    { id: 'silly_mid_on', name: 'Silly Mid On', x: 222, y: 195 },
+    { id: 'silly_mid_off', name: 'Silly Mid Off', x: 178, y: 195 },
+    { id: 'short_leg', name: 'Short Leg', x: 235, y: 210 },
+    { id: 'bat_pad', name: 'Bat Pad (Leg)', x: 215, y: 200 },
     // Inner Ring / 30-Yard Circle
-    { id: 'point',               name: 'Point',                 x: 110, y: 200 },
-    { id: 'backward_point',      name: 'Backward Point',        x: 115, y: 225 },
-    { id: 'cover_point',         name: 'Cover Point',           x: 120, y: 185 },
-    { id: 'cover',               name: 'Cover',                 x: 128, y: 165 },
-    { id: 'extra_cover',         name: 'Extra Cover',           x: 145, y: 148 },
-    { id: 'mid_off',             name: 'Mid Off',               x: 170, y: 138 },
-    { id: 'mid_on',              name: 'Mid On',                x: 230, y: 138 },
-    { id: 'mid_wicket',          name: 'Mid Wicket',            x: 268, y: 155 },
-    { id: 'square_leg',          name: 'Square Leg',            x: 288, y: 200 },
-    { id: 'backward_square_leg', name: 'Backward Square Leg',   x: 282, y: 222 },
-    { id: 'short_fine_leg',      name: 'Short Fine Leg',        x: 252, y: 252 },
-    { id: 'forward_short_leg',   name: 'Forward Short Leg',     x: 245, y: 185 },
+    { id: 'point', name: 'Point', x: 110, y: 200 },
+    { id: 'backward_point', name: 'Backward Point', x: 115, y: 225 },
+    { id: 'cover_point', name: 'Cover Point', x: 120, y: 185 },
+    { id: 'cover', name: 'Cover', x: 128, y: 165 },
+    { id: 'extra_cover', name: 'Extra Cover', x: 145, y: 148 },
+    { id: 'mid_off', name: 'Mid Off', x: 170, y: 138 },
+    { id: 'mid_on', name: 'Mid On', x: 230, y: 138 },
+    { id: 'mid_wicket', name: 'Mid Wicket', x: 268, y: 155 },
+    { id: 'square_leg', name: 'Square Leg', x: 288, y: 200 },
+    { id: 'backward_square_leg', name: 'Backward Square Leg', x: 282, y: 222 },
+    { id: 'short_fine_leg', name: 'Short Fine Leg', x: 252, y: 252 },
+    { id: 'forward_short_leg', name: 'Forward Short Leg', x: 245, y: 185 },
     // Outfield
-    { id: 'third_man',           name: 'Third Man',             x: 122, y: 338 },
-    { id: 'fine_leg',            name: 'Fine Leg',              x: 272, y: 345 },
-    { id: 'deep_fine_leg',       name: 'Deep Fine Leg',         x: 258, y: 368 },
-    { id: 'deep_backward_sq',    name: 'Deep Backward Sq Leg',  x: 348, y: 272 },
-    { id: 'deep_square_leg',     name: 'Deep Square Leg',       x: 365, y: 205 },
-    { id: 'deep_mid_wicket',     name: 'Deep Mid Wicket',       x: 355, y: 138 },
-    { id: 'cow_corner',          name: 'Cow Corner',            x: 328, y: 92  },
-    { id: 'long_on',             name: 'Long On',               x: 260, y: 52  },
-    { id: 'straight_hit',        name: 'Straight Hit',          x: 200, y: 35  },
-    { id: 'long_off',            name: 'Long Off',              x: 138, y: 52  },
-    { id: 'deep_extra_cover',    name: 'Deep Extra Cover',      x: 70,  y: 92  },
-    { id: 'sweeper_cover',       name: 'Sweeper Cover',         x: 48,  y: 138 },
-    { id: 'deep_cover',          name: 'Deep Cover',            x: 42,  y: 175 },
-    { id: 'deep_point',          name: 'Deep Point',            x: 38,  y: 205 },
-    { id: 'deep_backward_point', name: 'Deep Backward Point',   x: 48,  y: 245 },
-    { id: 'long_stop',           name: 'Long Stop',             x: 200, y: 375 },
-    { id: 'wide_off',            name: 'Wide (Off Side)',       x: 15,  y: 200 },
-    { id: 'wide_leg',            name: 'Wide (Leg Side)',       x: 385, y: 200 },
+    { id: 'third_man', name: 'Third Man', x: 122, y: 338 },
+    { id: 'fine_leg', name: 'Fine Leg', x: 272, y: 345 },
+    { id: 'deep_fine_leg', name: 'Deep Fine Leg', x: 258, y: 368 },
+    { id: 'deep_backward_sq', name: 'Deep Backward Sq Leg', x: 348, y: 272 },
+    { id: 'deep_square_leg', name: 'Deep Square Leg', x: 365, y: 205 },
+    { id: 'deep_mid_wicket', name: 'Deep Mid Wicket', x: 355, y: 138 },
+    { id: 'cow_corner', name: 'Cow Corner', x: 328, y: 92 },
+    { id: 'long_on', name: 'Long On', x: 260, y: 52 },
+    { id: 'straight_hit', name: 'Straight Hit', x: 200, y: 35 },
+    { id: 'long_off', name: 'Long Off', x: 138, y: 52 },
+    { id: 'deep_extra_cover', name: 'Deep Extra Cover', x: 70, y: 92 },
+    { id: 'sweeper_cover', name: 'Sweeper Cover', x: 48, y: 138 },
+    { id: 'deep_cover', name: 'Deep Cover', x: 42, y: 175 },
+    { id: 'deep_point', name: 'Deep Point', x: 38, y: 205 },
+    { id: 'deep_backward_point', name: 'Deep Backward Point', x: 48, y: 245 },
+    { id: 'long_stop', name: 'Long Stop', x: 200, y: 375 },
+    { id: 'wide_off', name: 'Wide (Off Side)', x: 15, y: 200 },
+    { id: 'wide_leg', name: 'Wide (Leg Side)', x: 385, y: 200 },
 ];
 
 // ─── SHOT DETECTION (Part 3 logic) ───────────────────────────────────────────
@@ -68,24 +68,18 @@ function detectShot(clickX, clickY) {
 
     let zone, shotType;
     if (distance > BOUNDARY_RADIUS) {
-        zone = 'over_boundary'; shotType = 'six';
+        zone = 'over_boundary';
     } else if (distance > INNER_CIRCLE_RADIUS) {
-        zone = 'outfield'; shotType = 'four';
-    } else if (distance > CLOSE_INFIELD_RADIUS) {
-        zone = 'inner_ring'; shotType = 'running';
+        zone = 'outfield';
+    } else if (distance > INNER_CIRCLE_RADIUS * 0.8 || distance > CLOSE_INFIELD_RADIUS) {
+        zone = 'inner_ring';
     } else {
-        zone = 'close_infield'; shotType = 'dot_or_single';
+        zone = 'close_infield';
     }
+    shotType = 'running'; // Defaulting to running, user selects runs manually
 
     let direction = '';
-    if      (angleDeg >= 337.5 || angleDeg < 22.5)  direction = 'Straight';
-    else if (angleDeg < 67.5)   direction = 'Long Off / Straight Off';
-    else if (angleDeg < 112.5)  direction = 'Cover / Extra Cover';
-    else if (angleDeg < 157.5)  direction = 'Point / Backward Point';
-    else if (angleDeg < 202.5)  direction = 'Third Man / Fine Leg (Off)';
-    else if (angleDeg < 247.5)  direction = 'Fine Leg / Backward Square Leg';
-    else if (angleDeg < 292.5)  direction = 'Square Leg / Mid Wicket';
-    else                         direction = 'Long On / Mid On';
+    // Direction detection removed as per user request to not auto-detect
 
     // Find the nearest field position for labeling
     let nearestPos = null, nearestDist = Infinity;
@@ -101,24 +95,23 @@ function detectShot(clickX, clickY) {
 }
 
 function getShotName(angleDeg, shotType, side) {
-    if (shotType === 'dot_or_single') return 'Blocked / Defended';
-    if (angleDeg >= 337.5 || angleDeg < 22.5) return shotType === 'six' ? 'Straight Six' : 'Straight Drive';
-    if (angleDeg < 67.5)  return side === 'off side' ? (shotType === 'six' ? 'Lofted Drive' : 'Straight Drive') : 'Slog';
-    if (angleDeg < 112.5) return shotType === 'six' ? 'Lofted Cover Drive' : 'Cover Drive / Extra Cover Drive';
-    if (angleDeg < 157.5) return shotType === 'six' ? 'Ramp / Lap' : 'Cut Shot';
-    if (angleDeg < 202.5) return 'Glance / Fine Leg';
-    if (angleDeg < 247.5) return shotType === 'six' ? 'Slog Sweep / Ramp' : 'Sweep / Fine Glance';
-    if (angleDeg < 292.5) return shotType === 'six' ? 'Slog / Heave' : 'Flick / Whip';
-    return shotType === 'six' ? 'Lofted On Drive' : 'On Drive / Mid On Push';
+    if (angleDeg >= 337.5 || angleDeg < 22.5) return 'Straight Shot';
+    if (angleDeg < 67.5) return side === 'off side' ? 'Off-Side Shot' : 'On-Side Shot';
+    if (angleDeg < 112.5) return 'Cover/Extra Cover Area';
+    if (angleDeg < 157.5) return 'Point/Gully Area';
+    if (angleDeg < 202.5) return 'Third Man/Fine Leg Area';
+    if (angleDeg < 247.5) return 'Fine Leg/Square Leg Area';
+    if (angleDeg < 292.5) return 'Mid-Wicket/Square Leg Area';
+    return 'Mid-On/Long-On Area';
 }
 
 // Zone label & color
 function getZoneStyle(zone) {
     switch (zone) {
-        case 'over_boundary': return { color: '#a855f7', label: 'SIX — Over Boundary', bg: 'rgba(168,85,247,0.15)' };
-        case 'outfield':      return { color: '#3b82f6', label: 'FOUR — Ground Boundary', bg: 'rgba(59,130,246,0.12)' };
-        case 'inner_ring':    return { color: '#22c55e', label: 'Running Runs (1–3)', bg: 'rgba(34,197,94,0.08)' };
-        default:              return { color: '#ff6b35', label: 'Dot / Single', bg: 'rgba(255,107,53,0.08)' };
+        case 'over_boundary': return { color: '#a855f7', label: 'Over Boundary', bg: 'rgba(168,85,247,0.15)' };
+        case 'outfield': return { color: '#3b82f6', label: 'Outfield', bg: 'rgba(59,130,246,0.12)' };
+        case 'inner_ring': return { color: '#22c55e', label: 'Inner Ring', bg: 'rgba(34,197,94,0.08)' };
+        default: return { color: '#ff6b35', label: 'Infield', bg: 'rgba(255,107,53,0.08)' };
     }
 }
 
@@ -140,11 +133,8 @@ export default function CricketGround({ onShotSelect, selectedRuns, activeZone }
         setClickEffect({ x: sx, y: sy, zone: info.zone, key: Date.now() });
         setTimeout(() => setClickEffect(null), 700);
 
-        // Auto-set runs based on zone
+        // Auto-set runs removed as per user request
         let autoRuns = null;
-        if (info.zone === 'over_boundary' || info.zone === 'outfield') {
-            autoRuns = info.zone === 'over_boundary' ? 6 : 4;
-        }
 
         onShotSelect({
             x: sx, y: sy,
@@ -178,10 +168,10 @@ export default function CricketGround({ onShotSelect, selectedRuns, activeZone }
             {/* Zone Legend */}
             <div className="flex flex-wrap gap-3 justify-center text-[9px] font-black uppercase tracking-widest">
                 {[
-                    { color: 'bg-purple-500', label: 'SIX — Over Boundary' },
-                    { color: 'bg-blue-500',   label: 'FOUR — Outfield' },
-                    { color: 'bg-green-500',  label: '1–3 — Inner Ring' },
-                    { color: 'bg-[#ff6b35]',  label: 'Dot/1 — Infield' },
+                    { color: 'bg-purple-500', label: 'Over Boundary' },
+                    { color: 'bg-blue-500', label: 'Outfield' },
+                    { color: 'bg-green-500', label: 'Inner Ring' },
+                    { color: 'bg-[#ff6b35]', label: 'Infield' },
                 ].map(z => (
                     <span key={z.label} className="flex items-center gap-1">
                         <span className={`w-2 h-2 rounded-full ${z.color}`} />
@@ -223,12 +213,12 @@ export default function CricketGround({ onShotSelect, selectedRuns, activeZone }
                             cx={CX} cy={CY}
                             rx={hoverInfo.zone === 'over_boundary' ? BOUNDARY_RADIUS :
                                 hoverInfo.zone === 'outfield' ? BOUNDARY_RADIUS - 5 :
-                                hoverInfo.zone === 'inner_ring' ? INNER_CIRCLE_RADIUS :
-                                CLOSE_INFIELD_RADIUS}
+                                    hoverInfo.zone === 'inner_ring' ? INNER_CIRCLE_RADIUS :
+                                        CLOSE_INFIELD_RADIUS}
                             ry={hoverInfo.zone === 'over_boundary' ? BOUNDARY_RADIUS - 5 :
                                 hoverInfo.zone === 'outfield' ? BOUNDARY_RADIUS - 10 :
-                                hoverInfo.zone === 'inner_ring' ? INNER_CIRCLE_RADIUS :
-                                CLOSE_INFIELD_RADIUS}
+                                    hoverInfo.zone === 'inner_ring' ? INNER_CIRCLE_RADIUS :
+                                        CLOSE_INFIELD_RADIUS}
                             fill={hoverStyle?.bg || 'transparent'}
                             className="pointer-events-none transition-all"
                         />
@@ -243,7 +233,7 @@ export default function CricketGround({ onShotSelect, selectedRuns, activeZone }
                         fill="url(#infGrd)" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" strokeDasharray="5 4" />
 
                     {/* Mowing stripes (subtle) */}
-                    {[-6,-4,-2,0,2,4,6].map(i => (
+                    {[-6, -4, -2, 0, 2, 4, 6].map(i => (
                         <line key={i}
                             x1={CX + i * 22} y1={CY - BOUNDARY_RADIUS + 10}
                             x2={CX + i * 22} y2={CY + BOUNDARY_RADIUS - 10}
@@ -292,7 +282,7 @@ export default function CricketGround({ onShotSelect, selectedRuns, activeZone }
                     {FIELD_POSITIONS.map(pos => {
                         const dx = pos.x - CX, dy = pos.y - CY;
                         const dist = Math.sqrt(dx * dx + dy * dy);
-                        const isClose   = dist < 85;
+                        const isClose = dist < 85;
                         const isOutfield = dist > 125;
                         const r = isClose ? 4 : isOutfield ? 5.5 : 5;
                         return (
@@ -358,14 +348,14 @@ export default function CricketGround({ onShotSelect, selectedRuns, activeZone }
                     <div className="flex items-center justify-between">
                         <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Shot</span>
                         <span className="text-[10px] font-black" style={{ color: activeStyle?.color }}>
-                            {activeZone.zone === 'over_boundary' ? '⬡ SIX' :
-                             activeZone.zone === 'outfield' ? '◆ FOUR' :
-                             activeZone.zone === 'inner_ring' ? '● Running' : '• Infield'}
+                            {activeZone.zone === 'over_boundary' ? 'Over Boundary' :
+                                activeZone.zone === 'outfield' ? 'Outfield' :
+                                    activeZone.zone === 'inner_ring' ? 'Inner Ring' : 'Infield'}
                         </span>
                     </div>
                     <div className="text-xs font-bold text-white">{activeZone.shotName}</div>
                     <div className="text-[9px] text-slate-400">
-                        {activeZone.direction} · {activeZone.side}
+                        {activeZone.side}
                         {activeZone.nearestPosition && ` · near ${activeZone.nearestPosition}`}
                     </div>
                 </div>

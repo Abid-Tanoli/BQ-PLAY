@@ -100,19 +100,24 @@ const LiveScoringPanel = ({
             </div>
 
             {/* Last Ball Analysis */}
-            <div className="bg-black/20 rounded-[2.5rem] p-8 border border-white/5">
+            <div className="bg-black/5 rounded-[2.5rem] p-8 border border-black/5">
                 <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6">Last Ball Analysis</h3>
                 {formattedHistory.length > 0 ? (
                     <div className="space-y-4">
                         <div className="flex gap-4 items-start">
                             <div className="text-xl font-black text-cric-accent whitespace-nowrap">{formatOvers(formattedHistory[formattedHistory.length - 1].ballNumber)}</div>
                             <div className="space-y-2">
-                                <div className="text-lg font-bold text-white leading-tight">
-                                    {formattedHistory[formattedHistory.length - 1].bowlerName} to {formattedHistory[formattedHistory.length - 1].batsmanName}, {formattedHistory[formattedHistory.length - 1].notation || (formattedHistory[formattedHistory.length - 1].runs + (formattedHistory[formattedHistory.length - 1].extraRuns || 0))}
+                                <div className="text-lg font-bold text-slate-900 leading-tight mb-3">
+                                    {formattedHistory[formattedHistory.length - 1].commentary || `${formattedHistory[formattedHistory.length - 1].bowlerName} to ${formattedHistory[formattedHistory.length - 1].batsmanName}, ${formattedHistory[formattedHistory.length - 1].notation || 'no run'}`}
                                 </div>
-                                <div className="text-slate-400 text-sm italic font-medium leading-relaxed">
-                                    {formattedHistory[formattedHistory.length - 1].commentary}
-                                </div>
+                                {formattedHistory[formattedHistory.length - 1].vividCommentary && formattedHistory[formattedHistory.length - 1].vividCommentary !== formattedHistory[formattedHistory.length - 1].commentary && (
+                                    <div className="bg-black/2 p-4 rounded-2xl border border-black/5 space-y-2">
+                                        <div className="text-cric-accent text-[9px] font-black uppercase tracking-widest opacity-80">AI Detailed Analysis</div>
+                                        <p className="text-slate-600 text-sm italic font-medium leading-relaxed">
+                                            {formattedHistory[formattedHistory.length - 1].vividCommentary}
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
