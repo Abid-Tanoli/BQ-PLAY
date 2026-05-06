@@ -6,6 +6,7 @@ import CricketGround from '../components/CricketGround';
 import MatchSetupWizard from '../components/ScoreManagement/MatchSetupWizard';
 import RightSidebarControls from '../components/ScoreManagement/RightSidebarControls';
 import LiveScoringPanel from '../components/ScoreManagement/LiveScoringPanel';
+import Scorecard from '../components/Scorecard';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 const API_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY || '';
@@ -81,6 +82,13 @@ export default function ManageScore() {
     const [useAICommentary, setUseAICommentary] = useState(true);
     const [activeGroundZone, setActiveGroundZone] = useState(null); // { x, y, zone, direction, shotName, autoRuns }
 
+    // PitchMap state
+    const [pitchMapLine, setPitchMapLine] = useState('');
+    const [pitchMapLength, setPitchMapLength] = useState('');
+    const [pitchMapShot, setPitchMapShot] = useState('');
+    const [pitchMapClickPos, setPitchMapClickPos] = useState(null);
+    const [pitchMapViewMode, setPitchMapViewMode] = useState('this_over');
+
     const [setupState, setSetupState] = useState({
         team1XI: [],
         team2XI: [],
@@ -98,8 +106,9 @@ export default function ManageScore() {
     const [isPreMatchComplete, setIsPreMatchComplete] = useState(true);
 
     const formatOvers = (balls) => {
-        const overs = Math.floor(balls / 6);
-        const rem = balls % 6;
+        if (!balls) return "0.0";
+        const overs = Math.floor((balls - 1) / 6);
+        const rem = ((balls - 1) % 6) + 1;
         return `${overs}.${rem}`;
     };
 
@@ -223,7 +232,7 @@ export default function ManageScore() {
                     overNumber: over.overNumber,
                     batsmanName: ball.batsmanOnStrike?.name || (battingXI.find(p => String(p._id) === String(ball.batsmanOnStrike?._id || ball.batsmanOnStrike))?.name) || "Batsman",
                     bowlerName: ball.bowler?.name || (bowlingXI.find(p => String(p._id) === String(ball.bowler?._id || ball.bowler))?.name) || "Bowler",
-                    ballNumber: over.overNumber * 6 + ball.ballNumber
+                    ballNumber: ball.ballNumber
                 });
             });
         });
@@ -322,6 +331,21 @@ export default function ManageScore() {
             return;
         }
 
+        // Validation: Ensure the striker isn't someone who is already out
+        const strikerStats = curInn.batting.find(b => String(b.player?._id || b.player) === String(curInn.onStrikeBatsman?._id || curInn.onStrikeBatsman));
+        if (strikerStats?.isOut || strikerStats?.isRetired || strikerStats?.isRetiredHurt) {
+            alert(`Striker ${strikerStats?.player?.name || ''} is already out/retired. Please select a new batsman first.`);
+            setShowSelectionModal('striker');
+            return;
+        }
+
+        // Validation: If a wicket is selected, ensure a next batsman is chosen (unless it's the last wicket)
+        if (selectedWicket && !setupState.wicketNewBatter && curInn.wickets < 9 && selectedWicket !== 'retired hurt') {
+            alert("Please select the next batsman in the Wicket Details modal.");
+            setShowSelectionModal('wicket');
+            return;
+        }
+
         const batsmanOnStrike = curInn.onStrikeBatsman?._id || curInn.onStrikeBatsman;
         const b1Id = curInn.currentBatsman1?._id || curInn.currentBatsman1;
         const b2Id = curInn.currentBatsman2?._id || curInn.currentBatsman2;
@@ -343,8 +367,13 @@ export default function ManageScore() {
             batsmanNonStrikeId: batsmanNonStrike,
             bowlerId: curInn.currentBowler?._id || curInn.currentBowler,
             fieldingZone: activeGroundZone?.direction || FIELD_POSITIONS.find(p => p.id === fieldPos)?.name || fieldPos,
-            shotPlacement: activeGroundZone ? { x: activeGroundZone.x, y: activeGroundZone.y, angle: activeGroundZone.angle, distance: activeGroundZone.distance, position: activeGroundZone.direction } : (shotPlacement || null),
-            shotType: activeGroundZone?.shotName || '',
+            shotPlacement: activeGroundZone ? { x: activeGroundZone.x, y: activeGroundZone.y, angle: activeGroundZone.angle, distance: activeGroundZone.distance, position: activeGroundZone.direction } : null,
+            shotType: pitchMapShot || activeGroundZone?.shotName || '',
+            pitchLine: pitchMapLine || '',
+            pitchLength: pitchMapLength || '',
+            pitchShotType: pitchMapShot || '',
+            pitchX: pitchMapClickPos ? Math.round(((pitchMapClickPos.x - 60) / 140) * 100) : null,
+            pitchY: pitchMapClickPos ? Math.round(((pitchMapClickPos.y - 40) / 440) * 100) : null,
             commentaryText: manualCommentary,
             customCommentary: !useAICommentary && !!manualCommentary,
             nextBatsmanId: setupState.wicketNewBatter || undefined
@@ -363,6 +392,10 @@ export default function ManageScore() {
             setFieldPos('');
             setManualCommentary('');
             setActiveGroundZone(null);
+            setPitchMapLine('');
+            setPitchMapLength('');
+            setPitchMapShot('');
+            setPitchMapClickPos(null);
 
             if (res.data.shouldEndInnings) {
                 setToast("Innings should be ended!");
@@ -420,6 +453,22 @@ export default function ManageScore() {
             setToast("Reverted successfully");
         } catch (e) {
             alert(e.response?.data?.message || e.message);
+        }
+    };
+
+    const handleRetire = async (playerId, type) => {
+        if (!window.confirm(`Retire ${type.replace('_', ' ')} for this batsman?`)) return;
+        try {
+            const res = await axios.post(`${API_URL}/matches/${selectedMatch._id}/retire-batsman`, {
+                inningsIndex: selectedMatch.currentInnings,
+                playerId,
+                type
+            }, { headers: { Authorization: `Bearer ${token}` } });
+            setSelectedMatch(res.data.match);
+            setToast("Batsman retired successfully");
+            checkRoles(res.data.match);
+        } catch (err) {
+            alert(err.response?.data?.message || err.message);
         }
     };
 
@@ -748,6 +797,7 @@ export default function ManageScore() {
                                 selectedMatch={selectedMatch}
                                 formattedHistory={formattedHistory}
                                 formatOvers={formatOvers}
+                                onRetire={handleRetire}
                             />
 
                             {/* Live Commentary Feed Integrated into Live Page */}
@@ -771,71 +821,19 @@ export default function ManageScore() {
                     )}
 
                     {activeTab === 'scorecard' && (
-                        <div className="space-y-12 animate-fadeIn">
-                            {/* Batting Scorecard */}
-                            <div className="space-y-4">
-                                <h3 className="text-xl font-black font-raj italic uppercase text-cric-accent tracking-tight">{battingTeamTeam?.name} Innings</h3>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-left">
-                                        <thead>
-                                            <tr className="border-b border-cric-border text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                                                <th className="pb-4 pl-4">Batter</th>
-                                                <th className="pb-4">Dismissal</th>
-                                                <th className="pb-4 text-right">R</th>
-                                                <th className="pb-4 text-right">B</th>
-                                                <th className="pb-4 text-right">4s</th>
-                                                <th className="pb-4 text-right">6s</th>
-                                                <th className="pb-4 text-right pr-4">SR</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-cric-border">
-                                            {(curInn?.batting || []).map((b, idx) => (
-                                                <tr key={idx} className="group hover:bg-black/5 dark:hover:bg-white/5">
-                                                    <td className="py-4 pl-4 font-bold text-cric-text">{b.player?.name || "Player"}</td>
-                                                    <td className="py-4 text-xs text-slate-400 italic">{b.howOut || (b.isOut ? 'Dismissed' : 'not out')}</td>
-                                                    <td className="py-4 text-right font-black text-cric-text">{b.runs}</td>
-                                                    <td className="py-4 text-right text-slate-400">{b.balls}</td>
-                                                    <td className="py-4 text-right text-slate-400">{b.fours}</td>
-                                                    <td className="py-4 text-right text-slate-400">{b.sixes}</td>
-                                                    <td className="py-4 text-right text-cric-accent pr-4 font-bold">{(b.runs / (b.balls || 1) * 100).toFixed(1)}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-
-                            {/* Bowling Scorecard */}
-                            <div className="space-y-4">
-                                <h3 className="text-xl font-black font-raj italic uppercase text-blue-500 tracking-tight">{bowlingTeamTeam?.name} Bowling</h3>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-left">
-                                        <thead>
-                                            <tr className="border-b border-cric-border text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                                                <th className="pb-4 pl-4">Bowler</th>
-                                                <th className="pb-4 text-right">O</th>
-                                                <th className="pb-4 text-right">M</th>
-                                                <th className="pb-4 text-right">R</th>
-                                                <th className="pb-4 text-right">W</th>
-                                                <th className="pb-4 text-right pr-4">ECON</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-cric-border">
-                                            {(curInn?.bowling || []).map((b, idx) => (
-                                                <tr key={idx} className="group hover:bg-black/5 dark:hover:bg-white/5">
-                                                    <td className="py-4 pl-4 font-bold text-cric-text">{b.player?.name || "Player"}</td>
-                                                    <td className="py-4 text-right font-black text-cric-text">{formatOvers(b.balls)}</td>
-                                                    <td className="py-4 text-right text-slate-400">{b.maidens || 0}</td>
-                                                    <td className="py-4 text-right text-slate-400">{b.runs}</td>
-                                                    <td className="py-4 text-right text-blue-500 font-black">{b.wickets}</td>
-                                                    <td className="py-4 text-right text-slate-400 pr-4">{(b.runs / ((b.balls || 1) / 6)).toFixed(2)}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
+                        <Scorecard
+                            curInn={curInn}
+                            battingTeamName={battingTeamTeam?.name || 'Batting Team'}
+                            bowlingTeamName={bowlingTeamTeam?.name || 'Bowling Team'}
+                            battingXI={battingXI}
+                            bowlingXI={bowlingXI}
+                            allPlayers={[...battingXI, ...bowlingXI]}
+                            formatOvers={formatOvers}
+                            selectedMatch={selectedMatch}
+                            tossInfo={selectedMatch?.tossWinner && selectedMatch?.tossDecision
+                                ? `${selectedMatch.teams.find(t => String(t._id) === String(selectedMatch.tossWinner?._id || selectedMatch.tossWinner))?.name || 'Team'} chose to ${selectedMatch.tossDecision}.`
+                                : null}
+                        />
                     )}
 
                     {activeTab === 'commentary' && (
@@ -903,6 +901,105 @@ export default function ManageScore() {
                         </div>
                     )}
 
+                    {activeTab === 'overs' && (
+                        <div className="space-y-6 animate-fadeIn">
+                            <h3 className="text-xl font-black font-raj italic uppercase text-cric-accent tracking-tight">Over-by-Over Summary</h3>
+                            {(curInn?.oversHistory || []).slice().reverse().map((over, idx) => {
+                                const overRuns = over.balls.reduce((s, b) => s + (b.runs || 0) + (b.isWide ? 1 : 0) + (b.isNoBall ? 1 : 0), 0);
+                                const overWkts = over.balls.filter(b => b.isWicket).length;
+                                return (
+                                    <div key={idx} className="bg-black/[0.03] dark:bg-white/[0.03] rounded-2xl p-5 border border-cric-border/50">
+                                        <div className="flex justify-between items-center mb-3">
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-cric-accent font-black text-base">Over {over.overNumber + 1}</span>
+                                                <span className="text-[10px] font-bold text-slate-500">
+                                                    {over.bowler?.name || bowlingXI.find(p => String(p._id) === String(over.bowler?._id || over.bowler))?.name || 'Bowler'}
+                                                </span>
+                                            </div>
+                                            <div className="text-sm font-black text-cric-text">
+                                                {overRuns} run{overRuns !== 1 ? 's' : ''}
+                                                {overWkts > 0 && <span className="text-red-500 ml-2">{overWkts} wkt{overWkts !== 1 ? 's' : ''}</span>}
+                                                {over.maidenOver && <span className="text-green-500 ml-2">M</span>}
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-2 flex-wrap">
+                                            {over.balls.map((b, bi) => {
+                                                const isW = b.isWicket;
+                                                const is4 = b.runs === 4 && !b.isWide && !b.isNoBall && !b.isWicket;
+                                                const is6 = b.runs === 6 && !b.isWide && !b.isNoBall && !b.isWicket;
+                                                const notation = isW ? 'W' : b.isWide ? `${b.runs}wd` : b.isNoBall ? `${b.runs}nb` : b.isBye ? `${b.runs}b` : b.isLegBye ? `${b.runs}lb` : b.runs === 0 ? '•' : String(b.runs);
+                                                return (
+                                                    <div key={bi} className={`w-9 h-9 rounded-lg flex items-center justify-center text-xs font-black shrink-0 shadow-sm ${
+                                                        isW ? 'bg-red-600 text-white' :
+                                                        is6 ? 'bg-purple-600 text-white' :
+                                                        is4 ? 'bg-blue-600 text-white' :
+                                                        (b.isWide || b.isNoBall) ? 'bg-amber-500 text-white' :
+                                                        'bg-black/10 dark:bg-white/10 text-cric-text'
+                                                    }`}>{notation}</div>
+                                                );
+                                            })}
+                                        </div>
+                                        {over.summary && (
+                                            <p className="text-[11px] text-slate-400 italic mt-3 border-t border-cric-border/30 pt-2">{over.summary}</p>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                            {(!curInn?.oversHistory || curInn.oversHistory.length === 0) && (
+                                <div className="text-center py-12 text-slate-500 italic text-sm">No overs bowled yet.</div>
+                            )}
+                        </div>
+                    )}
+
+                    {activeTab === 'table' && (
+                        <div className="space-y-8 animate-fadeIn">
+                            <h3 className="text-xl font-black font-raj italic uppercase text-cric-accent tracking-tight">Match Summary Table</h3>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="border-b-2 border-cric-border">
+                                            <th className="py-3 pl-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Team</th>
+                                            <th className="py-3 text-right text-[10px] font-black text-slate-500 uppercase tracking-widest">Score</th>
+                                            <th className="py-3 text-right text-[10px] font-black text-slate-500 uppercase tracking-widest">Overs</th>
+                                            <th className="py-3 text-right text-[10px] font-black text-slate-500 uppercase tracking-widest">RR</th>
+                                            <th className="py-3 text-right text-[10px] font-black text-slate-500 uppercase tracking-widest pr-4">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {(selectedMatch?.innings || []).map((inn, idx) => {
+                                            const teamName = selectedMatch.teams.find(t => String(t._id) === String(inn.team?._id || inn.team))?.name || 'Team';
+                                            const ov = formatOvers(inn.balls);
+                                            const rr = inn.runRate?.toFixed(2) || (inn.balls > 0 ? (inn.runs / (inn.balls / 6)).toFixed(2) : '0.00');
+                                            return (
+                                                <tr key={idx} className={`border-b border-cric-border/50 ${idx === selectedMatch.currentInnings ? 'bg-cric-accent/5' : ''}`}>
+                                                    <td className="py-4 pl-4 font-bold text-sm text-cric-text">
+                                                        {teamName}
+                                                        {idx === selectedMatch.currentInnings && <span className="ml-2 text-[9px] bg-cric-accent/20 text-cric-accent px-2 py-0.5 rounded-full font-black uppercase">Batting</span>}
+                                                    </td>
+                                                    <td className="py-4 text-right font-black text-sm text-cric-text">{inn.runs}/{inn.wickets}</td>
+                                                    <td className="py-4 text-right text-sm text-slate-500">{ov}</td>
+                                                    <td className="py-4 text-right text-sm text-slate-500">{rr}</td>
+                                                    <td className="py-4 text-right text-sm pr-4">
+                                                        <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase ${
+                                                            inn.status === 'live' ? 'bg-red-500/20 text-red-500' :
+                                                            inn.status === 'completed' ? 'bg-green-500/20 text-green-500' :
+                                                            'bg-slate-500/20 text-slate-500'
+                                                        }`}>{inn.status || 'upcoming'}</span>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {selectedMatch?.result?.description && (
+                                <div className="bg-cric-accent/5 rounded-2xl p-5 border border-cric-accent/20 text-center">
+                                    <span className="text-sm font-black text-cric-text">{selectedMatch.result.description}</span>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     {activeTab === 'xi' && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 animate-fadeIn">
                             {[battingTeamTeam, bowlingTeamTeam].map((team, idx) => (
@@ -913,9 +1010,9 @@ export default function ManageScore() {
                                     </div>
                                     <div className="space-y-3">
                                         {getPlayingXI(team?._id).map((p, pIdx) => (
-                                            <div key={pIdx} className="bg-black/20 p-4 rounded-2xl border border-white/5 flex justify-between items-center group hover:border-white/20 transition-all">
-                                                <span className="font-bold text-slate-300 group-hover:text-white transition-all">{p.name}</span>
-                                                <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Player</span>
+                                            <div key={pIdx} className="bg-black/[0.03] dark:bg-white/[0.03] p-4 rounded-2xl border border-cric-border/50 flex justify-between items-center group hover:border-cric-accent/30 transition-all">
+                                                <span className="font-bold text-cric-text group-hover:text-cric-accent transition-all">{p.name}</span>
+                                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Player</span>
                                             </div>
                                         ))}
                                     </div>
@@ -969,6 +1066,27 @@ export default function ManageScore() {
                 submitBall={submitBall}
                 activeGroundZone={activeGroundZone}
                 handleGroundClick={handleGroundClick}
+                pitchMapBalls={formattedHistory.map(b => ({
+                    ballId: `${b.overNumber}.${b.ballNumber}`,
+                    line: b.pitchLine || b.line || '',
+                    length: b.pitchLength || b.length || '',
+                    pitchX: b.pitchX,
+                    pitchY: b.pitchY,
+                    outcome: { runs: b.runs || 0, wicket: b.isWicket || false },
+                    runs: b.runs,
+                    isWicket: b.isWicket
+                }))}
+                pitchMapCurrentOver={curInn?.overs || 0}
+                pitchMapLine={pitchMapLine}
+                setPitchMapLine={setPitchMapLine}
+                pitchMapLength={pitchMapLength}
+                setPitchMapLength={setPitchMapLength}
+                pitchMapShot={pitchMapShot}
+                setPitchMapShot={setPitchMapShot}
+                pitchMapClickPos={pitchMapClickPos}
+                setPitchMapClickPos={setPitchMapClickPos}
+                pitchMapViewMode={pitchMapViewMode}
+                setPitchMapViewMode={setPitchMapViewMode}
             />
 
             {/* Selection Modals */}
@@ -1002,7 +1120,14 @@ export default function ManageScore() {
                                             <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest pl-2">Next Batsman</label>
                                             <select value={setupState.wicketNewBatter} onChange={(e) => setSetupState(s => ({ ...s, wicketNewBatter: e.target.value }))} className="w-full p-6 bg-cric-bg border border-cric-border rounded-3xl text-cric-text font-black outline-none focus:border-red-500">
                                                 <option value="">Select Next In...</option>
-                                                {battingXI.filter(p => ![strikerId, nonStrikerId].includes(p._id)).map(p => (
+                                                {battingXI.filter(p => {
+                                                    const pId = p._id || p;
+                                                    const stats = curInn?.batting?.find(b => String(b.player?._id || b.player) === String(pId));
+                                                    const isCurrent = [String(strikerId), String(nonStrikerId)].includes(String(pId));
+                                                    const isOut = stats?.isOut || stats?.isRetired;
+                                                    // Allow if they haven't batted OR if they are retired hurt (and not currently on field)
+                                                    return !isCurrent && (!stats || stats.isRetiredHurt) && !isOut;
+                                                }).map(p => (
                                                     <option key={p._id} value={p._id}>{p.name}</option>
                                                 ))}
                                             </select>
@@ -1017,16 +1142,35 @@ export default function ManageScore() {
                                             </select>
                                         </div>
                                     </div>
-                                    <button onClick={() => setShowSelectionModal('')} className="w-full py-8 rounded-[2rem] bg-red-600 text-white font-black font-raj text-2xl italic tracking-tighter uppercase shadow-xl hover:scale-105 transition-all mt-8">Confirm Wicket Details</button>
+                                    <button 
+                                        onClick={() => {
+                                            if (!setupState.wicketNewBatter && curInn.wickets < 9 && selectedWicket !== 'retired hurt') {
+                                                alert("Please select the next batsman before confirming.");
+                                                return;
+                                            }
+                                            setShowSelectionModal('');
+                                        }} 
+                                        className="w-full py-8 rounded-[2rem] bg-red-600 text-white font-black font-raj text-2xl italic tracking-tighter uppercase shadow-xl hover:scale-105 transition-all mt-8"
+                                    >
+                                        Confirm Wicket Details
+                                    </button>
                                 </div>
                             )}
 
                             {(showSelectionModal === 'striker' || showSelectionModal === 'nonStriker') && (
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                    {battingXI.map(p => (
+                                    {battingXI.filter(p => {
+                                        const pId = p._id || p;
+                                        const stats = curInn?.batting?.find(b => String(b.player?._id || b.player) === String(pId));
+                                        const isOut = stats?.isOut || stats?.isRetired;
+                                        // Include players who haven't batted yet OR are retired hurt
+                                        return (!stats || stats.isRetiredHurt) && !isOut;
+                                    }).map(p => (
                                         <button key={p._id} onClick={() => setRole(p._id, showSelectionModal)} className="p-8 rounded-[2rem] bg-black/5 dark:bg-white/5 border border-cric-border hover:border-cric-accent hover:bg-cric-accent/5 transition-all text-left">
                                             <div className="text-xl font-black text-cric-text">{p.name}</div>
-                                            <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-2 select-none">Select Batter</div>
+                                            <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-2 select-none">
+                                                {curInn?.batting?.find(b => String(b.player?._id || b.player) === String(p._id))?.isRetiredHurt ? 'Return Retired Hurt' : 'Select Batter'}
+                                            </div>
                                         </button>
                                     ))}
                                 </div>

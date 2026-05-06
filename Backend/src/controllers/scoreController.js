@@ -97,7 +97,7 @@ const populateFullMatch = async (match) => {
 export const updateScore = async (req, res) => {
   try {
     const { matchId } = req.params;
-    const {
+    let {
       inningsIndex,
       runs = 0,
       isWide = false,
@@ -385,6 +385,7 @@ export const updateScore = async (req, res) => {
     const bowlerOvers = (bowlerStats.overs) + (bowlerStats.balls % 6) / 6;
     bowlerStats.economy = bowlerOvers > 0 ? (bowlerStats.runs / bowlerOvers).toFixed(2) : 0;
 
+    let actualDismissedId = null;
     if (isWicket) {
       // Cricket Rule: On a No Ball, only certain wickets allowed
       const isNoBallWicketAllowed = ["run out", "obstructing the field", "handled ball"].includes(wicketType?.toLowerCase());
@@ -420,7 +421,7 @@ export const updateScore = async (req, res) => {
         }
 
         // If no dismissedPlayerId provided, assume striker is out (except for run outs)
-        let actualDismissedId = dismissedPlayerId;
+        actualDismissedId = dismissedPlayerId;
         if (!actualDismissedId && wicketType !== "run out") {
           actualDismissedId = batsmanOnStrikeId;
         }
@@ -746,7 +747,9 @@ export const updateScore = async (req, res) => {
 
         currentOver.summary = overSummary;
         // Save again if you want it persisted directly now
-        Match.findByIdAndUpdate(matchId, { $set: { [`innings.${inningsIndex}.oversHistory.${innings.oversHistory.length - 1}.summary`]: overSummary } }).exec();
+        Match.findByIdAndUpdate(matchId, { $set: { [`innings.${inningsIndex}.oversHistory.${innings.oversHistory.length - 1}.summary`]: overSummary } })
+          .exec()
+          .catch(err => console.error("Error updating over summary:", err));
 
         io.to(matchId).emit("match:overComplete", {
           matchId,
@@ -1834,6 +1837,56 @@ export const resetInnings = async (req, res) => {
   }
 };
 
+export const retireBatsman = async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    const { inningsIndex, playerId, type } = req.body; // type: "retired_hurt" or "retired"
+
+    const match = await Match.findById(matchId);
+    if (!match) return res.status(404).json({ message: "Match not found" });
+
+    const innings = match.innings[inningsIndex];
+    if (!innings) return res.status(400).json({ message: "Invalid innings index" });
+
+    const batsmanStats = innings.batting.find(
+      b => (b.player?._id || b.player).toString() === playerId.toString()
+    );
+
+    if (!batsmanStats) {
+      return res.status(400).json({ message: "Batsman not found in innings" });
+    }
+
+    if (type === "retired_hurt") {
+      batsmanStats.isRetiredHurt = true;
+    } else {
+      batsmanStats.isRetired = true;
+    }
+
+    // Remove from active strikers
+    if (String(innings.currentBatsman1) === String(playerId)) {
+      innings.currentBatsman1 = null;
+    } else if (String(innings.currentBatsman2) === String(playerId)) {
+      innings.currentBatsman2 = null;
+    }
+
+    if (String(innings.onStrikeBatsman) === String(playerId)) {
+      innings.onStrikeBatsman = null;
+    }
+
+    await match.save();
+    await populateFullMatch(match);
+
+    try {
+      const io = getIO();
+      io.emit("match:updated", match);
+    } catch (err) { }
+
+    res.status(200).json({ match, message: `Batsman ${type.replace('_', ' ')} successfully` });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
 export const resetMatch = async (req, res) => {
   try {
     const { matchId } = req.params;
@@ -1888,7 +1941,7 @@ export const resetMatch = async (req, res) => {
 export const editBall = async (req, res) => {
   try {
     const { matchId } = req.params;
-    const { inningsIndex, overNumber, ballNumber, runs = 0, isWide = false, isNoBall = false, isBye = false, isLegBye = false, isWicket = false, wicketType = '', commentary: manualSummary, vividCommentary: manualVivid } = req.body;
+    let { inningsIndex, overNumber, ballNumber, runs = 0, isWide = false, isNoBall = false, isBye = false, isLegBye = false, isWicket = false, wicketType = '', commentary: manualSummary, vividCommentary: manualVivid } = req.body;
     const match = await Match.findById(matchId);
     if (!match) return res.status(404).json({ message: 'Match not found' });
     const innings = match.innings[inningsIndex];

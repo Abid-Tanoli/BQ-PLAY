@@ -32,7 +32,8 @@ import {
   recordDRSReview,
   resetInnings,
   resetMatch,
-  editBall
+  editBall,
+  retireBatsman
 } from "../controllers/scoreController.js";
 
 const router = express.Router();
@@ -57,6 +58,7 @@ router.post("/:matchId/timeout", useStrategicTimeout);
 router.post("/:matchId/drs", recordDRSReview);
 router.post("/:matchId/reset-innings", resetInnings);
 router.post("/:matchId/reset-match", resetMatch);
+router.post("/:matchId/retire-batsman", retireBatsman);
 router.put("/:matchId/edit-ball", editBall);
 
 router.put("/:id", updateMatch);

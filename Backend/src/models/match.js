@@ -51,6 +51,8 @@ const batsmanStatsSchema = new mongoose.Schema({
   sixes: { type: Number, default: 0 },
   strikeRate: { type: Number, default: 0 },
   isOut: { type: Boolean, default: false },
+  isRetiredHurt: { type: Boolean, default: false },
+  isRetired: { type: Boolean, default: false },
   dismissalType: { type: String, default: "" },
   dismissedBy: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
   fielder: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },

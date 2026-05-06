@@ -1,5 +1,6 @@
 import React from 'react';
 import CricketGround from '../CricketGround';
+import PitchMap from '../PitchMap';
 
 const RightSidebarControls = ({
     curInn,
@@ -21,7 +22,20 @@ const RightSidebarControls = ({
     selectedWicket,
     submitBall,
     activeGroundZone,
-    handleGroundClick
+    handleGroundClick,
+    // PitchMap props
+    pitchMapBalls,
+    pitchMapCurrentOver,
+    pitchMapLine,
+    setPitchMapLine,
+    pitchMapLength,
+    setPitchMapLength,
+    pitchMapShot,
+    setPitchMapShot,
+    pitchMapClickPos,
+    setPitchMapClickPos,
+    pitchMapViewMode,
+    setPitchMapViewMode
 }) => {
     return (
         <div className="lg:w-[500px] shrink-0 sticky top-32 h-[calc(100vh-160px)] flex flex-col bg-cric-card rounded-[3.5rem] border border-cric-border shadow-2xl p-12 overflow-y-auto no-scrollbar">
@@ -110,6 +124,17 @@ const RightSidebarControls = ({
                             Submit Ball
                         </button>
                     </div>
+                </div>
+
+                {/* Pitch Map - Ball Tracking */}
+                <div className="space-y-4">
+                    <PitchMap
+                        balls={pitchMapBalls || []}
+                        currentOver={pitchMapCurrentOver || 0}
+                        bowlerName={bowlingXI.find(p => String(p._id) === String(bowlerId))?.name || ''}
+                        batsmanName={battingXI.find(p => String(p._id) === String(strikerId))?.name || ''}
+                        viewMode={pitchMapViewMode || 'this_over'}
+                    />
                 </div>
 
                 {/* Shot Direction - Interactive Ground */}

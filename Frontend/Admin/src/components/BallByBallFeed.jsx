@@ -26,8 +26,8 @@ function BallBadge({ ball, small = false }) {
 
 // Format over.ball string (e.g. ball 9 → "1.3")
 function fmtOver(totalBalls) {
-    const over = Math.floor(totalBalls / 6);
-    const ball = totalBalls % 6;
+    const over = Math.floor((totalBalls - 1) / 6);
+    const ball = ((totalBalls - 1) % 6) + 1;
     return `${over}.${ball}`;
 }
 

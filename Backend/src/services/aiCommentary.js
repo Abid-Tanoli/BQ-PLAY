@@ -33,15 +33,15 @@ class AICommentaryService {
         : "";
 
     const matchSit = matchContext.target
-      ? `Need ${matchContext.target - currentScore} from ${(matchContext.totalOvers - (Math.floor(overNumber) + (ballNumber / 6))) * 6 | 0} balls | RRR: ${matchContext.requiredRunRate}`
+      ? `Need ${matchContext.target - currentScore} from ${Math.max(0, (matchContext.totalOvers - (overNumber + ballNumber / 6)) * 6 | 0)} balls | RRR: ${matchContext.requiredRunRate}`
       : `${currentScore}/${currentWickets} | CRR: ${matchContext.totalOvers > 0 ? (currentScore / ((overNumber + ballNumber / 6) || 1)).toFixed(2) : '0.00'}`;
 
     if (this.apiKey) {
       try {
-        const prompt = `You are a professional cricket commentator in the style of ESPNcricinfo or Sky Sports.
+        const prompt = `You are a professional cricket commentator in the style of ESPNcricinfo.
         
 Ball Info:
-- Ball Number: ${overNumber}.${ballNumber}
+- Ball: ${overNumber}.${ballNumber}
 - Delivery Type: ${deliveryType}
 - Bowler: ${bowlerName}
 - Batter: ${batsmanName}
@@ -53,19 +53,14 @@ ${isWicket ? `- WICKET: ${wicketType}` : ""}
 - Match Situation: ${matchSit}
 
 Task: Generate two specific lines of commentary.
-1. SHORT: A professional broadcast summary.
-   Format: '[Bowler] to [Batter], [Result]'.
-   Example: 'Mohammad Ali to Abdul Samad, FOUR runs'
-2. VIVID: A highly technical, descriptive paragraph (2-3 sentences).
-   Rules for VIVID:
-   - Must mention ball length (fuller, short, good length, yorker).
-   - Must mention shot intent or style (driven with intent, flicked subtly, lashed away).
-   - Must mention the specific region and movement (through the covers, dragged across the line, ball races away).
-   - Integrate the field position and distance detail for realism.
+1. SHORT: A punchy, traditional scorecard-style summary. Format: '[Bowler] to [Batter], [Result]'.
+2. VIVID: A rich, technical paragraph (2-3 sentences). Use evocative verbs, describe the movement of the ball, the sound off the willow, and the fielders' scramble. Avoid repetitive structures.
 
 FORMAT EXACTLY:
 SHORT: [broadcast summary]
-VIVID: [detailed technical description]`;
+VIVID: [detailed technical description]
+
+Variation Note: Use diverse vocabulary. Ensure the tone fits the match tempo. Never use the phrase 'responded by dismissing himself'.`;
 
         const response = await fetch("https://api.anthropic.com/v1/messages", {
           method: "POST",
@@ -108,20 +103,62 @@ VIVID: [detailed technical description]`;
 
     // fallback logic
     if (!result.short) {
-      if (isWide) result.short = `${bowlerName} to ${batsmanName}, Wide ball down ${side || "leg"} side`;
-      else if (isNoBall) result.short = `${bowlerName} to ${batsmanName}, NO BALL — ${runs > 0 ? runs + " runs scored" : "no run"}`;
-      else if (isWicket) result.short = `${bowlerName} to ${batsmanName}, OUT! ${wicketType.toUpperCase()}!`;
-      else if (runs === 6) result.short = `${bowlerName} to ${batsmanName}, SIX runs!`;
-      else if (runs === 4) result.short = `${bowlerName} to ${batsmanName}, FOUR runs!`;
-      else if (runs === 0) result.short = `${bowlerName} to ${batsmanName}, dot ball`;
-      else result.short = `${bowlerName} to ${batsmanName}, ${runs} run${runs !== 1 ? "s" : ""}`;
+      if (isWide) result.short = `${bowlerName} to ${batsmanName}, Wide ball.`;
+      else if (isNoBall) result.short = `${bowlerName} to ${batsmanName}, No Ball!`;
+      else if (isWicket) result.short = `${bowlerName} to ${batsmanName}, OUT!`;
+      else if (runs >= 4) result.short = `${bowlerName} to ${batsmanName}, ${runs} runs!`;
+      else result.short = `${bowlerName} to ${batsmanName}, no run.`;
     }
 
     if (!result.vivid) {
-      const action = isWicket ? `dismissing ${batsmanName}` : (runs > 0 ? `picking up ${runs} run${runs !== 1 ? "s" : ""}` : `defending the delivery`);
+      const actions = {
+        dot: [
+          "defended solidly back to the bowler, no run",
+          "pushed into the off-side, finds the fielder",
+          "beaten by the movement, through to the keeper",
+          "left alone as it angled across the off stump",
+          "tucked away to mid-wicket but no gap found"
+        ],
+        runs: [
+          "nudged into the gap for a quick single",
+          "punched off the back foot through the covers for a couple",
+          "flicked away to the leg side, easy runs taken",
+          "driven straight down the ground to keep the score moving"
+        ],
+        four: [
+          "lashed through the covers, a magnificent boundary",
+          "timed to perfection, the ball races away to the ropes",
+          "a delightful drive that beats the diving fielder for four",
+          "pulled powerfully into the gap, no chance for the deep fielder"
+        ],
+        six: [
+          "lofted high and handsome over the ropes for a massive hit",
+          "cleared the boundary with ease, a spectacular strike",
+          "picked up from outside off and deposited into the stands",
+          "a towering hit that sails over the long-on boundary"
+        ],
+        wicket: [
+          "stunned as the stumps are rattled, a perfect delivery",
+          "finds the fielder with a mistimed shot, the catch is taken",
+          "trapped in front, the umpire's finger goes up immediately",
+          "an edge that carries safely to the keeper, big wicket!"
+        ]
+      };
+
+      const lengths = ["full and searching", "short and aggressive", "good length", "yorker length", "overpitched"];
+      const rand = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+      let category = "runs";
+      if (isWicket) category = "wicket";
+      else if (runs === 0) category = "dot";
+      else if (runs === 4) category = "four";
+      else if (runs === 6) category = "six";
+
+      const action = rand(actions[category]);
       const region = (direction || nearestPosition || zone) ? ` toward ${direction || nearestPosition || zone}` : "";
-      const length = runs >= 4 ? "slightly overpitched" : "on a perfect length";
-      result.vivid = `The ball was delivered ${length} ${isWide ? 'wide' : isNoBall ? 'as a no ball' : 'on a tight line'}, and ${batsmanName} responded by ${action}${region} in the ${distanceCategory || 'inner ring'}.`;
+      const length = rand(lengths);
+
+      result.vivid = `The bowler delivered a ${length} ball, and ${batsmanName} ${action}${region}.`;
     }
 
     return result;
@@ -195,7 +232,7 @@ ESPNcricinfo pundit style. No emojis. Plain flowing text only.`;
   }
 
   _overFallback({ bowlerName, runsThisOver, wicketsThisOver }) {
-    return `${runsThisOver} runs${wicketsThisOver > 0 ? ` and ${wicketsThisOver} wicket${wicketsThisOver > 1 ? "s" : ""}` : ""} from ${bowlerName}'s over. Match situation intensifying as the game moves into a critical phase.`;
+    return `${runsThisOver} run${runsThisOver !== 1 ? 's' : ''} from the over. A productive set of deliveries as the game develops.`;
   }
 
   // ─── PART 6: Ball Edit/Regenerate Commentary ──────────────────────────────
@@ -210,13 +247,12 @@ ESPNcricinfo pundit style. No emojis. Plain flowing text only.`;
 
     if (this.apiKey) {
       try {
-        const prompt = `Ball ${overNumber}.${ballNumber} was INCORRECTLY recorded. Please regenerate commentary.
+        const prompt = `The ball at ${overNumber}.${ballNumber} was incorrectly recorded. Please provide corrected commentary.
 
 CORRECTED Info:
-- Was recorded as: ${oldType} for ${oldRuns} runs toward ${oldDirection || "unknown"}
-- CORRECTED to: ${newType} for ${newRuns} runs toward ${newDirection || "unknown"}
+- Previous: ${oldType} for ${oldRuns}
+- Corrected: ${newType} for ${newRuns}
 - Bowler: ${bowlerName} | Batter: ${batsmanName}
-${isWide ? "- Delivery: Wide ball" : ""}${isNoBall ? "- Delivery: No ball" : ""}
 ${isWicket ? `- WICKET: ${wicketType}` : ""}
 
 Write TWO lines of corrected commentary for this ball.
