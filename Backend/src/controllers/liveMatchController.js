@@ -1,5 +1,5 @@
 import Ball from "../models/Ball.js";
-import Match from "../models/match.js";
+import Match from "../models/Match.js";
 
 export const addBall = async (req, res) => {
   try {
@@ -14,9 +14,9 @@ export const addBall = async (req, res) => {
     if (data.isWicket) match.score.wickets += 1;
 
     match.score.overs = data.over + data.ball / 6;
-    await match.save();
+    await match.save({ validateModifiedOnly: true });
 
-    req.io.to(matchId).emit("ball-update", {
+    req.io.to(`match-${matchId}`).emit("ball-update", {
       ball,
       score: match.score
     });

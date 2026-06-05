@@ -3,9 +3,15 @@ import React, { useRef, useEffect, useState } from "react";
 // Ball notation badge
 function BallBadge({ ball, small = false }) {
     const isWicket = ball.isWicket;
-    const notation = ball.notation || (ball.isWicket ? "W" : ball.runs === 0 ? "•" : String(ball.runs));
-    const isFour = ball.runs === 4 && !ball.isWide && !ball.isNoBall && !ball.isWicket;
-    const isSix = ball.runs === 6 && !ball.isWide && !ball.isNoBall && !ball.isWicket;
+    const isLegBye = ball.isLegBye;
+    const isBye = ball.isBye;
+    const notation = isWicket ? "W"
+        : isLegBye ? "LB"
+            : isBye ? "B"
+                : (ball.runs === 0 && !ball.isWide && !ball.isNoBall) ? "•" : String(ball.runs || 0);
+
+    const isFour = ball.runs === 4 && !ball.isWide && !ball.isNoBall && !ball.isWicket && !isLegBye && !isBye;
+    const isSix = ball.runs === 6 && !ball.isWide && !ball.isNoBall && !ball.isWicket && !isLegBye && !isBye;
     const isWide = ball.isWide;
     const isNoBall = ball.isNoBall;
 
@@ -14,7 +20,7 @@ function BallBadge({ ball, small = false }) {
         ? "bg-red-600 text-white shadow-red-500/40"
         : isSix ? "bg-purple-600 text-white shadow-purple-500/40"
             : isFour ? "bg-blue-600 text-white shadow-blue-500/40"
-                : (isWide || isNoBall) ? "bg-amber-500 text-white shadow-amber-500/40"
+                : (isWide || isNoBall || isLegBye || isBye) ? "bg-amber-500 text-white shadow-amber-500/40"
                     : "bg-white/10 text-slate-300 shadow-white/5";
 
     return (
@@ -38,8 +44,8 @@ function BallHeader({ ball, overNum, ballNum, onEdit }) {
         ? ball.wicketType?.toUpperCase() || "WICKET"
         : ball.isWide ? `${ball.runs + 1} WIDE`
             : ball.isNoBall ? `NB+${ball.runs}`
-                : ball.isBye ? `${ball.runs} BYE`
-                    : ball.isLegBye ? `${ball.runs} LEG BYE`
+                : ball.isBye ? "BYE"
+                    : ball.isLegBye ? "LEG BYE"
                         : ball.runs === 4 ? "FOUR"
                             : ball.runs === 6 ? "SIX"
                                 : ball.runs === 0 ? "DOT"
@@ -50,24 +56,22 @@ function BallHeader({ ball, overNum, ballNum, onEdit }) {
             <BallBadge ball={ball} />
             <div className="flex-1 min-w-0">
                 <div className="flex items-baseline gap-2 flex-wrap">
-                    <span className="text-slate-500 font-black text-[11px] tabular-nums shrink-0">
-                        {overNum}.{ballNum}
-                    </span>
-                    {!ball.commentary && (
-                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 ${ball.isWicket ? "bg-red-500/20 text-red-400" :
-                            ball.runs === 6 ? "bg-purple-500/20 text-purple-400" :
-                                ball.runs === 4 ? "bg-blue-500/20 text-blue-400" :
-                                    (ball.isWide || ball.isNoBall) ? "bg-amber-500/20 text-amber-400" :
-                                        "bg-white/5 text-slate-500"
-                            }`}>
-                            {typeLabel}
-                        </span>
-                    )}
                     <span className="text-slate-900 font-bold text-sm leading-tight">
-                        {ball.commentary || `${ball.bowlerName || 'Bowler'} to ${ball.batsmanName || 'Batsman'}`}
-                        {ball.isWicket && (
-                            <span className="text-red-600 font-black"> — OUT!</span>
-                        )}
+                        {overNum}.{ballNum} {ball.bowlerName || 'Bowler'} to {ball.batsmanName || 'Batsman'}, {(() => {
+                            const runs = ball.runs || 0;
+                            if (ball.isWicket) return "OUT!";
+                            if (ball.isWide) return "wide";
+                            if (ball.isNoBall) return "no ball";
+                            if (ball.isLegBye) return "leg bye";
+                            if (ball.isBye) return "bye";
+                            if (runs === 0) return "no run";
+                            if (runs === 1) return "1 run";
+                            if (runs === 2) return "2 runs";
+                            if (runs === 3) return "3 runs";
+                            if (runs === 4) return "FOUR";
+                            if (runs === 6) return "SIX";
+                            return `${runs} runs`;
+                        })()}
                     </span>
                 </div>
             </div>
@@ -103,7 +107,7 @@ function CommentaryLine({ text, loading }) {
     );
 }
 
-// Over block - ESPNcricinfo style
+// Over block - BQ-PLAY style
 function OverBlock({ over, balls, onEdit, showReadMore, onReadMore, allPlayers }) {
     const overRuns = over.runsScored ?? balls.reduce((s, b) => s + (b.runs || 0) + (b.isWide ? 1 : 0) + (b.isNoBall ? 1 : 0), 0);
     const overWickets = over.wickets ?? balls.filter(b => b.isWicket).length;
@@ -151,11 +155,10 @@ function OverBlock({ over, balls, onEdit, showReadMore, onReadMore, allPlayers }
                             ballNum={ball.ballNumber}
                             onEdit={onEdit}
                         />
-                        {ball.vividCommentary && ball.vividCommentary !== ball.commentary && (
-                            <div className="ml-12 mt-3 p-3 bg-black/[0.03] rounded-xl border-l-2 border-cric-accent/40">
-                                <span className="text-[9px] font-black uppercase text-cric-accent tracking-[0.2em] block mb-1 opacity-80">Detailed Analysis</span>
+                        {(ball.vividCommentary || ball.commentary) && (
+                            <div className="ml-12 mt-2">
                                 <p className="text-[12px] text-slate-600 italic leading-relaxed">
-                                    {ball.vividCommentary}
+                                    {ball.vividCommentary || ball.commentary}
                                 </p>
                             </div>
                         )}

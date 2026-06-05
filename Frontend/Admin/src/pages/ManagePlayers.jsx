@@ -4,6 +4,8 @@ import { fetchPlayers, createPlayer, updatePlayer, updatePlayerStats, deletePlay
 import { fetchTeams } from "../store/slices/teamSlice";
 import { useForm } from "react-hook-form";
 import { Link } from "react-router-dom";
+import { useToast } from "../components/Toast";
+import ConfirmModal from "../components/ConfirmModal";
 
 export default function ManagePlayers() {
   const dispatch = useDispatch();
@@ -18,6 +20,8 @@ export default function ManagePlayers() {
   const [selectedPlayers, setSelectedPlayers] = useState([]);
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const { register, handleSubmit, reset, setValue } = useForm();
+  const { showToast } = useToast();
+  const [confirmModal, setConfirmModal] = useState({ open: false, title: '', message: '', onConfirm: null, variant: 'danger' });
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -50,7 +54,7 @@ export default function ManagePlayers() {
       reset();
     } catch (err) {
       console.error(err);
-      alert(editingId ? "Failed to update player" : "Failed to create player");
+      showToast(editingId ? "Failed to update player" : "Failed to create player", 'error');
     }
   };
 
@@ -63,6 +67,11 @@ export default function ManagePlayers() {
     setValue("Campus", p.Campus || "");
     setValue("imageUrl", p.imageUrl || "");
     setValue("team", p.team?._id || p.team || "");
+    setValue("category", p.category || "Other");
+    setValue("subCategory", p.subCategory || "");
+    setValue("ageGroup", p.ageGroup || "Open");
+    setValue("organization", p.organization || "");
+    setValue("address", p.address || { town: "", district: "", city: "", province: "", country: "Pakistan" });
   };
 
   const cancelEdit = () => {
@@ -70,10 +79,8 @@ export default function ManagePlayers() {
     reset();
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm("Delete this player?")) {
-      await dispatch(deletePlayer(id));
-    }
+  const handleDelete = (id) => {
+    setConfirmModal({ open: true, title: 'Delete Player', message: 'Delete this player?', confirmLabel: 'Delete', variant: 'danger', onConfirm: async () => { setConfirmModal({ open: false }); await dispatch(deletePlayer(id)); } });
   };
 
   const handleSelectPlayer = (playerId) => {
@@ -92,27 +99,24 @@ export default function ManagePlayers() {
     }
   };
 
-  const handleBulkDelete = async () => {
+  const handleBulkDelete = () => {
     if (selectedPlayers.length === 0) {
-      alert("Please select players to delete");
+      showToast("Please select players to delete", 'warning');
       return;
     }
+    setConfirmModal({ open: true, title: 'Bulk Delete Players', message: `Are you sure you want to delete ${selectedPlayers.length} player(s)? This action cannot be undone.`, confirmLabel: 'Delete All', variant: 'danger', onConfirm: async () => { setConfirmModal({ open: false }); doBulkDelete(); } });
+  };
 
-    const confirmDelete = window.confirm(
-      `Are you sure you want to delete ${selectedPlayers.length} player(s)? This action cannot be undone.`
-    );
-
-    if (!confirmDelete) return;
-
+  const doBulkDelete = async () => {
     try {
       setBulkDeleting(true);
       await dispatch(bulkDeletePlayers(selectedPlayers));
-      alert(`Successfully deleted ${selectedPlayers.length} player(s)`);
+      showToast(`Successfully deleted ${selectedPlayers.length} player(s)`, 'success');
       setSelectedPlayers([]);
       dispatch(fetchPlayers({ page, search: debouncedSearch, team: filterTeam, Campus: filterCampus }));
     } catch (err) {
       console.error(err);
-      alert("Error deleting players: " + (err.message || "Unknown error"));
+      showToast("Error deleting players: " + (err.message || "Unknown error"), 'error');
     } finally {
       setBulkDeleting(false);
     }
@@ -243,6 +247,32 @@ export default function ManagePlayers() {
                   className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-800 transition-all"
                   placeholder="https://..."
                 />
+              </div>
+
+              {/* Deep Categorization Section */}
+              <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 space-y-3">
+                <label className="block text-[9px] font-black uppercase tracking-widest text-blue-900 mb-1">
+                  Categorization
+                </label>
+                <select {...register("category")} className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800">
+                  {["School", "College", "University", "Organization", "Business", "Industry", "Club", "International", "Other"].map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+                <input {...register("subCategory")} placeholder="Sub-Category (e.g. CS, Eng)" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800" />
+                <select {...register("ageGroup")} className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800">
+                  {["U-10", "U-13", "U-15", "U-17", "U-19", "Open"].map(a => <option key={a} value={a}>{a}</option>)}
+                </select>
+                <input {...register("organization")} placeholder="Institution Name" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800" />
+              </div>
+
+              {/* Location Section */}
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+                <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">
+                  Location
+                </label>
+                <input {...register("address.town")} placeholder="Town" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800" />
+                <input {...register("address.district")} placeholder="District" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800" />
+                <input {...register("address.city")} placeholder="City" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800" />
+                <input {...register("address.province")} placeholder="Province" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800" />
               </div>
               <button
                 type="submit"
@@ -495,6 +525,15 @@ export default function ManagePlayers() {
           )}
         </div>
       </div>
+      <ConfirmModal
+        open={confirmModal.open}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmLabel={confirmModal.confirmLabel}
+        variant={confirmModal.variant}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal({ open: false })}
+      />
     </div>
   );
 }

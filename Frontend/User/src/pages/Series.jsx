@@ -3,13 +3,14 @@ import { useParams, Link } from "react-router-dom";
 import { api } from "../services/api";
 import Header from "../components/Header";
 import BlogGallery from "../components/BlogGallery";
+import BoundaryMeter from "../components/BoundaryMeter";
 
 export default function Series() {
   const { seriesId } = useParams();
   const [series, setSeries] = useState(null);
   const [matches, setMatches] = useState([]);
   const [squads, setSquads] = useState([]);
-  const [stats, setStats] = useState({ topRunScorers: [], topWicketTakers: [] });
+  const [stats, setStats] = useState({ topRunScorers: [], topWicketTakers: [], boundaryMeter: { sixes: 0, fours: 0, mostSixes: [], mostFours: [] } });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("matches");
 
@@ -17,37 +18,68 @@ export default function Series() {
 
   const loadData = async () => {
     try {
-      let seriesData, matchesData, squadData;
-      try {
-        const res = await api.get(`/events/${seriesId}`);
-        seriesData = res.data;
-        matchesData = seriesData.matches || [];
-        squadData = seriesData.eventSquads || [];
-      } catch {
-        const [seriesRes, matchesRes, squadRes] = await Promise.all([
-          api.get(`/tournaments/${seriesId}`),
-          api.get(`/tournaments/${seriesId}/fixtures`),
-          api.get(`/tournaments/${seriesId}/squad`).catch(() => ({ data: [] }))
-        ]);
-        seriesData = seriesRes.data;
-        matchesData = matchesRes.data;
-        squadData = squadRes.data;
+      setLoading(true);
+      let seriesData = null;
+      let matchesData = [];
+      let squadData = [];
+
+      const endpoints = [
+        { url: `/series/${seriesId}`, matchesField: 'matches', squadsField: null },
+        { url: `/events/${seriesId}`, matchesField: 'matches', squadsField: 'eventSquads' },
+        { url: `/tournaments/${seriesId}`, matchesField: 'matches', squadsField: 'tournamentSquads' }
+      ];
+
+      for (const ep of endpoints) {
+        try {
+          const res = await api.get(ep.url);
+          seriesData = res.data;
+          matchesData = seriesData.matches || [];
+          if (ep.squadsField) {
+            squadData = seriesData[ep.squadsField] || [];
+          }
+          break;
+        } catch (e) {
+          console.log(`Failed ${ep.url}:`, e.message);
+        }
       }
 
-      // Fetch detailed stats for each completed match
-      const completedMatches = matchesData.filter(m => m.status === "completed");
+      if (!seriesData) {
+        try {
+          const matchRes = await api.get(`/matches/${seriesId}`);
+          seriesData = {
+            _id: matchRes.data._id,
+            name: matchRes.data.title || "Match",
+            format: matchRes.data.matchType || "T20",
+            status: matchRes.data.status || "upcoming"
+          };
+          matchesData = [matchRes.data];
+        } catch (e4) {
+          console.log("Not a match either");
+        }
+        
+        if (!seriesData) {
+          setSeries(null);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Resolve match IDs or populate matches if they come as references
+      const matchIds = matchesData.map(m => m._id || m).filter(Boolean);
+      const allMatches = await Promise.all(
+        matchIds.map(id => api.get(`/matches/${id}`).catch(() => null))
+      );
+      const validMatches = allMatches.filter(r => r?.data).map(r => r.data);
+
+      setSeries(seriesData);
+      setMatches(validMatches);
+      setSquads(squadData);
+
+      // Calculate stats from completed matches
+      const completedMatches = validMatches.filter(m => m?.status === "completed");
       const matchDetails = await Promise.all(
         completedMatches.map(m => api.get(`/matches/${m._id}`).catch(() => ({ data: m })))
       );
-      const allMatches = await Promise.all(
-        matchesData.map(m => api.get(`/matches/${m._id}`).catch(() => ({ data: m })))
-      );
-
-      setSeries(seriesData);
-      setMatches(allMatches.map(r => r.data));
-      setSquads(squadData);
-
-      // Calculate stats from match details
       const playerStats = calculateStats(matchDetails.map(r => r.data));
       setStats(playerStats);
     } catch (err) {
@@ -133,8 +165,23 @@ export default function Series() {
 
     const topRunScorers = Object.values(battingStats).sort((a, b) => b.runs - a.runs).slice(0, 20);
     const topWicketTakers = Object.values(bowlingStats).sort((a, b) => b.wickets - a.wickets).slice(0, 20);
+    const boundaryPlayers = Object.values(battingStats);
+    const boundaryMeter = {
+      sixes: boundaryPlayers.reduce((sum, player) => sum + (player.sixes || 0), 0),
+      fours: boundaryPlayers.reduce((sum, player) => sum + (player.fours || 0), 0),
+      mostSixes: boundaryPlayers
+        .filter(player => player.sixes > 0)
+        .sort((a, b) => b.sixes - a.sixes)
+        .slice(0, 5)
+        .map(player => ({ playerId: player.playerId, name: player.name, team: player.team, count: player.sixes })),
+      mostFours: boundaryPlayers
+        .filter(player => player.fours > 0)
+        .sort((a, b) => b.fours - a.fours)
+        .slice(0, 5)
+        .map(player => ({ playerId: player.playerId, name: player.name, team: player.team, count: player.fours }))
+    };
 
-    return { topRunScorers, topWicketTakers };
+    return { topRunScorers, topWicketTakers, boundaryMeter };
   };
 
   if (loading) {
@@ -150,7 +197,7 @@ export default function Series() {
       <div className="min-h-screen bg-[#f0f2f5] flex items-center justify-center">
         <div className="text-center">
           <p className="text-2xl font-black text-[#031d44] uppercase">Series not found</p>
-          <Link to="/" className="text-blue-600 hover:underline mt-4 block">Go Home</Link>
+          <Link to="/series" className="text-blue-600 hover:underline mt-4 block">Back to Series</Link>
         </div>
       </div>
     );
@@ -170,12 +217,12 @@ export default function Series() {
     <div className="bg-[#f0f2f5] min-h-screen">
       <Header />
 
-      {/* Series Header - ESPN Style */}
+      {/* Series Header */}
       <div className="bg-gradient-to-r from-[#031d44] via-[#0a2d5e] to-[#031d44] text-white">
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="flex items-center gap-3 text-sm text-blue-300 mb-4">
             <Link to="/" className="hover:text-white transition-colors">Home</Link>
-            <span>•</span>
+            <span>-</span>
             <span>{series.name}</span>
           </div>
 
@@ -200,7 +247,7 @@ export default function Series() {
               <p className="text-sm text-blue-200 mt-2">
                 {series.startDate ? new Date(series.startDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : ""}
                 {series.endDate && ` - ${new Date(series.endDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`}
-                {series.venue && ` • ${series.venue}`}
+                {series.venue && ` - ${series.venue}`}
               </p>
             </div>
           </div>
@@ -313,7 +360,7 @@ export default function Series() {
                           <span className="text-2xl font-black text-slate-300">VS</span>
                         </div>
                         <p className="text-center text-[10px] text-slate-500 font-bold mt-2">
-                          {new Date(match.startAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} • {match.venue}
+                          {new Date(match.startAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} - {match.venue}
                         </p>
                       </div>
                     </Link>
@@ -402,6 +449,8 @@ export default function Series() {
         {/* Stats Tab */}
         {activeTab === "stats" && (
           <div className="space-y-8">
+            <BoundaryMeter stats={stats.boundaryMeter || {}} />
+
             {/* Most Runs */}
             <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
               <div className="p-6 border-b border-slate-200 bg-gradient-to-r from-blue-600 to-blue-700 text-white">

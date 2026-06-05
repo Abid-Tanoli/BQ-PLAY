@@ -1,7 +1,9 @@
-import Match from "../models/match.js";
+import Match from "../models/Match.js";
 import Team from "../models/Team.js";
 import Event from "../models/Event.js";
+import Tournament from "../models/Tournament.js";
 import { getIO } from "../socket/socket.js";
+import { getBallRunText, normalizeBallRunText } from "../utils/cricketHelpers.js";
 
 const populateMatch = (query) => {
   return query
@@ -39,12 +41,14 @@ const populateMatch = (query) => {
     .populate("teamRoles.wicketKeepers", "name playingRole role");
 };
 
+const matchRoom = (matchId) => `match-${matchId}`;
+
 export const getMatches = async (req, res) => {
   try {
     const matches = await populateMatch(Match.find())
       .sort({ startAt: -1 });
 
-    res.status(200).json(matches);
+    res.status(200).json(normalizeBallRunText(matches));
   } catch (error) {
     console.error("Error fetching matches:", error);
     res.status(500).json({
@@ -62,7 +66,7 @@ export const getMatch = async (req, res) => {
       return res.status(404).json({ message: "Match not found" });
     }
 
-    res.status(200).json(match);
+    res.status(200).json(normalizeBallRunText(match));
   } catch (error) {
     console.error("Error fetching match:", error);
     res.status(500).json({
@@ -74,7 +78,11 @@ export const getMatch = async (req, res) => {
 
 export const createMatch = async (req, res) => {
   try {
-    const { title, venue, matchType, matchCategory, matchSubcategory, startAt, teams, powerplayConfig, series, seriesMatchNumber } = req.body;
+    const { 
+      title, venue, matchType, matchCategory, matchSubcategory, startAt, teams, 
+      powerplayConfig, series, seriesMatchNumber,
+      category, subCategory, ageGroup, organization, address
+    } = req.body;
 
     if (!teams || teams.length !== 2) {
       return res.status(400).json({
@@ -126,8 +134,12 @@ export const createMatch = async (req, res) => {
       title: title || `${team1.name} vs ${team2.name}`,
       venue: venue || "",
       matchType: matchType || "T20",
-      matchCategory: matchCategory || "local-club",
-      matchSubcategory: matchSubcategory || "",
+      matchCategory: matchCategory || category || "Other",
+      category: category || matchCategory || "Other",
+      subCategory: subCategory || "",
+      ageGroup: ageGroup || "Open",
+      organization: organization || "",
+      address: address || { town: "", district: "", city: "", province: "", country: "Pakistan" },
       tournament: req.body.tournamentId || null,
       startAt,
       teams,
@@ -138,7 +150,7 @@ export const createMatch = async (req, res) => {
       seriesMatchNumber: seriesMatchNumber || null
     });
 
-    await match.save();
+    await match.save({ validateModifiedOnly: true });
 
     // Link match to tournament if provided
     if (req.body.tournamentId) {
@@ -173,7 +185,7 @@ export const createMatch = async (req, res) => {
 
 export const updateMatch = async (req, res) => {
   try {
-    const { title, venue, matchType, startAt, teams, status, powerplayConfig, series, seriesMatchNumber } = req.body;
+    const { title, venue, matchType, totalOvers, startAt, teams, status, powerplayConfig, series, seriesMatchNumber } = req.body;
 
     const match = await Match.findById(req.params.id);
     if (!match) {
@@ -208,13 +220,24 @@ export const updateMatch = async (req, res) => {
     if (title !== undefined) match.title = title;
     if (venue !== undefined) match.venue = venue;
     if (matchType !== undefined) match.matchType = matchType;
+    if (totalOvers !== undefined) match.totalOvers = totalOvers;
     if (startAt !== undefined) match.startAt = startAt;
     if (status !== undefined) match.status = status;
     if (powerplayConfig !== undefined) match.powerplayConfig = powerplayConfig;
     if (series !== undefined) match.series = series;
     if (seriesMatchNumber !== undefined) match.seriesMatchNumber = seriesMatchNumber;
 
-    await match.save();
+    await match.save({ validateModifiedOnly: true });
+
+    if (totalOvers !== undefined && match.innings[1]) {
+      const inn2 = match.innings[1];
+      if (inn2.status === "live" || inn2.status === "completed") {
+        const totalBallsFaced = inn2.balls || 0;
+        const remainingOvers = Math.max(totalOvers - Math.floor(totalBallsFaced / 6) - (totalBallsFaced % 6) / 6, 0);
+        const remainingRuns = (inn2.target || 0) - (inn2.runs || 0);
+        inn2.requiredRunRate = remainingOvers > 0 ? (remainingRuns / remainingOvers).toFixed(2) : 0;
+      }
+    }
 
     await match.populate("teams", "name shortName logo");
     await match.populate("innings.team", "name shortName");
@@ -278,7 +301,7 @@ export const setMOM = async (req, res) => {
     }
 
     match.manOfMatch = playerId;
-    await match.save();
+    await match.save({ validateModifiedOnly: true });
 
     await match.populate("manOfMatch", "name role");
     await match.populate("teams", "name shortName logo");
@@ -375,7 +398,7 @@ export const updateMatchStatus = async (req, res) => {
     }
 
     match.status = status;
-    await match.save();
+    await match.save({ validateModifiedOnly: true });
 
     await match.populate("teams", "name shortName logo");
 
@@ -439,12 +462,12 @@ export const setPlayingXI = async (req, res) => {
       match.playingXI.push({ team: teamId, players });
     }
 
-    await match.save();
+    await match.save({ validateModifiedOnly: true });
     const updatedMatch = await populateMatch(Match.findById(matchId));
 
     try {
       const io = getIO();
-      io.to(matchId).emit("match:playingXIUpdated", updatedMatch);
+      io.to(matchRoom(matchId)).emit("match:playingXIUpdated", updatedMatch);
     } catch (socketError) {
       console.log("Socket not available:", socketError.message);
     }
@@ -489,13 +512,13 @@ export const setOpeners = async (req, res) => {
       innings.battingOrder.push(batsman2Id);
     }
 
-    await match.save();
+    await match.save({ validateModifiedOnly: true });
     const updatedMatch = await populateMatch(Match.findById(matchId));
 
     try {
       const io = getIO();
-      io.to(matchId).emit("match:openersSet", { matchId, inningsIndex });
-      io.to(matchId).emit("match:updated", updatedMatch);
+      io.to(matchRoom(matchId)).emit("match:openersSet", { matchId, inningsIndex });
+      io.to(matchRoom(matchId)).emit("match:updated", updatedMatch);
     } catch (socketError) {
       console.log("Socket not available:", socketError.message);
     }
@@ -554,7 +577,7 @@ export const updateToss = async (req, res) => {
       match.innings[1].team = bowlingFirst;
     }
 
-    await match.save();
+    await match.save({ validateModifiedOnly: true });
     const updatedMatch = await populateMatch(Match.findById(matchId));
 
     try {
@@ -635,13 +658,13 @@ export const setSquad15 = async (req, res) => {
       match.squad15.push({ team: teamId, players, captain, viceCaptain, wicketKeepers });
     }
 
-    await match.save();
+    await match.save({ validateModifiedOnly: true });
     await match.populate("squad15.team", "name shortName logo");
     await match.populate("squad15.players", "name role playingRole");
 
     try {
       const io = getIO();
-      io.to(matchId).emit("match:squadUpdated", match);
+      io.to(matchRoom(matchId)).emit("match:squadUpdated", match);
     } catch (socketError) {
       console.log("Socket not available:", socketError.message);
     }
@@ -689,13 +712,13 @@ export const setTwelfthMan = async (req, res) => {
       match.twelfthMan.push({ team: teamId, player: playerId });
     }
 
-    await match.save();
+    await match.save({ validateModifiedOnly: true });
     await match.populate("twelfthMan.team", "name shortName logo");
     await match.populate("twelfthMan.player", "name role playingRole");
 
     try {
       const io = getIO();
-      io.to(matchId).emit("match:twelfthManUpdated", match);
+      io.to(matchRoom(matchId)).emit("match:twelfthManUpdated", match);
     } catch (socketError) {
       console.log("Socket not available:", socketError.message);
     }
@@ -749,13 +772,13 @@ export const setBowlingXI = async (req, res) => {
       match.bowlingXI.push({ team: teamId, players });
     }
 
-    await match.save();
+    await match.save({ validateModifiedOnly: true });
     await match.populate("bowlingXI.team", "name shortName logo");
     await match.populate("bowlingXI.players", "name role playingRole");
 
     try {
       const io = getIO();
-      io.to(matchId).emit("match:bowlingXIUpdated", match);
+      io.to(matchRoom(matchId)).emit("match:bowlingXIUpdated", match);
     } catch (socketError) {
       console.log("Socket not available:", socketError.message);
     }
@@ -826,7 +849,7 @@ export const setTeamRoles = async (req, res) => {
       match.teamRoles.push({ team: teamId, captain, viceCaptain, wicketKeepers });
     }
 
-    await match.save();
+    await match.save({ validateModifiedOnly: true });
     await match.populate("teamRoles.team", "name shortName logo");
     await match.populate("teamRoles.captain", "name role playingRole");
     await match.populate("teamRoles.viceCaptain", "name role playingRole");
@@ -834,7 +857,7 @@ export const setTeamRoles = async (req, res) => {
 
     try {
       const io = getIO();
-      io.to(matchId).emit("match:teamRolesUpdated", match);
+      io.to(matchRoom(matchId)).emit("match:teamRolesUpdated", match);
     } catch (socketError) {
       console.log("Socket not available:", socketError.message);
     }

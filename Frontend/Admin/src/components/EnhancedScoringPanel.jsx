@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useToast } from "./Toast";
 
 export default function EnhancedScoringPanel({ onSubmitBall, onEndInnings, onBack, currentBatsmen, currentBowler, selectedZoneLabel }) {
     const [runs, setRuns] = useState(0);
@@ -8,6 +9,22 @@ export default function EnhancedScoringPanel({ onSubmitBall, onEndInnings, onBac
     const [nonStrikerId, setNonStrikerId] = useState("");
     const [bowlerId, setBowlerId] = useState("");
     const [commentary, setCommentary] = useState("");
+    const { showToast } = useToast();
+    const [pitchZone, setPitchZone] = useState("");
+    const [ballMovement, setBallMovement] = useState("none");
+    const [ballOutcome, setBallOutcome] = useState("played");
+
+    const movementOptions = [
+        ["none", "None"], ["inswing", "Inswing"], ["outswing", "Outswing"],
+        ["off-cutter", "Off Cutter"], ["leg-cutter", "Leg Cutter"],
+        ["seam-movement", "Seam"], ["leg-spin", "Leg Spin"], ["off-spin", "Off Spin"],
+        ["googly", "Googly"], ["doosra", "Doosra"], ["flipper", "Flipper"]
+    ];
+    const outcomeOptions = [["played", "Played"], ["beat", "Beat"], ["left", "Left"], ["missed", "Missed"], ["edged", "Edged"]];
+    const pitchZones = [
+        ["full-toss", "Full Toss"], ["yorker", "Yorker"], ["full", "Full"],
+        ["good-length", "Good Length"], ["short", "Short"], ["bouncer", "Bouncer"]
+    ];
 
     // Sync IDs when props change
     useEffect(() => {
@@ -27,7 +44,7 @@ export default function EnhancedScoringPanel({ onSubmitBall, onEndInnings, onBac
 
     const handleSubmit = () => {
         if (!strikerId || !nonStrikerId || !bowlerId) {
-            alert("Please select striker, non-striker, and bowler.");
+            showToast("Please select striker, non-striker, and bowler.", "warning");
             return;
         }
 
@@ -44,6 +61,9 @@ export default function EnhancedScoringPanel({ onSubmitBall, onEndInnings, onBac
             bowlerId: bowlerId,
             commentaryText: commentary,
             fieldingZone: selectedZoneLabel,
+            pitchZone,
+            ballMovement,
+            ballOutcome,
             customCommentary: !!commentary
         };
 
@@ -53,6 +73,9 @@ export default function EnhancedScoringPanel({ onSubmitBall, onEndInnings, onBac
         setExtra(null);
         setWicket(null);
         setCommentary("");
+        setPitchZone("");
+        setBallMovement("none");
+        setBallOutcome("played");
     };
 
     return (
@@ -173,6 +196,56 @@ export default function EnhancedScoringPanel({ onSubmitBall, onEndInnings, onBac
                             <option key={type} value={type}>{type.toUpperCase()}</option>
                         ))}
                     </select>
+                </div>
+
+                <div className="space-y-3">
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Ball Movement</h3>
+                    <div className="flex flex-wrap gap-2">
+                        {movementOptions.map(([value, label]) => (
+                            <button
+                                key={value}
+                                type="button"
+                                onClick={() => setBallMovement(value)}
+                                className={`px-3 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${ballMovement === value ? "bg-blue-600 text-white shadow-md" : "bg-slate-50 text-slate-600 hover:bg-slate-100"}`}
+                            >
+                                {label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="space-y-3">
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Ball Outcome</h3>
+                    <div className="grid grid-cols-5 gap-2">
+                        {outcomeOptions.map(([value, label]) => (
+                            <button
+                                key={value}
+                                type="button"
+                                onClick={() => setBallOutcome(value)}
+                                className={`py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${ballOutcome === value ? "bg-[#ff6b35] text-white shadow-md" : "bg-slate-50 text-slate-600 hover:bg-slate-100"}`}
+                            >
+                                {label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="space-y-3">
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Pitch Landing Zone</h3>
+                    <div className="rounded-2xl bg-[#2c7a17] p-3">
+                        <div className="mx-auto grid h-72 w-32 overflow-hidden rounded-xl bg-[#ffd333] ring-4 ring-white/20">
+                            {pitchZones.map(([value, label]) => (
+                                <button
+                                    key={value}
+                                    type="button"
+                                    onClick={() => setPitchZone(value)}
+                                    className={`border-b border-white/70 text-[10px] font-black uppercase tracking-widest transition-all ${pitchZone === value ? "bg-[#f71963] text-white" : "text-slate-900 hover:bg-white/30"}`}
+                                >
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                 </div>
 
                 {/* Commentary */}

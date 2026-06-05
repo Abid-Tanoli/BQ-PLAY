@@ -19,6 +19,7 @@ const ballSchema = new mongoose.Schema({
   fielder: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
   commentary: { type: String, default: "" },
   vividCommentary: { type: String, default: "" },
+  runText: { type: String, default: "" },
   batsmanName: { type: String, default: "" },
   bowlerName: { type: String, default: "" },
   timestamp: { type: Date, default: Date.now },
@@ -30,7 +31,15 @@ const ballSchema = new mongoose.Schema({
   },
   // Fielding position where ball was fielded
   fieldingZone: { type: String, default: "" },
-  shotType: { type: String, default: "" }
+  shotType: { type: String, default: "" },
+  pitchZone: { type: String, default: "" },
+  ballMovement: { type: String, default: "none" },
+  ballOutcome: { type: String, default: "played" },
+  pitchLine: { type: String, default: "" },
+  pitchLength: { type: String, default: "" },
+  pitchShotType: { type: String, default: "" },
+  pitchX: { type: Number, default: null },
+  pitchY: { type: Number, default: null }
 });
 
 const overSchema = new mongoose.Schema({
@@ -94,7 +103,7 @@ const partnershipSchema = new mongoose.Schema({
 });
 
 const inningsSchema = new mongoose.Schema({
-  team: { type: mongoose.Schema.Types.ObjectId, ref: "Team", required: true },
+  team: { type: mongoose.Schema.Types.ObjectId, ref: "Team" },
   battingOrder: [{ type: mongoose.Schema.Types.ObjectId, ref: "Player" }],
   runs: { type: Number, default: 0 },
   wickets: { type: Number, default: 0 },
@@ -160,17 +169,42 @@ const matchSchema = new mongoose.Schema(
     matchCategory: {
       type: String,
       enum: [
-        "international",
-        "league",
-        "domestic",
-        "local-club",
-        "incubation"
+        "School",
+        "College",
+        "University",
+        "Organization",
+        "Business",
+        "Industry",
+        "Club",
+        "International",
+        "Other"
       ],
-      default: "local-club"
+      default: "Other"
     },
-    matchSubcategory: {
+    category: {
+      type: String,
+      enum: ["School", "College", "University", "Organization", "Business", "Industry", "Club", "International", "Other"],
+      default: "Other"
+    },
+    subCategory: {
       type: String,
       default: ""
+    },
+    ageGroup: {
+      type: String,
+      enum: ["U-10", "U-13", "U-15", "U-17", "U-19", "Open"],
+      default: "Open"
+    },
+    organization: {
+      type: String,
+      default: ""
+    },
+    address: {
+      town: String,
+      district: String,
+      city: String,
+      province: String,
+      country: { type: String, default: "Pakistan" }
     },
     tournament: {
       type: mongoose.Schema.Types.ObjectId,
@@ -181,8 +215,7 @@ const matchSchema = new mongoose.Schema(
       default: 20
     },
     startAt: {
-      type: Date,
-      required: true
+      type: Date
     },
     teams: [{
       type: mongoose.Schema.Types.ObjectId,
@@ -196,7 +229,7 @@ const matchSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["upcoming", "live", "innings-break", "completed", "abandoned", "pending_tie_resolution"],
+      enum: ["upcoming", "live", "innings-break", "completed", "abandoned", "pending_tie_resolution", "super_over"],
       default: "upcoming"
     },
     result: {
@@ -260,6 +293,11 @@ const matchSchema = new mongoose.Schema(
       default: "",
       trim: true
     },
+    espnMatchId: { type: String, default: "" },
+    slug: { type: String, default: "" },
+    resultText: { type: String, default: "" },
+    statusText: { type: String, default: "" },
+    commentary: { type: mongoose.Schema.Types.Mixed },
     seriesMatchNumber: {
       type: Number,
       default: null
@@ -289,6 +327,24 @@ const matchSchema = new mongoose.Schema(
       over: { type: Number },
       type: { type: String, default: "strategic" },
       timestamp: { type: Date, default: Date.now }
+    }],
+    superOvers: [{
+      superOverNumber: { type: Number, required: true },
+      battingFirst: { type: mongoose.Schema.Types.ObjectId, ref: "Team" },
+      battingSecond: { type: mongoose.Schema.Types.ObjectId, ref: "Team" },
+      innings: [inningsSchema],
+      result: {
+        winner: { type: mongoose.Schema.Types.ObjectId, ref: "Team" },
+        margin: { type: String }
+      },
+      bowlers: [{
+        team: { type: mongoose.Schema.Types.ObjectId, ref: "Team" },
+        bowler: { type: mongoose.Schema.Types.ObjectId, ref: "Player" }
+      }],
+      batsmen: [{
+        team: { type: mongoose.Schema.Types.ObjectId, ref: "Team" },
+        players: [{ type: mongoose.Schema.Types.ObjectId, ref: "Player" }]
+      }]
     }]
   },
   {

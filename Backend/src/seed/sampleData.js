@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import Team from '../models/Team.js';
 import Player from '../models/Player.js';
-import Match from '../models/match.js';
+import Match from '../models/Match.js';
 import connectDB from '../utils/db.js';
 
 dotenv.config();
@@ -43,7 +43,7 @@ async function seed() {
     status: 'upcoming'
   });
 
-  await match.save();
+  await match.save({ validateModifiedOnly: true });
 
   console.log('Seed completed');
   process.exit(0);

@@ -6,6 +6,8 @@ import { fetchTeams } from "../store/slices/teamSlice";
 import api from "../services/api";
 import EventSquadSelection from "../components/EventSquadSelection";
 import ChangePlayerModal from "../components/ChangePlayerModal";
+import { useToast } from "../components/Toast";
+import ConfirmModal from "../components/ConfirmModal";
 
 const EVENT_TYPES = [
     { value: "single-match", label: "Single Match", icon: "🏏", desc: "One standalone match" },
@@ -42,6 +44,8 @@ export default function ManageEvents() {
     const [changePlayerEvent, setChangePlayerEvent] = useState(null);
     const [changePlayerTeam, setChangePlayerTeam] = useState(null);
     const [changePlayerSquad, setChangePlayerSquad] = useState(null);
+    const { showToast } = useToast();
+    const [confirmModal, setConfirmModal] = useState({ open: false, title: '', message: '', onConfirm: null, variant: 'danger' });
 
     useEffect(() => {
         loadEvents();
@@ -90,7 +94,10 @@ export default function ManageEvents() {
                             title: `${data.name} - Match ${i + 1}`,
                             venue: mData.venue || data.venue || "",
                             matchType: data.format || "T20",
-                            matchCategory: "international",
+                            matchCategory: data.category || "Other",
+                            category: data.category || "Other",
+                            organization: data.organization || "",
+                            address: data.address || {},
                             startAt,
                             teams: data.teams,
                             tournamentId: eventId,
@@ -110,7 +117,7 @@ export default function ManageEvents() {
             loadEvents();
         } catch (err) {
             console.error(err);
-            alert(err.response?.data?.message || "Failed to save event");
+            showToast(err.response?.data?.message || "Failed to save event", 'error');
         } finally { setLoading(false); }
     };
 
@@ -126,11 +133,15 @@ export default function ManageEvents() {
         setValue("venue", ev.venue || "");
         setValue("description", ev.description || "");
         setValue("teams", ev.teams?.map(t => t._id || t));
+        setValue("category", ev.category);
+        setValue("subCategory", ev.subCategory);
+        setValue("ageGroup", ev.ageGroup);
+        setValue("organization", ev.organization);
+        setValue("address", ev.address || { town: "", district: "", city: "", province: "", country: "Pakistan" });
     };
 
-    const onDelete = async (id) => {
-        if (!window.confirm("Delete this event and all its matches?")) return;
-        try { await api.delete(`/events/${id}`); loadEvents(); } catch (err) { alert("Failed to delete event"); }
+    const onDelete = (id) => {
+        setConfirmModal({ open: true, title: 'Delete Event', message: 'Delete this event and all its matches?', confirmLabel: 'Delete', variant: 'danger', onConfirm: async () => { setConfirmModal({ open: false }); try { await api.delete(`/events/${id}`); loadEvents(); } catch (err) { showToast('Failed to delete event', 'error'); } } });
     };
 
     const openSquadForm = async (ev, teamId) => {
@@ -238,6 +249,60 @@ export default function ManageEvents() {
                                 <p className="text-[10px] text-slate-500 mt-1">How many matches will be played in this series/tournament?</p>
                             </div>
                         )}
+
+                        {/* Deep Categorization Section */}
+                        <div className="bg-blue-50/50 p-6 rounded-2xl border border-blue-100 space-y-4">
+                            <h4 className="text-xs font-black text-[#031d44] uppercase tracking-widest flex items-center gap-2">
+                                <span className="text-lg">🏷️</span> Deep Categorization
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Category</label>
+                                    <select {...register("category")} className="w-full p-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-800 focus:ring-2 ring-blue-500/20">
+                                        {["School", "College", "University", "Organization", "Business", "Industry", "Club", "International", "Other"].map(c => <option key={c} value={c}>{c}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Sub-Category / Level</label>
+                                    <input {...register("subCategory")} placeholder="e.g., Primary, CS, Engineering" className="w-full p-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-800" />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Age Group</label>
+                                    <select {...register("ageGroup")} className="w-full p-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-800">
+                                        {["U-10", "U-13", "U-15", "U-17", "U-19", "Open"].map(a => <option key={a} value={a}>{a}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Parent Organization / Institution</label>
+                                <input {...register("organization")} placeholder="e.g., Al-Khidmat, University of Karachi, Allied Bank" className="w-full p-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-800" />
+                            </div>
+                        </div>
+
+                        {/* Location / Address Section */}
+                        <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 space-y-4">
+                            <h4 className="text-xs font-black text-[#031d44] uppercase tracking-widest flex items-center gap-2">
+                                <span className="text-lg">📍</span> Location Details
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <div>
+                                    <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Town / Area</label>
+                                    <input {...register("address.town")} placeholder="e.g., North Nazimabad" className="w-full p-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-800" />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">District</label>
+                                    <input {...register("address.district")} placeholder="e.g., Central" className="w-full p-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-800" />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">City</label>
+                                    <input {...register("address.city")} placeholder="e.g., Karachi" className="w-full p-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-800" />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Province</label>
+                                    <input {...register("address.province")} placeholder="e.g., Sindh" className="w-full p-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-800" />
+                                </div>
+                            </div>
+                        </div>
 
                         {/* Dynamic Placeholders for Series Matches */}
                         {selectedType === "series" && selectedTotalMatches > 0 && (
@@ -411,6 +476,15 @@ export default function ManageEvents() {
                     onSuccess={loadEvents}
                 />
             )}
+            <ConfirmModal
+                open={confirmModal.open}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                confirmLabel={confirmModal.confirmLabel}
+                variant={confirmModal.variant}
+                onConfirm={confirmModal.onConfirm}
+                onCancel={() => setConfirmModal({ open: false })}
+            />
         </div>
     );
 }

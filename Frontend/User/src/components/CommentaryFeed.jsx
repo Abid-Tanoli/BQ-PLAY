@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 
-// Ball-by-Ball Commentary Feed - Cricinfo Style
+// Ball-by-Ball Commentary Feed - BQ-PLAY style
 // Professional commentary display with live updates
 
 const CommentaryFeed = ({ match, live = true }) => {
@@ -57,21 +57,40 @@ const CommentaryFeed = ({ match, live = true }) => {
   // Format ball notation
   const getBallNotation = (ball) => {
     if (ball.isWicket) return 'W';
-    if (ball.isWide) return `${1 + (ball.runs || 0)}wd`;
-    if (ball.isNoBall) return ball.runs > 0 ? `nb+${ball.runs}` : 'nb';
-    if (ball.runs === 0) return '•';
-    return ball.runs.toString();
+    if (ball.isWide) return 'Wd';
+    if (ball.isNoBall) return 'Nb';
+    if (ball.runs === 0 && !ball.isWide && !ball.isNoBall) return '•';
+    return String(ball.runs || 0);
   };
 
-  // Parse commentary into first line and description
-  const parseCommentary = (commentary) => {
-    if (!commentary) return { firstLine: '', description: '' };
-    const lines = commentary.split('\n');
-    return {
-      firstLine: lines[0] || '',
-      description: lines.slice(1).join('\n')
-    };
+  const getRunText = (ball) => {
+    if (ball.runText) return ball.runText;
+    const runs = ball.runs || 0;
+    if (ball.isWicket) return 'OUT!';
+    if (ball.isWide) return 'wide';
+    if (ball.isNoBall) return 'no ball';
+    if (runs === 0) return 'no run';
+    if (runs === 1) return '1 run';
+    if (runs === 2) return '2 runs';
+    if (runs === 3) return '3 runs';
+    if (runs === 4) return 'FOUR';
+    if (runs === 6) return 'SIX';
+    return `${runs} runs`;
   };
+
+  const labelize = (value) =>
+    String(value || "")
+      .replace(/_/g, "-")
+      .replace(/-/g, " ")
+      .replace(/\b\w/g, (letter) => letter.toUpperCase());
+
+  const getBallMeta = (ball) => [
+    ball.pitchZone || ball.pitchLength ? `Length: ${labelize(ball.pitchZone || ball.pitchLength)}` : "",
+    ball.pitchLine ? `Line: ${labelize(ball.pitchLine)}` : "",
+    ball.ballMovement && ball.ballMovement !== "none" ? `Movement: ${labelize(ball.ballMovement)}` : "",
+    ball.ballOutcome && ball.ballOutcome !== "played" ? `Outcome: ${labelize(ball.ballOutcome)}` : "",
+    ball.fieldingZone || ball.nearestPosition || ball.regionName || ball.zone ? `Area: ${labelize(ball.fieldingZone || ball.nearestPosition || ball.regionName || ball.zone)}` : "",
+  ].filter(Boolean);
 
   // Group balls by over for over summaries
   const groupedByOver = [];
@@ -129,18 +148,19 @@ const CommentaryFeed = ({ match, live = true }) => {
                     </span>
                   )}
                 </div>
-                {over.summary && (
-                  <div className="text-xs font-bold text-slate-600 dark:text-slate-300">
-                    {over.summary}
-                  </div>
-                )}
+                <div className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                  {over.summary || `${over.balls.reduce((sum, ball) => sum + (ball.runs || 0) + (ball.isWide || ball.isNoBall ? 1 : 0), 0)} runs, ${over.balls.filter(ball => ball.isWicket).length} wickets`}
+                </div>
               </div>
             </div>
 
             {/* Balls in Over */}
             <div className="divide-y dark:divide-slate-700">
               {[...over.balls].reverse().map((ball, ballIdx) => {
-                const { firstLine, description } = parseCommentary(ball.commentary);
+                const bowlerName = ball.bowlerName || ball.bowler?.name || over.balls[0]?.bowler?.name || 'Bowler';
+                const batsmanName = ball.batsmanName || ball.batsmanOnStrike?.name || 'Batsman';
+                const summaryLine = `${over.overNumber}.${ball.ballNumber || ball.ballIndex + 1} ${bowlerName} to ${batsmanName}, ${getRunText(ball)}`;
+                const meta = getBallMeta(ball);
                 return (
                   <div
                     key={ballIdx}
@@ -158,18 +178,22 @@ const CommentaryFeed = ({ match, live = true }) => {
 
                       {/* Commentary Text */}
                       <div className="flex-1 min-w-0">
-                        {firstLine && (
-                          <p className="font-bold text-sm text-slate-900 dark:text-white mb-1">
-                            {firstLine}
+                        <p className="font-bold text-sm text-slate-900 dark:text-white mb-1">
+                          {summaryLine}
+                        </p>
+                        {(ball.vividCommentary || ball.commentary) && (
+                          <p className="text-sm text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
+                            {ball.vividCommentary || ball.commentary}
                           </p>
                         )}
-                        {description && (
-                          <p className="text-sm text-slate-600 dark:text-slate-300">
-                            {description}
-                          </p>
-                        )}
-                        {!firstLine && !description && (
-                          <p className="text-sm text-slate-400 italic">No commentary</p>
+                        {meta.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {meta.map(item => (
+                              <span key={item} className="rounded-full bg-slate-100 dark:bg-slate-700 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-300">
+                                {item}
+                              </span>
+                            ))}
+                          </div>
                         )}
                       </div>
                     </div>

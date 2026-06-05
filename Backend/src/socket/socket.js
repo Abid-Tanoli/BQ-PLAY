@@ -2,6 +2,8 @@ import { Server } from "socket.io";
 
 let io;
 
+const matchRoom = (matchId) => `match-${matchId}`;
+
 export const initSocket = (server) => {
   io = new Server(server, {
     cors: {
@@ -28,11 +30,13 @@ export const initSocket = (server) => {
     });
 
     socket.on("join-match", (matchId) => {
+      socket.join(matchRoom(matchId));
       socket.join(matchId);
       console.log(`🏏 Socket ${socket.id} joined match: ${matchId}`);
     });
 
     socket.on("leave-match", (matchId) => {
+      socket.leave(matchRoom(matchId));
       socket.leave(matchId);
       console.log(`🏏 Socket ${socket.id} left match: ${matchId}`);
     });
@@ -50,6 +54,52 @@ export const initSocket = (server) => {
     socket.on("join-cricket-live", () => {
       socket.join("cricket-live");
       console.log(`🏏 Socket ${socket.id} joined cricket-live room`);
+    });
+
+    socket.on("JOIN_IMATCH", ({ matchId, id } = {}) => {
+      const roomId = matchId || id;
+      if (!roomId) return;
+      socket.join(`imatch_${roomId}`);
+      socket.join(`m_${roomId}`);
+      console.log(`🌍 Socket ${socket.id} joined international match: ${roomId}`);
+    });
+
+    socket.on("LEAVE_IMATCH", ({ matchId, id } = {}) => {
+      const roomId = matchId || id;
+      if (!roomId) return;
+      socket.leave(`imatch_${roomId}`);
+      socket.leave(`m_${roomId}`);
+      console.log(`🌍 Socket ${socket.id} left international match: ${roomId}`);
+    });
+
+    socket.on("JOIN_MATCH", ({ matchId, id } = {}) => {
+      const roomId = matchId || id;
+      if (!roomId) return;
+      socket.join(`imatch_${roomId}`);
+      socket.join(`m_${roomId}`);
+      console.log(`International socket ${socket.id} joined match: ${roomId}`);
+    });
+
+    socket.on("LEAVE_MATCH", ({ matchId, id } = {}) => {
+      const roomId = matchId || id;
+      if (!roomId) return;
+      socket.leave(`imatch_${roomId}`);
+      socket.leave(`m_${roomId}`);
+      console.log(`International socket ${socket.id} left match: ${roomId}`);
+    });
+
+    socket.on("JOIN", ({ matchId, id } = {}) => {
+      const roomId = matchId || id;
+      if (!roomId) return;
+      socket.join(`imatch_${roomId}`);
+      socket.join(`m_${roomId}`);
+    });
+
+    socket.on("LEAVE", ({ matchId, id } = {}) => {
+      const roomId = matchId || id;
+      if (!roomId) return;
+      socket.leave(`imatch_${roomId}`);
+      socket.leave(`m_${roomId}`);
     });
 
     socket.on("match:updateList", () => {
@@ -102,7 +152,7 @@ export const emitPlayerUpdate = (player) => {
 
 export const emitMatchUpdate = (matchId, data) => {
   if (io) {
-    io.to(matchId).emit("match:update", data);
+    io.to(matchRoom(matchId)).emit("match:update", data);
     io.emit("match:update", data);
   }
 };
@@ -116,21 +166,76 @@ export const emitCricketLiveUpdate = (data) => {
 
 export const emitFieldClick = (matchId, data) => {
   if (io) {
-    io.to(matchId).emit("match:fieldClick", data);
+    io.to(matchRoom(matchId)).emit("match:fieldClick", data);
     io.emit("match:fieldClick", data);
   }
 };
 
 export const emitAICommentary = (matchId, data) => {
   if (io) {
-    io.to(matchId).emit("match:aiCommentary", data);
+    io.to(matchRoom(matchId)).emit("match:aiCommentary", data);
     io.emit("match:aiCommentary", data);
   }
 };
 
 export const emitBallWithCommentary = (matchId, data) => {
   if (io) {
-    io.to(matchId).emit("match:ballWithCommentary", data);
+    io.to(matchRoom(matchId)).emit("match:ballWithCommentary", data);
     io.emit("match:ballWithCommentary", data);
+  }
+};
+
+export const emitBallUpdate = (matchId, data) => {
+  if (io) {
+    io.to(matchRoom(matchId)).emit("BALL_UPDATE", data);
+  }
+};
+
+export const emitMatchStatusChange = (matchId, data) => {
+  if (io) {
+    io.to(matchRoom(matchId)).emit("MATCH_STATUS_CHANGE", data);
+  }
+};
+
+export const emitWicketAlert = (matchId, data) => {
+  if (io) {
+    io.to(matchRoom(matchId)).emit("WICKET_ALERT", data);
+  }
+};
+
+export const emitMilestoneAlert = (matchId, data) => {
+  if (io) {
+    io.to(matchRoom(matchId)).emit("MILESTONE_ALERT", data);
+  }
+};
+
+export const emitInningsComplete = (matchId, data) => {
+  if (io) {
+    io.to(matchRoom(matchId)).emit("INNINGS_COMPLETE", data);
+  }
+};
+
+export const emitMatchResult = (matchId, data) => {
+  if (io) {
+    io.to(matchRoom(matchId)).emit("MATCH_RESULT", data);
+    io.emit("MATCH_RESULT", data);
+  }
+};
+
+export const emitDRSUpdate = (matchId, data) => {
+  if (io) {
+    io.to(matchRoom(matchId)).emit("DRS_UPDATE", data);
+  }
+};
+
+export const emitReviewDecision = (matchId, data) => {
+  if (io) {
+    io.to(matchRoom(matchId)).emit("REVIEW_DECISION", data);
+  }
+};
+
+export const emitUmpireSignal = (matchId, signal) => {
+  if (io) {
+    io.to(matchRoom(matchId)).emit("UMPIRE_SIGNAL", { signal, timestamp: new Date() });
   }
 };
