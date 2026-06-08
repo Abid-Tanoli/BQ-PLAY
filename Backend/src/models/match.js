@@ -10,6 +10,12 @@ const ballSchema = new mongoose.Schema({
   isNoBall: { type: Boolean, default: false },
   isBye: { type: Boolean, default: false },
   isLegBye: { type: Boolean, default: false },
+  extraType: {
+    type: String,
+    enum: ["wide", "no_ball", "bye", "leg_bye", "penalty", ""],
+    default: ""
+  },
+  extraRuns: { type: Number, default: 0 },
   isWicket: { type: Boolean, default: false },
   wicketType: {
     type: String,
@@ -22,6 +28,7 @@ const ballSchema = new mongoose.Schema({
   runText: { type: String, default: "" },
   batsmanName: { type: String, default: "" },
   bowlerName: { type: String, default: "" },
+  fielderName: { type: String, default: "" },
   timestamp: { type: Date, default: Date.now },
   // Shot placement for wagon wheel
   shotPlacement: {
@@ -123,7 +130,7 @@ const inningsSchema = new mongoose.Schema({
   currentBowler: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
   status: {
     type: String,
-    enum: ["upcoming", "live", "completed", "innings-break"],
+    enum: ["upcoming", "toss_done", "live", "completed", "innings-break", "innings_break"],
     default: "upcoming"
   },
   oversHistory: [overSchema],
@@ -229,7 +236,7 @@ const matchSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["upcoming", "live", "innings-break", "completed", "abandoned", "pending_tie_resolution", "super_over"],
+      enum: ["upcoming", "toss_done", "live", "innings-break", "innings_break", "completed", "abandoned", "pending_tie_resolution", "super_over"],
       default: "upcoming"
     },
     result: {
@@ -357,6 +364,9 @@ const matchSchema = new mongoose.Schema(
 matchSchema.index({ status: 1, startAt: -1 });
 matchSchema.index({ teams: 1 });
 matchSchema.index({ tournament: 1 });
+matchSchema.index({ series: 1, status: 1, startAt: 1 });
+matchSchema.index({ "innings.oversHistory.overNumber": 1 });
+matchSchema.index({ "innings.fallOfWickets.player": 1 });
 
 matchSchema.pre('save', function () {
   if (this.isModified('matchType')) {

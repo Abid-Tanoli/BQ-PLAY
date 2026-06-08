@@ -2,8 +2,33 @@ import Match from "../models/Match.js";
 import Team from "../models/Team.js";
 import Event from "../models/Event.js";
 import Tournament from "../models/Tournament.js";
+import Partnership from "../models/Partnership.js";
 import { getIO } from "../socket/socket.js";
 import { getBallRunText, normalizeBallRunText } from "../utils/cricketHelpers.js";
+
+const normalStatus = (status = "upcoming") => (status === "innings-break" ? "innings_break" : status);
+const legalMatchStatuses = ["upcoming", "toss_done", "live", "innings_break", "innings-break", "completed"];
+const toNumber = (value, fallback = 0) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const idOf = (value) => String(value?._id || value || "");
+const sameId = (a, b) => idOf(a) && idOf(a) === idOf(b);
+const displayName = (entity, fallback = "Unknown") => entity?.name || entity?.shortName || entity?.fullName || fallback;
+const formatOversFromBalls = (balls = 0) => `${Math.floor(toNumber(balls) / 6)}.${toNumber(balls) % 6}`;
+const formatBowlerOvers = (row = {}) => {
+  if (toNumber(row.balls) > 0) return formatOversFromBalls(row.balls);
+  return `${toNumber(row.overs)}.0`;
+};
+const inningsScore = (innings) => `${toNumber(innings?.runs)}/${toNumber(innings?.wickets)} (${formatOversFromBalls(innings?.balls)} ov)`;
+
+const playerPayload = (player) => ({
+  _id: player?._id || player,
+  name: player?.name || "Unknown",
+  role: player?.role || player?.playingRole || "",
+  playingRole: player?.playingRole || player?.role || ""
+});
 
 const populateMatch = (query) => {
   return query
@@ -24,6 +49,9 @@ const populateMatch = (query) => {
     .populate("innings.currentBatsman2", "name playingRole role")
     .populate("innings.onStrikeBatsman", "name playingRole role")
     .populate("innings.currentBowler", "name playingRole role")
+    .populate("innings.fallOfWickets.player", "name playingRole role")
+    .populate("innings.partnerships.batsman1", "name playingRole role")
+    .populate("innings.partnerships.batsman2", "name playingRole role")
     .populate("result.winner", "name shortName")
     .populate("tossWinner", "name shortName")
     .populate("manOfMatch", "name playingRole role")
@@ -34,6 +62,8 @@ const populateMatch = (query) => {
     .populate("squad15.captain", "name playingRole role")
     .populate("squad15.viceCaptain", "name playingRole role")
     .populate("squad15.wicketKeepers", "name playingRole role")
+    .populate("twelfthMan.team", "name shortName logo")
+    .populate("twelfthMan.player", "name playingRole role")
     .populate("bowlingXI.players", "name playingRole role")
     .populate("bowlingXI.team", "name shortName logo")
     .populate("teamRoles.captain", "name playingRole role")
@@ -382,13 +412,264 @@ export const getMatchStats = async (req, res) => {
   }
 };
 
+export const getMatchLiveStats = async (req, res) => {
+  try {
+    const match = await Match.findById(req.params.id)
+      .populate("innings.team", "name shortName")
+      .populate("innings.batting.player", "name playingRole role")
+      .populate("innings.bowling.player", "name playingRole role");
+
+    if (!match) {
+      return res.status(404).json({ message: "Match not found" });
+    }
+
+    const battingRows = [];
+    const bowlingRows = [];
+
+    (match.innings || []).forEach((innings, index) => {
+      const teamName = displayName(innings.team, `Innings ${index + 1}`);
+      (innings.batting || []).forEach((row) => {
+        battingRows.push({
+          playerId: row.player?._id || row.player,
+          name: displayName(row.player, "Unknown"),
+          team: teamName,
+          runs: toNumber(row.runs),
+          balls: toNumber(row.balls),
+          fours: toNumber(row.fours),
+          sixes: toNumber(row.sixes),
+          sr: row.strikeRate ? toNumber(row.strikeRate).toFixed(2) : (row.balls ? ((toNumber(row.runs) / toNumber(row.balls)) * 100).toFixed(2) : "0.00")
+        });
+      });
+      (innings.bowling || []).forEach((row) => {
+        bowlingRows.push({
+          playerId: row.player?._id || row.player,
+          name: displayName(row.player, "Unknown"),
+          team: teamName,
+          overs: formatBowlerOvers(row),
+          balls: toNumber(row.balls),
+          maidens: toNumber(row.maidens),
+          runs: toNumber(row.runs),
+          wickets: toNumber(row.wickets),
+          dotBalls: toNumber(row.dotBalls ?? row.dots),
+          econ: row.economy ? toNumber(row.economy).toFixed(2) : (row.balls ? ((toNumber(row.runs) / toNumber(row.balls)) * 6).toFixed(2) : "0.00"),
+          wides: toNumber(row.wides),
+          noBalls: toNumber(row.noBalls)
+        });
+      });
+    });
+
+    res.status(200).json({
+      matchId: match._id,
+      status: normalStatus(match.status),
+      currentInnings: match.currentInnings,
+      currentInningsNumber: toNumber(match.currentInnings) + 1,
+      topScorers: battingRows
+        .sort((a, b) => b.runs - a.runs || b.sr - a.sr)
+        .slice(0, 10),
+      topBowlers: bowlingRows
+        .sort((a, b) => b.wickets - a.wickets || a.runs - b.runs)
+        .slice(0, 10)
+    });
+  } catch (error) {
+    console.error("Error fetching live stats:", error);
+    res.status(500).json({
+      message: "Failed to fetch live stats",
+      error: error.message
+    });
+  }
+};
+
+export const getMatchSummary = async (req, res) => {
+  try {
+    const match = await populateMatch(Match.findById(req.params.id));
+
+    if (!match) {
+      return res.status(404).json({ message: "Match not found" });
+    }
+
+    const innings = (match.innings || []).map((inn, index) => ({
+      innings: index + 1,
+      team: displayName(inn.team, `Team ${index + 1}`),
+      teamId: inn.team?._id || inn.team,
+      score: `${toNumber(inn.runs)}/${toNumber(inn.wickets)}`,
+      overs: formatOversFromBalls(inn.balls),
+      extras: inn.extras || {},
+      topBatsmen: [...(inn.batting || [])]
+        .sort((a, b) => toNumber(b.runs) - toNumber(a.runs))
+        .slice(0, 3)
+        .map((row) => ({
+          name: displayName(row.player, "Unknown"),
+          runs: toNumber(row.runs),
+          balls: toNumber(row.balls),
+          fours: toNumber(row.fours),
+          sixes: toNumber(row.sixes)
+        })),
+      topBowlers: [...(inn.bowling || [])]
+        .sort((a, b) => toNumber(b.wickets) - toNumber(a.wickets) || toNumber(a.runs) - toNumber(b.runs))
+        .slice(0, 3)
+        .map((row) => ({
+          name: displayName(row.player, "Unknown"),
+          wickets: toNumber(row.wickets),
+          runs: toNumber(row.runs),
+          overs: formatBowlerOvers(row),
+          economy: row.economy || "0.00"
+        }))
+    }));
+
+    const topBatter = innings.flatMap((inn) => inn.topBatsmen).sort((a, b) => b.runs - a.runs)[0];
+    const topBowler = innings.flatMap((inn) => inn.topBowlers).sort((a, b) => b.wickets - a.wickets || a.runs - b.runs)[0];
+
+    const keyMoments = [
+      ...(match.highlights || []).map((item) => item.description).filter(Boolean),
+      topBatter?.runs >= 50 ? `${topBatter.name} scored ${topBatter.runs} from ${topBatter.balls} balls` : "",
+      topBowler?.wickets >= 3 ? `${topBowler.name} took ${topBowler.wickets}/${topBowler.runs}` : ""
+    ].filter(Boolean).slice(0, 8);
+
+    res.status(200).json({
+      matchId: match._id,
+      status: normalStatus(match.status),
+      result: match.result?.description || match.resultText || "",
+      playerOfMatch: match.manOfMatch
+        ? {
+          _id: match.manOfMatch?._id || match.manOfMatch,
+          name: displayName(match.manOfMatch, "Player of the Match"),
+          reason: topBatter ? `${topBatter.runs} runs (${topBatter.balls} balls)` : ""
+        }
+        : null,
+      innings,
+      keyMoments
+    });
+  } catch (error) {
+    console.error("Error fetching match summary:", error);
+    res.status(500).json({
+      message: "Failed to fetch match summary",
+      error: error.message
+    });
+  }
+};
+
+export const getMatchPartnershipsSummary = async (req, res) => {
+  try {
+    const match = await populateMatch(Match.findById(req.params.id));
+
+    if (!match) {
+      return res.status(404).json({ message: "Match not found" });
+    }
+
+    const mapEmbedded = (inn, index) => (inn.partnerships || []).map((partnership, idx) => {
+      const wicket = partnership.wicket || partnership.endedAt || partnership.startedAt || idx + 1;
+      return {
+        _id: partnership._id,
+        wicket,
+        wicketNumber: wicket,
+        runs: toNumber(partnership.runs),
+        balls: toNumber(partnership.balls),
+        batsmen: [
+          displayName(partnership.batsman1, playerPayload(partnership.batsman1).name),
+          displayName(partnership.batsman2, playerPayload(partnership.batsman2).name)
+        ],
+        batsman1: partnership.batsman1,
+        batsman2: partnership.batsman2,
+        isCurrent: index === toNumber(match.currentInnings) && idx === (inn.partnerships || []).length - 1 && normalStatus(match.status) === "live",
+        percentOfScore: inn.runs ? Number(((toNumber(partnership.runs) / toNumber(inn.runs)) * 100).toFixed(1)) : 0
+      };
+    });
+
+    const inningsPayload = await Promise.all((match.innings || []).map(async (inn, index) => {
+      let partnerships = mapEmbedded(inn, index);
+      if (!partnerships.length) {
+        const stored = await Partnership.find({ matchId: match._id, inning: index + 1 })
+          .populate("batsman1Id", "name playingRole role")
+          .populate("batsman2Id", "name playingRole role")
+          .sort({ wicketNumber: 1 });
+        partnerships = stored.map((partnership) => ({
+          _id: partnership._id,
+          wicket: partnership.wicketNumber,
+          wicketNumber: partnership.wicketNumber,
+          runs: toNumber(partnership.runs),
+          balls: toNumber(partnership.balls),
+          batsmen: [displayName(partnership.batsman1Id), displayName(partnership.batsman2Id)],
+          batsman1: partnership.batsman1Id,
+          batsman2: partnership.batsman2Id,
+          isCurrent: !!partnership.isActive,
+          percentOfScore: inn.runs ? Number(((toNumber(partnership.runs) / toNumber(inn.runs)) * 100).toFixed(1)) : 0
+        }));
+      }
+
+      return {
+        innings: index + 1,
+        team: displayName(inn.team, `Team ${index + 1}`),
+        teamId: inn.team?._id || inn.team,
+        score: inningsScore(inn),
+        partnerships
+      };
+    }));
+
+    res.status(200).json({
+      innings1: inningsPayload[0] || null,
+      innings2: inningsPayload[1] || null,
+      innings: inningsPayload
+    });
+  } catch (error) {
+    console.error("Error fetching partnerships summary:", error);
+    res.status(500).json({
+      message: "Failed to fetch partnerships",
+      error: error.message
+    });
+  }
+};
+
+export const getMatchSquads = async (req, res) => {
+  try {
+    const match = await populateMatch(Match.findById(req.params.id));
+
+    if (!match) {
+      return res.status(404).json({ message: "Match not found" });
+    }
+
+    const teams = (match.teams || []).map((team) => {
+      const playingXI = (match.playingXI || []).find((entry) => sameId(entry.team, team))?.players || [];
+      const squad15 = (match.squad15 || []).find((entry) => sameId(entry.team, team))?.players || [];
+      const twelfth = (match.twelfthMan || []).filter((entry) => sameId(entry.team, team)).map((entry) => entry.player).filter(Boolean);
+      const playingIds = new Set(playingXI.map(idOf));
+      const benchMap = new Map();
+      [...squad15, ...twelfth].forEach((player) => {
+        if (!playingIds.has(idOf(player))) benchMap.set(idOf(player), player);
+      });
+      const benchIds = new Set(benchMap.keys());
+      const seriesSquad = (team.players || []).filter((player) => !playingIds.has(idOf(player)) && !benchIds.has(idOf(player)));
+
+      return {
+        team: {
+          _id: team._id,
+          name: team.name,
+          shortName: team.shortName,
+          logo: team.logo
+        },
+        playingXI: playingXI.map(playerPayload),
+        benchPlayers: Array.from(benchMap.values()).map(playerPayload),
+        seriesSquad: seriesSquad.map(playerPayload)
+      };
+    });
+
+    res.status(200).json({ matchId: match._id, teams });
+  } catch (error) {
+    console.error("Error fetching match squads:", error);
+    res.status(500).json({
+      message: "Failed to fetch squads",
+      error: error.message
+    });
+  }
+};
+
 export const updateMatchStatus = async (req, res) => {
   try {
-    const { status } = req.body;
+    const { status, currentInnings, tossWinnerId, tossDecision, decision } = req.body;
+    const normalizedStatus = normalStatus(status);
 
-    if (!["upcoming", "live", "completed"].includes(status)) {
+    if (!legalMatchStatuses.includes(status) || !legalMatchStatuses.map(normalStatus).includes(normalizedStatus)) {
       return res.status(400).json({
-        message: "Invalid status. Must be: upcoming, live, or completed"
+        message: "Invalid status. Must be: upcoming, toss_done, live, innings_break, or completed"
       });
     }
 
@@ -397,14 +678,31 @@ export const updateMatchStatus = async (req, res) => {
       return res.status(404).json({ message: "Match not found" });
     }
 
-    match.status = status;
+    match.status = normalizedStatus;
+    if (currentInnings !== undefined) {
+      const inningsNumber = toNumber(currentInnings);
+      match.currentInnings = inningsNumber > 0 && inningsNumber <= match.innings.length
+        ? inningsNumber - 1
+        : Math.max(0, Math.min(inningsNumber, Math.max(match.innings.length - 1, 0)));
+    }
+    if (tossWinnerId !== undefined) match.tossWinner = tossWinnerId;
+    if (tossDecision !== undefined || decision !== undefined) match.tossDecision = tossDecision || decision;
+    if (normalizedStatus === "toss_done" && match.innings?.[match.currentInnings]) {
+      match.innings[match.currentInnings].status = "upcoming";
+    }
+    if (normalizedStatus === "live" && match.innings?.[match.currentInnings]) {
+      match.innings[match.currentInnings].status = "live";
+    }
+    if (normalizedStatus === "innings_break" && match.innings?.[match.currentInnings]) {
+      match.innings[match.currentInnings].status = "upcoming";
+    }
     await match.save({ validateModifiedOnly: true });
 
     await match.populate("teams", "name shortName logo");
 
     try {
       const io = getIO();
-      io.emit("match:statusChanged", { matchId: match._id, status });
+      io.emit("match:statusChanged", { matchId: match._id, status: normalizedStatus });
       io.emit("match:updated", match);
       io.emit("match:updateList");
     } catch (socketError) {
@@ -413,7 +711,7 @@ export const updateMatchStatus = async (req, res) => {
 
     res.status(200).json({
       match,
-      message: `Match status updated to ${status}`
+      message: `Match status updated to ${normalizedStatus}`
     });
   } catch (error) {
     console.error("Error updating match status:", error);
@@ -548,6 +846,9 @@ export const updateToss = async (req, res) => {
 
     match.tossWinner = tossWinnerId;
     match.tossDecision = decision;
+    if (!["live", "innings_break", "innings-break", "completed", "pending_tie_resolution", "super_over"].includes(match.status)) {
+      match.status = "toss_done";
+    }
 
     // Update innings teams based on toss
     const team1Id = match.teams[0]._id || match.teams[0];

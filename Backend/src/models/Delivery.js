@@ -9,6 +9,9 @@ const deliverySchema = new mongoose.Schema({
   batsmanId: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
   bowlerId: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
   nonStrikerId: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
+  batsmanName: { type: String, default: "" },
+  bowlerName: { type: String, default: "" },
+  fielderName: { type: String, default: "" },
   runsOffBat: { type: Number, default: 0 },
   extras: { type: Number, default: 0 },
   extraType: { type: String, enum: ["wide", "no_ball", "bye", "leg_bye", "penalty", null] },
@@ -27,5 +30,6 @@ const deliverySchema = new mongoose.Schema({
 }, { timestamps: true });
 
 deliverySchema.index({ matchId: 1, inning: 1, overNumber: 1, ballNumber: 1 });
+deliverySchema.index({ matchId: 1 });
 
 export default mongoose.models.Delivery || mongoose.model("Delivery", deliverySchema);

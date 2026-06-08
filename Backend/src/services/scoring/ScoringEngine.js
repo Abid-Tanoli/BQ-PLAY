@@ -57,6 +57,9 @@ class ScoringEngine {
     if (!innings) throw new Error(`Innings ${inningsIndex} not found`);
 
     this.match.matchState = inningsIndex === 0 ? 'firstInnings' : 'secondInnings';
+    this.match.status = 'live';
+    innings.status = 'live';
+    this.match.currentInnings = inningsIndex;
 
     const isFreeHit = innings.isFreeHit || false;
     const ballType = this._classifyBall(delivery);
@@ -337,7 +340,7 @@ class ScoringEngine {
       bowl = { player: br.bowler, overs: 0, maidens: 0, runs: 0, wickets: 0, wides: 0, noBalls: 0, balls: 0, dots: 0, economy: 0 };
       innings.bowling.push(bowl);
     }
-    if (!br.isWide && !br.isNoBall) { bowl.balls += 1; if (br.batsmanRuns === 0 && !br.isWicket && ballType === 'legal') bowl.dots += 1; }
+    if (!br.isWide && !br.isNoBall) { bowl.balls += 1; if (br.batsmanRuns === 0 && ballType === 'legal') bowl.dots += 1; }
     if (ballType === 'wide') bowl.wides += 1;
     if (ballType === 'noBall') bowl.noBalls += 1;
     if (ballType === 'wide' || ballType === 'noBall') bowl.runs += br.extraRuns + br.batsmanRuns;
@@ -382,7 +385,7 @@ class ScoringEngine {
   _completeOver(innings, over) {
     over.isComplete = true;
     this.events.push({ type: 'overComplete', overNumber: over.overNumber, runs: over.runsScored, wickets: over.wickets });
-    const isMaiden = over.balls.every(b => b.batsmanRuns === 0 && !b.isWicket && !b.isWide && !b.isNoBall && !b.isBye && !b.isLegBye);
+    const isMaiden = over.balls.every(b => b.batsmanRuns === 0 && !b.isWide && !b.isNoBall);
     if (isMaiden) { over.isMaiden = true; this.events.push({ type: 'maiden', overNumber: over.overNumber }); }
     const bowler = innings.bowling?.find(b => String(b.player?._id || b.player) === String(over.bowler?._id || over.bowler));
     if (bowler && isMaiden) bowler.maidens = (bowler.maidens || 0) + 1;
@@ -476,7 +479,14 @@ class ScoringEngine {
     this.events.push({ type: 'inningsComplete', innings: inningsIndex, runs: innings.runs, wickets: innings.wickets });
     if (inningsIndex === 0) innings.target = innings.runs + 1;
     if (inningsIndex === 1 || (inningsIndex === 0 && this.match.innings.length <= 1)) this._calculateResult();
-    if (inningsIndex < this.match.innings.length - 1) this.match.currentInnings = inningsIndex + 1;
+    if (inningsIndex < this.match.innings.length - 1) {
+      this.match.currentInnings = inningsIndex + 1;
+      this.match.status = 'innings_break';
+      if (this.match.innings[inningsIndex + 1]) {
+        this.match.innings[inningsIndex + 1].status = 'upcoming';
+        this.match.innings[inningsIndex + 1].target = innings.runs + 1;
+      }
+    }
   }
 
   _calculateResult() {

@@ -69,19 +69,39 @@ export default function Series() {
       const allMatches = await Promise.all(
         matchIds.map(id => api.get(`/matches/${id}`).catch(() => null))
       );
-      const validMatches = allMatches.filter(r => r?.data).map(r => r.data);
+      let validMatches = allMatches.filter(r => r?.data).map(r => r.data);
+
+      try {
+        const groupedRes = await api.get(`/series/${seriesId}/matches`);
+        validMatches = [
+          ...(groupedRes.data.live || []),
+          ...(groupedRes.data.completed || []),
+          ...(groupedRes.data.upcoming || [])
+        ];
+      } catch (groupErr) {
+        console.log("Grouped series matches unavailable, using embedded matches:", groupErr.message);
+      }
 
       setSeries(seriesData);
       setMatches(validMatches);
-      setSquads(squadData);
+      try {
+        const squadRes = await api.get(`/series/${seriesId}/squads`);
+        setSquads(squadRes.data.teams || []);
+      } catch (squadErr) {
+        setSquads(squadData);
+      }
 
-      // Calculate stats from completed matches
-      const completedMatches = validMatches.filter(m => m?.status === "completed");
-      const matchDetails = await Promise.all(
-        completedMatches.map(m => api.get(`/matches/${m._id}`).catch(() => ({ data: m })))
-      );
-      const playerStats = calculateStats(matchDetails.map(r => r.data));
-      setStats(playerStats);
+      try {
+        const statsRes = await api.get(`/series/${seriesId}/stats`);
+        setStats(statsRes.data);
+      } catch (statsErr) {
+        const completedMatches = validMatches.filter(m => m?.status === "completed");
+        const matchDetails = await Promise.all(
+          completedMatches.map(m => api.get(`/matches/${m._id}`).catch(() => ({ data: m })))
+        );
+        const playerStats = calculateStats(matchDetails.map(r => r.data));
+        setStats(playerStats);
+      }
     } catch (err) {
       console.error("Failed to load series:", err);
     } finally {
@@ -210,8 +230,10 @@ export default function Series() {
     { key: "squads", label: "Squads" },
   ];
 
-  const completedMatches = matches.filter(m => m.status === "completed");
-  const upcomingMatches = matches.filter(m => m.status === "upcoming" || m.status === "scheduled");
+  const normalizeStatus = (status) => status === "innings-break" ? "innings_break" : status;
+  const liveMatches = matches.filter(m => ["live", "innings_break", "toss_done"].includes(normalizeStatus(m.status)));
+  const completedMatches = matches.filter(m => normalizeStatus(m.status) === "completed");
+  const upcomingMatches = matches.filter(m => ["upcoming", "scheduled"].includes(normalizeStatus(m.status)));
 
   return (
     <div className="bg-[#f0f2f5] min-h-screen">
@@ -276,6 +298,51 @@ export default function Series() {
         {/* Matches Tab */}
         {activeTab === "matches" && (
           <div className="space-y-8">
+            {liveMatches.length > 0 && (
+              <div>
+                <h2 className="text-xl font-black text-[#031d44] uppercase tracking-tight mb-4 flex items-center gap-2">
+                  <span className="w-2 h-6 bg-red-600 rounded-full"></span>
+                  Live ({liveMatches.length})
+                </h2>
+                <div className="grid grid-cols-1 gap-3">
+                  {liveMatches.map(match => (
+                    <Link
+                      key={match._id}
+                      to={`/match/${match._id}`}
+                      className="block bg-white rounded-xl shadow-md overflow-hidden border border-red-200 hover:shadow-lg transition-all"
+                    >
+                      <div className="p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-[10px] font-bold text-red-600 uppercase tracking-wider">
+                            {match.matchNumber ? `Match ${match.matchNumber}` : match.title}
+                          </span>
+                          <span className="px-2 py-0.5 bg-red-600 text-white rounded-full text-[9px] font-bold uppercase">
+                            {normalizeStatus(match.status).replace("_", " ")}
+                          </span>
+                        </div>
+                        <div className="space-y-2">
+                          {match.innings?.slice(0, 2).map((inn, idx) => {
+                            const team = typeof inn.team === "object" ? inn.team : match.teams?.[idx] || {};
+                            return (
+                              <div key={idx} className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  {team.logo && <img src={team.logo} alt={team.name} className="w-6 h-6 rounded-full object-cover" />}
+                                  <span className="font-bold text-sm text-slate-800 uppercase">{team.shortName || team.name}</span>
+                                </div>
+                                <span className="font-black text-sm text-slate-800">
+                                  {inn.runs || 0}/{inn.wickets || 0} <span className="text-xs text-slate-500 font-bold">({Math.floor((inn.balls || 0) / 6)}.{(inn.balls || 0) % 6})</span>
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Completed Matches */}
             {completedMatches.length > 0 && (
               <div>
@@ -499,7 +566,7 @@ export default function Series() {
                       </tr>
                     ))}
                     {stats.topRunScorers.length === 0 && (
-                      <tr><td colSpan="13" className="px-4 py-8 text-center text-slate-500">No batting stats available yet</td></tr>
+                      <tr><td colSpan="13" className="px-4 py-8 text-center text-slate-500">{stats.emptyMessage || "No batting stats available yet"}</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -550,7 +617,7 @@ export default function Series() {
                       </tr>
                     ))}
                     {stats.topWicketTakers.length === 0 && (
-                      <tr><td colSpan="11" className="px-4 py-8 text-center text-slate-500">No bowling stats available yet</td></tr>
+                      <tr><td colSpan="11" className="px-4 py-8 text-center text-slate-500">{stats.emptyMessage || "No bowling stats available yet"}</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -573,39 +640,43 @@ export default function Series() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {squads.map(squad => (
-                  <div key={squad.team?._id} className="bg-white rounded-xl shadow-lg overflow-hidden border border-slate-200">
+                  <div key={squad.team?._id || squad._id || squad.name} className="bg-white rounded-xl shadow-lg overflow-hidden border border-slate-200">
                     <div className="bg-gradient-to-r from-[#031d44] to-[#0a2d5e] text-white p-4">
                       <div className="flex items-center gap-3">
                         {squad.team?.logo && <img src={squad.team.logo} alt={squad.team.name} className="w-10 h-10 rounded-lg object-cover" />}
                         <div>
-                          <h3 className="text-lg font-black uppercase">{squad.team?.name}</h3>
+                          <h3 className="text-lg font-black uppercase">{squad.team?.name || squad.name}</h3>
                           <p className="text-[10px] text-blue-200 font-bold">{squad.players?.length || 0} Players</p>
                         </div>
                       </div>
                     </div>
                     <div className="p-4">
                       {/* Captain & VC */}
-                      <div className="flex items-center gap-4 mb-3 text-xs font-bold">
-                        <span className="text-blue-600">C: {squad.players?.find(p => p._id === squad.captain)?.name || "TBD"}</span>
-                        <span className="text-green-600">VC: {squad.players?.find(p => p._id === squad.viceCaptain)?.name || "TBD"}</span>
-                        <span className="text-orange-600">WK: {squad.wicketKeepers?.length || 0}</span>
-                      </div>
+                      {(squad.captain || squad.viceCaptain || squad.wicketKeepers?.length > 0) && (
+                        <div className="flex items-center gap-4 mb-3 text-xs font-bold">
+                          <span className="text-blue-600">C: {squad.players?.find(p => (p._id || p.id) === squad.captain)?.name || "TBD"}</span>
+                          <span className="text-green-600">VC: {squad.players?.find(p => (p._id || p.id) === squad.viceCaptain)?.name || "TBD"}</span>
+                          <span className="text-orange-600">WK: {squad.wicketKeepers?.length || 0}</span>
+                        </div>
+                      )}
                       {/* Players Grid */}
                       <div className="flex flex-wrap gap-2">
                         {squad.players?.map(p => {
-                          const isC = p._id === squad.captain;
-                          const isVC = p._id === squad.viceCaptain;
-                          const isWK = squad.wicketKeepers?.includes(p._id);
+                          const playerId = p._id || p.id;
+                          const isC = playerId === squad.captain;
+                          const isVC = playerId === squad.viceCaptain;
+                          const isWK = squad.wicketKeepers?.some(id => String(id?._id || id) === String(playerId));
                           return (
                             <Link
-                              key={p._id}
-                              to={`/players/${p._id}`}
+                              key={playerId}
+                              to={`/players/${playerId}`}
                               className="px-3 py-1.5 bg-slate-100 hover:bg-blue-100 hover:text-blue-700 rounded-lg text-xs font-bold transition-colors flex items-center gap-1"
                             >
                               {p.name}
                               {isC && <span className="text-blue-600">(C)</span>}
                               {isVC && <span className="text-green-600">(VC)</span>}
                               {isWK && <span className="text-orange-600">(WK)</span>}
+                              {p.isPlayingXI && <span className="text-emerald-600">(XI)</span>}
                             </Link>
                           );
                         })}

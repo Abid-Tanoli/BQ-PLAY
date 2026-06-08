@@ -15,11 +15,19 @@ function computeBallNotation(ball) {
 }
 
 function enrichBallRecord(engineBall, deliveryData, batsmanName, bowlerName) {
+  const extraType = engineBall.isWide ? 'wide'
+    : engineBall.isNoBall ? 'no_ball'
+      : engineBall.isBye ? 'bye'
+        : engineBall.isLegBye ? 'leg_bye'
+          : '';
   return {
     ...engineBall,
     ballNumber: engineBall.ballNumber,
-    batsmanName: batsmanName || 'Batsman',
-    bowlerName: bowlerName || 'Bowler',
+    batsmanName: engineBall.batsmanName || batsmanName || deliveryData.batsmanOnStrikeName || 'Batsman',
+    bowlerName: engineBall.bowlerName || bowlerName || deliveryData.bowlerName || 'Bowler',
+    fielderName: engineBall.fielderName || deliveryData.fielderName || '',
+    extraType,
+    extraRuns: engineBall.extraRuns || 0,
     runText: getBallRunText(engineBall),
     notation: computeBallNotation(engineBall),
     shotPlacement: deliveryData.shotPlacement || { angle: 0, distance: 50, position: '' },
@@ -74,7 +82,7 @@ function mapBowlingStats(engineBowling) {
       wides: b.wides || 0,
       noBalls: b.noBalls || 0,
       economy: b.economy || '0.00',
-      dotBalls: b.dotBalls || b.dots || 0,
+    dotBalls: b.dotBalls ?? b.dots ?? 0,
       foursScored: b.foursScored || 0,
       sixesScored: b.sixesScored || 0,
     };
@@ -213,13 +221,11 @@ export function processDeliveryWithEngine(mongooseMatch, deliveryData) {
 
   // Extract key values for the controller
   const curInnings = mongooseMatch.innings[inningsIndex];
-  const currentOverNumber = Math.floor((curInnings?.balls || 0) / 6);
+  const isLegalDelivery = !result.ball.isWide && !result.ball.isNoBall;
+  const ballsBeforeThisDelivery = Math.max((curInnings?.balls || 0) - (isLegalDelivery ? 1 : 0), 0);
+  const currentOverNumber = Math.floor(ballsBeforeThisDelivery / 6);
   const currentOver = curInnings?.oversHistory?.find(o => o.overNumber === currentOverNumber);
-  const legalBallsInOver = currentOver?.balls?.filter(b => !b.isWide && !b.isNoBall).length || 0;
-  // ballNumberInOver = count of legal balls before this one + 1
-  // When current ball is an extra (wide/noball), legalBallsInOver doesn't include it,
-  // so we add 1 to produce the correct display number.
-  const ballNumberInOver = legalBallsInOver + (result.ball.isWide || result.ball.isNoBall ? 1 : 0);
+  const ballNumberInOver = result.ball.ballNumber || ((currentOver?.balls || []).length || 1);
 
   return {
     ball: enrichedBall,

@@ -2,6 +2,9 @@ import express from 'express';
 import { 
   getSeries, 
   getSeriesById, 
+  getSeriesMatchesById,
+  getSeriesStatsById,
+  getSeriesSquadsById,
   createSeries, 
   updateSeries, 
   deleteSeries 
@@ -11,6 +14,9 @@ import { protect, requireAdmin } from '../middleware/authMiddleware.js';
 const router = express.Router();
 
 router.get('/', getSeries);
+router.get('/:id/matches', getSeriesMatchesById);
+router.get('/:id/stats', getSeriesStatsById);
+router.get('/:id/squads', getSeriesSquadsById);
 router.get('/:id', getSeriesById);
 router.post('/', protect, requireAdmin, createSeries);
 router.put('/:id', protect, requireAdmin, updateSeries);

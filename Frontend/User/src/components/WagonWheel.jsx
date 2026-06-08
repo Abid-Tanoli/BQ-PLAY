@@ -1,10 +1,10 @@
 import React from 'react';
 
 const WagonWheel = ({ shots = [], playerName = "Batsman" }) => {
-    // Shot placement data normalized to 400x400 SVG
-    // Batsman position on 400x400 is approx (200, 320)
+    // Shot placement data normalized to 400x400 SVG.
+    // The batsman's crease is slightly below the field center.
     const batsmanX = 200;
-    const batsmanY = 320;
+    const batsmanY = 248;
 
     const getColor = (runs) => {
         if (runs >= 6) return '#a855f7'; // Purple for 6s
@@ -72,15 +72,22 @@ const WagonWheel = ({ shots = [], playerName = "Batsman" }) => {
 
                         {/* Labels */}
                         <text x="200" y="30" textAnchor="middle" className="fill-slate-500 text-[10px] font-black uppercase tracking-widest">SIGHTSCREEN</text>
-                        <text x="30" y="200" textAnchor="middle" transform="rotate(-90 30,200)" className="fill-slate-500 text-[10px] font-black uppercase tracking-widest">OFF SIDE</text>
-                        <text x="370" y="200" textAnchor="middle" transform="rotate(90 370,200)" className="fill-slate-500 text-[10px] font-black uppercase tracking-widest">LEG SIDE</text>
+                        <text x="30" y="200" textAnchor="middle" transform="rotate(-90 30,200)" className="fill-slate-500 text-[10px] font-black uppercase tracking-widest">LEG SIDE</text>
+                        <text x="370" y="200" textAnchor="middle" transform="rotate(90 370,200)" className="fill-slate-500 text-[10px] font-black uppercase tracking-widest">OFF SIDE</text>
 
                         {/* Inner Ring (30 Yard) */}
                         <circle cx="200" cy="200" r="110" fill="none" stroke="#ffffff08" strokeWidth="1" strokeDasharray="10 5" />
 
                         {/* Pitch */}
-                        <rect x="188" y="140" width="24" height="120" fill="#cc9b6d20" rx="4" />
-                        <rect x="190" y="145" width="20" height="110" fill="#cc9b6d40" rx="2" />
+                        <rect x="188" y="118" width="24" height="150" fill="#cc9b6d20" rx="4" />
+                        <rect x="190" y="125" width="20" height="136" fill="#cc9b6d40" rx="2" />
+                        <line x1="188" y1="142" x2="212" y2="142" stroke="#f8fafc66" strokeWidth="1" />
+                        <line x1="188" y1="248" x2="212" y2="248" stroke="#f8fafc66" strokeWidth="1" />
+                        <g stroke="#f8fafc99" strokeWidth="1.5">
+                            <line x1="194" y1="130" x2="194" y2="142" />
+                            <line x1="200" y1="130" x2="200" y2="142" />
+                            <line x1="206" y1="130" x2="206" y2="142" />
+                        </g>
 
                         {/* Shots */}
                         {scoringShots.map((shot, idx) => {

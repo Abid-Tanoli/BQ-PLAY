@@ -7,6 +7,10 @@ import {
   deleteMatch,
   setMOM,
   getMatchStats,
+  getMatchLiveStats,
+  getMatchSummary,
+  getMatchPartnershipsSummary,
+  getMatchSquads,
   updateMatchStatus,
   setPlayingXI,
   setOpeners,
@@ -56,6 +60,10 @@ const router = express.Router();
 router.get("/", getMatches);
 router.get("/:id", getMatch);
 router.get("/:id/stats", getMatchStats);
+router.get("/:id/live-stats", getMatchLiveStats);
+router.get("/:id/summary", getMatchSummary);
+router.get("/:id/partnerships", getMatchPartnershipsSummary);
+router.get("/:id/squads", getMatchSquads);
 router.get("/:id/partnerships/:inning", getMatchPartnerships);
 router.get("/:id/partnerships/:inning/active", getActivePartnership);
 router.get("/:id/wagon-wheel/:inning", getWagonWheelData);

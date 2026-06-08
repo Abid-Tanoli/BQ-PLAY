@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 const seriesSchema = new mongoose.Schema({
   name: { type: String, required: true },
   shortName: String,
+  slug: { type: String, index: true },
   matchType: { type: String, enum: ['Test', 'ODI', 'T20', 'T20I'], default: 'T20' },
   status: { type: String, enum: ['upcoming', 'ongoing', 'completed'], default: 'upcoming' },
   startDate: Date,

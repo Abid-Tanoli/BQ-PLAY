@@ -132,9 +132,47 @@ const currentInningsOf = (match) => {
 };
 
 const statusLabel = (status) => {
-  if (status === "innings-break") return "Innings Break";
+  if (status === "innings-break" || status === "innings_break") return "Innings Break";
+  if (status === "toss_done") return "Toss Done";
   if (status === "pending_tie_resolution") return "Tie Break";
-  return status ? status.charAt(0).toUpperCase() + status.slice(1) : "Upcoming";
+  return status ? labelize(status) : "Upcoming";
+};
+
+const statusKey = (status) => (status === "innings-break" ? "innings_break" : status || "upcoming");
+
+const currentInningsNumber = (match) => {
+  const raw = number(match?.currentInnings);
+  return raw >= 0 && raw < 2 ? raw + 1 : raw;
+};
+
+const countdownText = (value) => {
+  const start = value ? new Date(value).getTime() : 0;
+  const diff = start - Date.now();
+  if (!start || diff <= 0) return "Match starts soon";
+  const totalMinutes = Math.ceil(diff / 60000);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours <= 0) return `Match starts in ${minutes} minute${minutes === 1 ? "" : "s"}`;
+  return `Match starts in ${hours} hour${hours === 1 ? "" : "s"} ${minutes} minute${minutes === 1 ? "" : "s"}`;
+};
+
+const getMatchBanner = (match) => {
+  const status = statusKey(match?.status);
+  const inningsNo = currentInningsNumber(match);
+
+  if (status === "completed") {
+    return { text: getResultLine(match) || "MATCH ENDED", live: false, tone: "bg-emerald-500 text-white" };
+  }
+  if (status === "innings_break") {
+    return { text: "INNINGS BREAK", live: false, tone: "bg-amber-400 text-slate-950" };
+  }
+  if (status === "live") {
+    return { text: `${inningsNo === 2 ? "2ND" : "1ST"} INNINGS LIVE`, live: true, tone: "bg-red-600 text-white" };
+  }
+  if (status === "toss_done") {
+    return { text: getTossLine(match), live: false, tone: "bg-blue-100 text-blue-800" };
+  }
+  return { text: countdownText(match?.startTime || match?.startAt), live: false, tone: "bg-white/15 text-white" };
 };
 
 const overValue = (balls) => number(balls) / 6;
@@ -173,8 +211,8 @@ const getResultLine = (match) => {
 
 const getTossLine = (match) => {
   if (!match?.tossWinner) return "Toss not updated";
-  const decision = match.tossDecision === "bowl" ? "bowl" : "bat";
-  return `${longTeamName(match.tossWinner)} chose to ${decision}`;
+  const decision = match.tossDecision === "bowl" ? "Bowl" : "Bat";
+  return `${longTeamName(match.tossWinner)} won the toss and chose to ${decision}`;
 };
 
 const ballRuns = (ball) => number(ball.runs);
@@ -200,7 +238,12 @@ const ballClass = (ball) => {
 
 const ballResultText = (ball) => {
   if (ball?.runText) return ball.runText;
-  if (ball?.isWicket) return "OUT!";
+  if (ball?.isWicket) {
+    const fielder = ball.fielderName || playerName(ball.fielder);
+    const wicketType = labelize(ball.wicketType || "out");
+    if ((ball.wicketType || "").toLowerCase() === "caught" && fielder !== "Unknown") return `OUT! Caught by ${fielder}`;
+    return `OUT! ${wicketType}`;
+  }
   if (ball?.isWide) return "wide";
   if (ball?.isNoBall) return "no ball";
   if (ball?.isLegBye) return "leg bye";
@@ -290,7 +333,7 @@ const SummaryTab = ({ match, allPlayers }) => {
         const key = idOf(b.player);
         if (!scores[key]) scores[key] = { name: resolveName(b.player), player: b.player, runs: 0, ballsFaced: 0, wickets: 0, runsConceded: 0, ballsBowled: 0, catches: 0 };
         scores[key].runs += number(b.runs);
-        scores[key].ballsFaced += number(b.ballsFaced);
+        scores[key].ballsFaced += number(b.balls ?? b.ballsFaced);
       });
       (inn.bowling || []).forEach(b => {
         if (!b.player) return;
@@ -432,7 +475,7 @@ const SummaryTab = ({ match, allPlayers }) => {
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-semibold text-slate-600">Top Batter:</span>
                       <span className="font-bold text-slate-800">
-                        {playerName(topBatter.player, allPlayers)} {topBatter.runs}({topBatter.ballsFaced}) - SR {strikeRate(topBatter.runs, topBatter.ballsFaced)}
+                        {playerName(topBatter.player, allPlayers)} {topBatter.runs}({topBatter.balls ?? topBatter.ballsFaced}) - SR {strikeRate(topBatter.runs, topBatter.balls ?? topBatter.ballsFaced)}
                       </span>
                     </div>
                   )}
@@ -516,7 +559,7 @@ const SummaryTab = ({ match, allPlayers }) => {
       {match && (() => {
         const allBalls = (match.innings || []).flatMap((inn, innIdx) => {
           const team = match.teams?.find(t => sameId(t._id, inn.team));
-          return (inn.overs || []).flatMap(over =>
+          return (inn.oversHistory || []).flatMap(over =>
             (over.balls || []).map((ball, bIdx) => {
               const runs = ballRuns(ball);
               const overStr = `${over.overNumber}.${ball.ballNumber || bIdx + 1}`;
@@ -663,7 +706,7 @@ const EnhancedMatchTabs = ({ match, matchId }) => {
   const rrr = getRrr(match, currentInnings);
   const selectedInningsData = match?.innings?.[selectedInnings] || currentInnings;
   const selectedBattingTeam = getTeamById(match, selectedInningsData?.team);
-  const isLive = match?.status === "live";
+  const banner = getMatchBanner(match);
 
   if (!match) return null;
 
@@ -691,9 +734,9 @@ const EnhancedMatchTabs = ({ match, matchId }) => {
         <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-bold uppercase tracking-[0.16em] text-blue-100">
             <span>BQ-PLAY Live Scores</span>
-            <span className="flex items-center gap-2">
-              {isLive && <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-500" />}
-              {statusLabel(match.status)}
+            <span className={`flex items-center gap-2 rounded-full px-3 py-1 ${banner.tone}`}>
+              {banner.live && <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-white" />}
+              {banner.text}
             </span>
           </div>
           <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
@@ -719,7 +762,7 @@ const EnhancedMatchTabs = ({ match, matchId }) => {
       </section>
 
       <nav className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl gap-6 overflow-x-auto px-4 py-0 sm:px-6 lg:px-8">
+        <div className="no-scrollbar mx-auto flex max-w-7xl flex-nowrap gap-4 overflow-x-auto px-4 py-0 sm:px-6 lg:px-8">
           {TABS.map((tab) => (
             <button
               key={tab.id}
@@ -760,6 +803,7 @@ const EnhancedMatchTabs = ({ match, matchId }) => {
                 bowler={bowler}
                 strikerId={strikerId}
                 players={players}
+                innings={currentInnings}
               />
               <RecentBalls overs={recentOvers} />
               <CommentaryPreview overs={commentaryOvers} players={players} onSwitchTab={setActiveTab} />
@@ -882,8 +926,18 @@ function PlayerLine({ row, label, players, active }) {
   );
 }
 
-function CurrentPlayers({ striker, nonStriker, bowler, strikerId, players }) {
+function CurrentPlayers({ striker, nonStriker, bowler, strikerId, players, innings }) {
   const batterRows = [striker, nonStriker].filter(Boolean);
+  const currentBowlerId = idOf(bowler?.player || innings?.currentBowler);
+  const previousBowler = [...(innings?.oversHistory || [])]
+    .reverse()
+    .map((over) => {
+      const bowlerId = idOf(over.bowler);
+      if (!bowlerId || bowlerId === currentBowlerId) return null;
+      return (innings?.bowling || []).find((row) => sameId(row.player, bowlerId)) || { player: over.bowler };
+    })
+    .find(Boolean);
+  const bowlerRows = [bowler, previousBowler].filter(Boolean);
 
   return (
     <div className="overflow-hidden border-b border-slate-200 bg-white">
@@ -938,17 +992,22 @@ function CurrentPlayers({ striker, nonStriker, bowler, strikerId, players }) {
             </tr>
           </thead>
           <tbody>
-            {bowler ? (
-              <tr>
-                <td className="px-3 py-2 font-black text-slate-950">{playerName(bowler?.player, players)}</td>
-                <td className="px-3 py-2 text-right tabular-nums">{formatBowlerOvers(bowler)}</td>
-                <td className="px-3 py-2 text-right tabular-nums">{number(bowler?.maidens)}</td>
-                <td className="px-3 py-2 text-right tabular-nums">{number(bowler?.runs)}</td>
-                <td className="px-3 py-2 text-right font-black tabular-nums">{number(bowler?.wickets)}</td>
-                <td className="px-3 py-2 text-right tabular-nums">{bowler?.economy || economyRate(bowler?.runs, bowler?.balls)}</td>
-                <td className="px-3 py-2 text-right tabular-nums">{number(bowler?.dots || bowler?.dotBalls)}</td>
-                <td className="px-3 py-2 text-right tabular-nums">{number(bowler?.wides)}/{number(bowler?.noBalls)}</td>
-              </tr>
+            {bowlerRows.length ? (
+              bowlerRows.map((row, index) => (
+                <tr key={`${idOf(row?.player)}-${index}`}>
+                  <td className="px-3 py-2 font-black text-slate-950">
+                    <span className="mr-2 text-[10px] uppercase tracking-widest text-slate-400">{index === 0 ? "Current" : "Previous"}</span>
+                    {playerName(row?.player, players)}
+                  </td>
+                  <td className="px-3 py-2 text-right tabular-nums">{formatBowlerOvers(row)}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{number(row?.maidens)}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{number(row?.runs)}</td>
+                  <td className="px-3 py-2 text-right font-black tabular-nums">{number(row?.wickets)}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{row?.economy || economyRate(row?.runs, row?.balls)}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{number(row?.dots ?? row?.dotBalls)}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{number(row?.wides)}/{number(row?.noBalls)}</td>
+                </tr>
+              ))
             ) : (
               <tr>
                 <td className="px-3 py-4 text-slate-500" colSpan={8}>Current bowler will appear after scoring starts.</td>
@@ -973,13 +1032,10 @@ function MetricSmall({ label, value }) {
 function RecentBalls({ overs }) {
   const [overOffset, setOverOffset] = useState(0);
   const safeOvers = overs || [];
-  const maxOffset = Math.max(safeOvers.length - 1, 0);
+  const maxOffset = Math.max(safeOvers.length - 3, 0);
   const windowEnd = Math.max(safeOvers.length - overOffset, 0);
-  const windowStart = Math.max(windowEnd - 4, 0);
+  const windowStart = Math.max(windowEnd - 3, 0);
   const visibleOvers = safeOvers.slice(windowStart, windowEnd);
-  const visibleBalls = visibleOvers
-    .flatMap((over) => (over.balls || []).map((ball) => ({ ...ball, overNumber: over.overNumber, overRuns: over.runsScored })))
-    .slice(-18);
 
   return (
     <div className="border-b border-slate-200 bg-white py-3">
@@ -990,21 +1046,25 @@ function RecentBalls({ overs }) {
           <button type="button" onClick={() => setOverOffset((value) => Math.max(value - 1, 0))} className="rounded bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600 transition-all hover:bg-slate-200">&rsaquo;</button>
         </div>
       </div>
-      <div className="mt-4 flex gap-2 overflow-x-auto pb-2">
-        {visibleBalls.length ? (
-          visibleBalls.map((ball, index) => {
-            const showSeparator = index === 0 || visibleBalls[index - 1]?.overNumber !== ball.overNumber;
+      <div className="mt-4 space-y-2">
+        {visibleOvers.length ? (
+          visibleOvers.map((over) => {
+            const summary = overRunsAndWickets(over);
             return (
-              <React.Fragment key={ball._id || `${ball.overNumber}-${index}`}>
-                {showSeparator && (
-                  <span className="flex min-w-fit items-center rounded bg-slate-100 px-2.5 py-2 text-[11px] font-black text-slate-700">
-                    {number(ball.overNumber) + 1} ov
-                  </span>
-                )}
-                <span className={`flex h-9 min-w-9 items-center justify-center rounded px-2 text-xs font-black ${ballClass(ball)}`}>
-                  {ballLabel(ball)}
-                </span>
-              </React.Fragment>
+              <div key={over._id || over.overNumber} className="grid gap-2 rounded-lg bg-slate-50 p-2 sm:grid-cols-[80px_1fr_auto] sm:items-center">
+                <div className="text-[11px] font-black uppercase tracking-widest text-slate-600">Over {number(over.overNumber) + 1}</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {(over.balls || []).map((ball, index) => (
+                    <span key={ball._id || index} className={`flex h-8 min-w-8 items-center justify-center rounded px-2 text-xs font-black ${ballClass(ball)}`}>
+                      {ballLabel(ball)}
+                    </span>
+                  ))}
+                </div>
+                <div className="text-right text-[11px] font-bold text-slate-500">
+                  {summary.runs} run{summary.runs === 1 ? "" : "s"}
+                  {summary.wickets > 0 ? `, ${summary.wickets} wkt` : ""}
+                </div>
+              </div>
             );
           })
         ) : (
@@ -1016,15 +1076,8 @@ function RecentBalls({ overs }) {
 }
 
 function CommentaryPreview({ overs, players, onSwitchTab }) {
-  const allBalls = overs.flatMap((over) => over.balls.map((ball) => ({ ball, over })));
-  const latestBall = allBalls[0];
-  const recentBalls = allBalls.slice(0, 6);
-  const recentOvers = new Map();
-  recentBalls.forEach(({ ball, over }) => {
-    const key = over.overNumber;
-    if (!recentOvers.has(key)) recentOvers.set(key, { over, balls: [] });
-    recentOvers.get(key).balls.push(ball);
-  });
+  const recentOvers = (overs || []).slice(0, 3);
+  const latestBall = recentOvers[0]?.balls?.length ? recentOvers[0].balls[recentOvers[0].balls.length - 1] : null;
   return (
     <div className="bg-white py-3">
       <div className="flex items-center justify-between">
@@ -1041,7 +1094,9 @@ function CommentaryPreview({ overs, players, onSwitchTab }) {
       </div>
       {latestBall ? (
         <div className="mt-3 space-y-3">
-          {Array.from(recentOvers.values()).slice(0, 2).map(({ over, balls }) => (
+          {recentOvers.map((over) => {
+            const balls = over.balls || [];
+            return (
             <div key={over.overNumber} className="border-t border-slate-200 pt-3">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Over {number(over.overNumber) + 1}</span>
@@ -1059,7 +1114,8 @@ function CommentaryPreview({ overs, players, onSwitchTab }) {
                 ))}
               </div>
             </div>
-          ))}
+          );
+          })}
         </div>
       ) : (
         <p className="mt-3 text-sm text-slate-500">Commentary will appear here after the first ball.</p>
@@ -1084,6 +1140,12 @@ function MiniInfo({ match }) {
 
 function ScoreBreakdown({ match }) {
   const innings = match?.innings || [];
+  const current = currentInningsOf(match);
+  const currentPartnership = (current?.partnerships || [])[(current?.partnerships || []).length - 1];
+  const currentBatters = [current?.currentBatsman1, current?.currentBatsman2]
+    .map((player) => (current?.batting || []).find((row) => sameId(row.player, player)))
+    .filter(Boolean);
+  const currentBowler = (current?.bowling || []).find((row) => sameId(row.player, current?.currentBowler));
   const phases = [
     { label: "Power Play", start: 0, end: 6 },
     { label: "Middle Overs", start: 6, end: Math.max(number(match?.totalOvers) - 5, 6) },
@@ -1123,7 +1185,65 @@ function ScoreBreakdown({ match }) {
           ))}
         </div>
       </div>
+      <div className="mt-4 grid gap-3">
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+          <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">Current Partnership</div>
+          <div className="mt-1 text-xl font-black text-slate-950">
+            {number(currentPartnership?.runs)} <span className="text-xs font-bold text-slate-500">runs</span>
+          </div>
+          <p className="text-xs font-semibold text-slate-500">
+            {number(currentPartnership?.balls)} balls · RR {currentPartnership?.balls ? ((number(currentPartnership.runs) / number(currentPartnership.balls)) * 6).toFixed(2) : "0.00"}
+          </p>
+        </div>
+        {currentBatters.length > 0 && (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {currentBatters.map((row) => (
+              <div key={idOf(row.player)} className="rounded-lg border border-slate-200 p-3">
+                <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">{playerName(row.player)}</div>
+                <MiniWagonWheel shots={row.shots || []} />
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="rounded-lg border border-slate-200 p-3">
+          <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">Current Bowler Stats</div>
+          {currentBowler ? (
+            <div className="mt-2 grid grid-cols-5 gap-2 text-center text-xs">
+              <MetricSmall label="O" value={formatBowlerOvers(currentBowler)} />
+              <MetricSmall label="M" value={number(currentBowler.maidens)} />
+              <MetricSmall label="R" value={number(currentBowler.runs)} />
+              <MetricSmall label="W" value={number(currentBowler.wickets)} />
+              <MetricSmall label="Econ" value={currentBowler.economy || economyRate(currentBowler.runs, currentBowler.balls)} />
+            </div>
+          ) : (
+            <p className="mt-2 text-sm text-slate-500">Current bowler will appear after scoring starts.</p>
+          )}
+        </div>
+      </div>
     </div>
+  );
+}
+
+function MiniWagonWheel({ shots = [] }) {
+  const size = 118;
+  const origin = { x: size / 2, y: size * 0.62 };
+  const scoringShots = shots.filter((shot) => number(shot.runs) > 0).slice(-12);
+  return (
+    <svg viewBox={`0 0 ${size} ${size}`} className="mt-2 h-28 w-full rounded-lg bg-emerald-950/90">
+      <circle cx={size / 2} cy={size / 2} r={size / 2 - 5} fill="#123524" stroke="#ffffff22" />
+      <rect x={origin.x - 4} y={size * 0.32} width="8" height="44" rx="2" fill="#f2c07855" />
+      {scoringShots.map((shot, index) => {
+        const angle = number(shot.angle);
+        const distance = Math.min(number(shot.distance, 50), 100);
+        const radius = (size / 2 - 8) * (distance / 100);
+        const rad = angle * (Math.PI / 180);
+        const x = origin.x + radius * Math.sin(rad);
+        const y = origin.y - radius * Math.cos(rad);
+        const color = number(shot.runs) >= 6 ? "#c084fc" : number(shot.runs) >= 4 ? "#60a5fa" : "#cbd5e1";
+        return <line key={index} x1={origin.x} y1={origin.y} x2={x} y2={y} stroke={color} strokeWidth={number(shot.runs) >= 4 ? 2.4 : 1.2} strokeLinecap="round" />;
+      })}
+      <circle cx={origin.x} cy={origin.y} r="3.5" fill="#ff6b35" />
+    </svg>
   );
 }
 
@@ -1164,12 +1284,12 @@ function ScorecardTab({ match, innings, selectedInnings, setSelectedInnings, bat
               <tr>
                 <th className="px-4 py-3">Batter</th>
                 <th className="px-4 py-3">How Out</th>
-                <th className="px-4 py-3">Bowler</th>
+                <th className="hidden px-4 py-3 sm:table-cell">Bowler</th>
                 <th className="px-3 py-3 text-right">R</th>
                 <th className="px-3 py-3 text-right">B</th>
-                <th className="px-3 py-3 text-right">4s</th>
-                <th className="px-3 py-3 text-right">6s</th>
-                <th className="px-4 py-3 text-right">SR</th>
+                <th className="hidden px-3 py-3 text-right sm:table-cell">4s</th>
+                <th className="hidden px-3 py-3 text-right sm:table-cell">6s</th>
+                <th className="hidden px-4 py-3 text-right md:table-cell">SR</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -1179,12 +1299,12 @@ function ScorecardTab({ match, innings, selectedInnings, setSelectedInnings, bat
                   <tr key={idOf(row.player)} className={!row.isOut ? "border-l-4 border-l-emerald-500" : ""}>
                     <td className="px-4 py-3 font-black">{playerName(row.player, players)}</td>
                     <td className="px-4 py-3 text-slate-500">{dismissal.how}</td>
-                    <td className="px-4 py-3 text-slate-500">{dismissal.bowler}</td>
+                    <td className="hidden px-4 py-3 text-slate-500 sm:table-cell">{dismissal.bowler}</td>
                     <td className="px-3 py-3 text-right font-black">{number(row.runs)}</td>
                     <td className="px-3 py-3 text-right">{number(row.balls)}</td>
-                    <td className="px-3 py-3 text-right">{number(row.fours)}</td>
-                    <td className="px-3 py-3 text-right">{number(row.sixes)}</td>
-                    <td className="px-4 py-3 text-right">{row.strikeRate ? number(row.strikeRate).toFixed(2) : strikeRate(row.runs, row.balls)}</td>
+                    <td className="hidden px-3 py-3 text-right sm:table-cell">{number(row.fours)}</td>
+                    <td className="hidden px-3 py-3 text-right sm:table-cell">{number(row.sixes)}</td>
+                    <td className="hidden px-4 py-3 text-right md:table-cell">{row.strikeRate ? number(row.strikeRate).toFixed(2) : strikeRate(row.runs, row.balls)}</td>
                   </tr>
                 );
               })}
@@ -1210,12 +1330,12 @@ function ScorecardTab({ match, innings, selectedInnings, setSelectedInnings, bat
       <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
         <h3 className="text-xs font-black uppercase tracking-[0.18em] text-slate-500 mb-3">Fall of Wickets</h3>
         {(innings?.fallOfWickets || []).length ? (
-          <div className="space-y-2">
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {innings.fallOfWickets.map((w, i) => (
               <div key={i} className="flex items-center gap-3 text-sm bg-slate-50 rounded-lg px-3 py-2">
-                <span className="font-black text-slate-700 min-w-[3rem]">{w.wickets}-{w.runs}</span>
-                <span className="text-slate-500 flex-1">{playerName(w.player, players)}</span>
-                <span className="text-xs font-bold text-slate-400">{number(w.overs).toFixed(1)} ov</span>
+                <span className="font-black text-slate-700 min-w-[3rem]">{number(w.wicket || w.wickets || i + 1)}-{number(w.runs)}</span>
+                <span className="text-slate-500 flex-1 truncate">{playerName(w.player, players)}</span>
+                <span className="text-xs font-bold text-slate-400">{w.overs || "0.0"} ov</span>
               </div>
             ))}
           </div>
@@ -1237,11 +1357,12 @@ function ScorecardTab({ match, innings, selectedInnings, setSelectedInnings, bat
                 <th className="px-4 py-3">Bowler</th>
                 <th className="px-3 py-3 text-right">O</th>
                 <th className="px-3 py-3 text-right">M</th>
+                <th className="px-3 py-3 text-right">DOT</th>
                 <th className="px-3 py-3 text-right">R</th>
                 <th className="px-3 py-3 text-right">W</th>
-                <th className="px-3 py-3 text-right">Econ</th>
-                <th className="px-3 py-3 text-right">WD</th>
-                <th className="px-4 py-3 text-right">NB</th>
+                <th className="hidden px-3 py-3 text-right sm:table-cell">Econ</th>
+                <th className="hidden px-3 py-3 text-right md:table-cell">WD</th>
+                <th className="hidden px-4 py-3 text-right md:table-cell">NB</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -1250,11 +1371,12 @@ function ScorecardTab({ match, innings, selectedInnings, setSelectedInnings, bat
                   <td className="px-4 py-3 font-black">{playerName(row.player, players)}</td>
                   <td className="px-3 py-3 text-right">{formatBowlerOvers(row)}</td>
                   <td className="px-3 py-3 text-right">{number(row.maidens)}</td>
+                  <td className="px-3 py-3 text-right">{number(row.dotBalls ?? row.dots)}</td>
                   <td className="px-3 py-3 text-right">{number(row.runs)}</td>
                   <td className="px-3 py-3 text-right font-black">{number(row.wickets)}</td>
-                  <td className="px-3 py-3 text-right">{row.economy || economyRate(row.runs, row.balls)}</td>
-                  <td className="px-3 py-3 text-right">{number(row.wides)}</td>
-                  <td className="px-4 py-3 text-right">{number(row.noBalls)}</td>
+                  <td className="hidden px-3 py-3 text-right sm:table-cell">{row.economy || economyRate(row.runs, row.balls)}</td>
+                  <td className="hidden px-3 py-3 text-right md:table-cell">{number(row.wides)}</td>
+                  <td className="hidden px-4 py-3 text-right md:table-cell">{number(row.noBalls)}</td>
                 </tr>
               ))}
             </tbody>
@@ -1503,7 +1625,18 @@ function PlayingXITab({ match, players }) {
       <div className="grid gap-4 lg:grid-cols-2">
         {(match?.teams || []).map((team) => {
           const teamId = idOf(team);
-          const xi = getPlayingXI(match, team).length ? getPlayingXI(match, team) : (team.players || []);
+          const explicitXi = getPlayingXI(match, team);
+          const xi = explicitXi.length ? explicitXi : (team.players || []).slice(0, 11);
+          const xiIds = new Set(xi.map(idOf));
+          const twelfth = (match?.twelfthMan || []).filter((entry) => sameId(entry.team, team)).map((entry) => entry.player).filter(Boolean);
+          const squadPlayers = (match?.squad15 || []).find((entry) => sameId(entry.team, team))?.players || [];
+          const benchMap = new Map();
+          [...squadPlayers, ...twelfth].forEach((player) => {
+            if (!xiIds.has(idOf(player))) benchMap.set(idOf(player), player);
+          });
+          const bench = Array.from(benchMap.values());
+          const benchIds = new Set(bench.map(idOf));
+          const seriesSquad = (team.players || []).filter((player) => !xiIds.has(idOf(player)) && !benchIds.has(idOf(player)));
           const roles = rolesByTeam.get(teamId) || {};
           const innings = inningsForTeam(teamId);
           const battingIds = new Set((innings?.batting || []).map((row) => idOf(row.player)));
@@ -1558,11 +1691,33 @@ function PlayingXITab({ match, players }) {
                   );
                 })}
               </div>
+              {bench.length > 0 && (
+                <SquadSection title="Bench / Substitutes" players={bench} allPlayers={players} muted />
+              )}
+              {seriesSquad.length > 0 && (
+                <SquadSection title="Series Squad (Not Playing)" players={seriesSquad} allPlayers={players} muted />
+              )}
             </div>
           );
         })}
       </div>
     </section>
+  );
+}
+
+function SquadSection({ title, players: squadPlayers, allPlayers, muted = false }) {
+  return (
+    <div className="border-t border-slate-200 bg-slate-50/70 px-4 py-3">
+      <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500">{title}</h4>
+      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+        {squadPlayers.map((player) => (
+          <div key={idOf(player)} className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm ${muted ? "bg-white text-slate-600" : "bg-slate-100 text-slate-900"}`}>
+            <span className="font-bold">{playerName(player, allPlayers)}</span>
+            <span className="text-[10px] font-bold uppercase text-slate-400">{player?.playingRole || player?.role || "Player"}</span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -1781,7 +1936,7 @@ function WagonWheelTab({ match, players }) {
             s.distance === 'outfield' ? 60 : 30;
           return {
             runs: s.runs,
-            angle: s.direction,
+            angle: number(s.direction) > 180 ? number(s.direction) - 360 : number(s.direction),
             distance: distVal,
             position: s.position
           };
@@ -1800,14 +1955,28 @@ function PartnershipsTab({ match, innings, players }) {
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const results = await Promise.all(
-          allInnings.map((_, idx) =>
-            api.get(`/matches/${match._id}/partnerships/${idx + 1}`).then(r => r.data)
-          )
-        );
-        setPartnershipData(results);
+        const res = await api.get(`/matches/${match._id}/partnerships`);
+        if (Array.isArray(res.data?.innings)) {
+          setPartnershipData(res.data.innings.map((inn) => inn.partnerships || []));
+        } else {
+          const results = await Promise.all(
+            allInnings.map((_, idx) =>
+              api.get(`/matches/${match._id}/partnerships/${idx + 1}`).then(r => r.data)
+            )
+          );
+          setPartnershipData(results);
+        }
       } catch (err) {
-        console.error("Failed to load partnerships:", err);
+        try {
+          const results = await Promise.all(
+            allInnings.map((_, idx) =>
+              api.get(`/matches/${match._id}/partnerships/${idx + 1}`).then(r => r.data)
+            )
+          );
+          setPartnershipData(results);
+        } catch (fallbackErr) {
+          console.error("Failed to load partnerships:", fallbackErr);
+        }
       } finally {
         setLoading(false);
       }
@@ -1837,8 +2006,8 @@ function PartnershipsTab({ match, innings, players }) {
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
-                  {p.wicketNumber}{ordinal(p.wicketNumber)} Wicket Partnership
-                  {isActive && <span className="ml-2 text-green-600 text-[9px]">(Current)</span>}
+                  {p.wicketNumber || p.wicket}{ordinal(number(p.wicketNumber || p.wicket || i + 1))} Wicket Partnership
+                  {(isActive || p.isCurrent) && <span className="ml-2 text-green-600 text-[9px]">(Current)</span>}
                 </span>
                 {p.runs > 0 && (
                   <span className="text-xs font-bold text-slate-400">
@@ -1869,8 +2038,8 @@ function PartnershipsTab({ match, innings, players }) {
                   </div>
                 </div>
                 <div className="text-right text-sm">
-                  <div className="font-medium">{playerName(p.batsman1Id || p.batsman1, players)}</div>
-                  <div className="font-medium">{playerName(p.batsman2Id || p.batsman2, players)}</div>
+                  <div className="font-medium">{p.batsmen?.[0] || playerName(p.batsman1Id || p.batsman1, players)}</div>
+                  <div className="font-medium">{p.batsmen?.[1] || playerName(p.batsman2Id || p.batsman2, players)}</div>
                   {p.fours > 0 || p.sixes > 0 ? (
                     <div className="text-xs text-slate-400 mt-1">
                       {p.fours > 0 && <span className="text-blue-500">{p.fours} 4s </span>}

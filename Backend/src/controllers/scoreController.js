@@ -72,6 +72,9 @@ const populateFullMatch = async (match) => {
     { path: "innings.currentBatsman2", select: "name role playingRole bowlingStyle" },
     { path: "innings.onStrikeBatsman", select: "name role playingRole bowlingStyle" },
     { path: "innings.currentBowler", select: "name role playingRole bowlingStyle" },
+    { path: "innings.fallOfWickets.player", select: "name role playingRole bowlingStyle" },
+    { path: "innings.partnerships.batsman1", select: "name role playingRole bowlingStyle" },
+    { path: "innings.partnerships.batsman2", select: "name role playingRole bowlingStyle" },
     { path: "innings.oversHistory.balls.batsmanOnStrike", select: "name" },
     { path: "innings.oversHistory.balls.batsmanNonStrike", select: "name" },
     { path: "innings.oversHistory.balls.bowler", select: "name" },
@@ -79,6 +82,9 @@ const populateFullMatch = async (match) => {
     { path: "playingXI.players", select: "name role playingRole bowlingStyle" },
     { path: "playingXI.team", select: "name shortName logo" },
     { path: "squad15.players", select: "name role playingRole bowlingStyle" },
+    { path: "squad15.team", select: "name shortName logo" },
+    { path: "twelfthMan.team", select: "name shortName logo" },
+    { path: "twelfthMan.player", select: "name role playingRole bowlingStyle" },
     { path: "result.winner", select: "name shortName logo" },
     { path: "tossWinner", select: "name shortName" }
   ]);
@@ -214,6 +220,7 @@ export const updateScore = async (req, res) => {
     // Get player names for commentary
     const batsmanOnStrike = await Player.findById(batsmanOnStrikeId);
     const bowlerPlayer = await Player.findById(bowlerId);
+    const fielderPlayer = fielderId ? await Player.findById(fielderId) : null;
 
     // Compute bowlerStats and batsmanNonStrikeStats for downstream use
     const bowlerStats = innings.bowling.find(
@@ -344,9 +351,30 @@ export const updateScore = async (req, res) => {
     ball.vividCommentary = vividCommentary;
     ball.batsmanName = batsmanOnStrike?.name || "Batsman";
     ball.bowlerName = bowlerPlayer?.name || "Bowler";
+    ball.fielderName = fielderPlayer?.name || "";
+    ball.extraType = isWide ? "wide" : isNoBall ? "no_ball" : isBye ? "bye" : isLegBye ? "leg_bye" : "";
+    ball.extraRuns = extraRuns || 0;
+
+    const persistedOver = innings.oversHistory?.find(o => o.overNumber === currentOverNumber);
+    const persistedBall = persistedOver?.balls?.[persistedOver.balls.length - 1];
+    if (persistedBall) {
+      persistedBall.commentary = commentary;
+      persistedBall.vividCommentary = vividCommentary;
+      persistedBall.batsmanName = ball.batsmanName;
+      persistedBall.bowlerName = ball.bowlerName;
+      persistedBall.fielderName = ball.fielderName;
+      persistedBall.runText = ball.runText || getBallRunText(ball);
+      persistedBall.extraType = ball.extraType;
+      persistedBall.extraRuns = ball.extraRuns;
+    }
 
     // Set current bowler on innings
     innings.currentBowler = bowlerId;
+    innings.status = "live";
+    match.currentInnings = inningsIndex;
+    if (!["completed", "pending_tie_resolution", "super_over"].includes(match.status)) {
+      match.status = "live";
+    }
 
     // Strike rotation for next ball (engine handles odd-runs swap in ball record)
     const dismissedId = ball.dismissedPlayer || (isWicket ? batsmanOnStrikeId : null);
@@ -499,6 +527,9 @@ export const updateScore = async (req, res) => {
         batsmanId: batsmanOnStrikeId,
         bowlerId: bowlerId,
         nonStrikerId: batsmanNonStrikeId,
+        batsmanName: batsmanOnStrike?.name || "Batsman",
+        bowlerName: bowlerPlayer?.name || "Bowler",
+        fielderName: fielderPlayer?.name || "",
         runsOffBat: batsmanRuns,
         extras: extraRuns,
         extraType: isWide ? 'wide' : isNoBall ? 'no_ball' : isBye ? 'bye' : isLegBye ? 'leg_bye' : null,
@@ -637,9 +668,9 @@ export const endInnings = async (req, res) => {
     if (match.innings[inningsIndex + 1]) {
       match.innings[inningsIndex + 1].status = "upcoming";
       match.innings[inningsIndex + 1].target = currentInnings.runs + 1;
-      match.status = "innings-break";
+      match.status = "innings_break";
       match.currentInnings = inningsIndex + 1;
-    } else if (match.result.resultType === "super_over") {
+    } else if (match.result?.resultType === "super_over") {
       // Handle Super Over phased endings
       const isFirstInnOfSO = inningsIndex % 2 === 0;
       const superOverNumber = Math.floor((inningsIndex - 2) / 2) + 1;
@@ -826,7 +857,7 @@ export const startNextInnings = async (req, res) => {
       return res.status(404).json({ message: "Match not found" });
     }
 
-    if (match.status !== "innings-break") {
+    if (!["innings-break", "innings_break"].includes(match.status)) {
       return res.status(400).json({ message: "Match is not in innings break" });
     }
 
