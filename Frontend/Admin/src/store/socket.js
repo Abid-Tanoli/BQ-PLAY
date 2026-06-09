@@ -1,20 +1,28 @@
 import { io } from "socket.io-client";
 
-let socket = null;
+const SOCKET_KEY = "__BQ_PLAY_ADMIN_SOCKET__";
+let socket = globalThis[SOCKET_KEY] || null;
+
+const setSocket = (nextSocket) => {
+  socket = nextSocket;
+  globalThis[SOCKET_KEY] = nextSocket;
+};
 
 export const initSocket = () => {
-  if (!socket || !socket.connected) {
+  if (!socket) {
     const url = import.meta.env.VITE_SOCKET_URL || "http://localhost:5000";
     socket = io(url, {
-      transports: ["websocket", "polling"],
+      transports: ["polling", "websocket"],
+      upgrade: true,
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
-      reconnectionAttempts: 5,
-      timeout: 20000,
+      reconnectionAttempts: Infinity,
+      timeout: 10000,
       autoConnect: true,
       withCredentials: true,
     });
+    setSocket(socket);
 
     socket.on("connect", () => {
       console.log("✅ Socket connected:", socket.id);
@@ -23,7 +31,9 @@ export const initSocket = () => {
       console.log("❌ Socket disconnected:", reason);
     });
     socket.on("connect_error", (error) => {
-      console.error("❌ Socket connection error:", error.message);
+      if (!socket?.connected) {
+        console.error("❌ Socket connection error:", error.message);
+      }
     });
     socket.on("reconnect", (attemptNumber) => {
       console.log("🔄 Socket reconnected after", attemptNumber, "attempts");
@@ -49,7 +59,7 @@ export const disconnectSocket = () => {
   if (socket) {
     console.log("🔌 Disconnecting socket...");
     socket.disconnect();
-    socket = null;
+    setSocket(null);
   }
 };
 
@@ -66,5 +76,14 @@ export const emitSocket = (event, data) => {
     return false;
   }
 };
+
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    if (socket) {
+      socket.disconnect();
+      setSocket(null);
+    }
+  });
+}
 
 export default { initSocket, getSocket, disconnectSocket, isSocketConnected, emitSocket };

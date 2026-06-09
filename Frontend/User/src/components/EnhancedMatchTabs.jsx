@@ -59,6 +59,19 @@ const number = (value, fallback = 0) => {
 
 const formatOvers = (balls = 0) => `${Math.floor(number(balls) / 6)}.${number(balls) % 6}`;
 
+const isIllegalDelivery = (ball) => !!(ball?.isWide || ball?.isNoBall);
+
+const withDisplayBallNumbers = (balls = []) => {
+  let legalBalls = 0;
+  return balls.map((ball) => {
+    const displayBall = ball?.displayBallNumber || ball?.legalBallNumber || legalBalls + 1;
+    if (!isIllegalDelivery(ball)) {
+      legalBalls += 1;
+    }
+    return { ...ball, displayBall };
+  });
+};
+
 const formatBowlerOvers = (bowler) => {
   if (!bowler) return "0.0";
   if (number(bowler.balls) > 0) return formatOvers(bowler.balls);
@@ -312,10 +325,7 @@ const flattenCommentary = (innings) =>
   (innings?.oversHistory || [])
     .map((over) => ({
       ...over,
-      balls: [...(over.balls || [])].map((ball, index) => ({
-        ...ball,
-        displayBall: ball.ballNumber || index + 1,
-      })),
+      balls: withDisplayBallNumbers(over.balls || []),
     }))
     .reverse();
 
@@ -1541,15 +1551,19 @@ function CommentaryBall({ over, ball, players, compact = false }) {
 
   if (compact) {
     return (
-      <div className="flex items-center gap-2 px-4 py-1.5 hover:bg-slate-50 text-xs">
-        <span className="text-[10px] font-bold text-slate-400 w-8 shrink-0">{overText}</span>
+      <div className="grid grid-cols-[2rem_1.25rem_minmax(0,1fr)] gap-2 px-4 py-1.5 hover:bg-slate-50 text-xs">
+        <span className="text-[10px] font-bold text-slate-400 shrink-0 pt-0.5">{overText}</span>
         <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-black shrink-0 ${ballClass(ball)}`}>
           {ballLabel(ball)}
         </span>
-        <span className="font-semibold text-slate-700 truncate">{batsman}</span>
-        <span className="text-slate-300 mx-1">-</span>
-        <span className="font-bold text-slate-500">{ballResultText(ball)}</span>
-        {text && <span className="text-slate-400 truncate ml-1">- {text}</span>}
+        <div className="min-w-0">
+          <p className="truncate">
+            <span className="font-semibold text-slate-700">{batsman}</span>
+            <span className="text-slate-300 mx-1">-</span>
+            <span className="font-bold text-slate-500">{ballResultText(ball)}</span>
+          </p>
+          {text && <p className="mt-0.5 truncate text-slate-400">{text}</p>}
+        </div>
       </div>
     );
   }

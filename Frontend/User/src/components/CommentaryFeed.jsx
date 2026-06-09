@@ -16,17 +16,24 @@ const CommentaryFeed = ({ match, live = true }) => {
   }
 
   const currentInnings = match.innings[match.currentInnings] || match.innings[0];
+  const isIllegalDelivery = (ball) => !!(ball?.isWide || ball?.isNoBall);
 
   // Flatten all balls from all overs
   const allBalls = [];
   currentInnings.oversHistory?.forEach(over => {
+    let legalBalls = 0;
     over.balls?.forEach((ball, ballIdx) => {
+      const displayBall = ball.displayBallNumber || ball.legalBallNumber || legalBalls + 1;
       allBalls.push({
         ...ball,
         overNumber: over.overNumber,
         ballIndex: ballIdx,
+        displayBall,
         overSummary: over.summary
       });
+      if (!isIllegalDelivery(ball)) {
+        legalBalls += 1;
+      }
     });
   });
 
@@ -159,7 +166,7 @@ const CommentaryFeed = ({ match, live = true }) => {
               {[...over.balls].reverse().map((ball, ballIdx) => {
                 const bowlerName = ball.bowlerName || ball.bowler?.name || over.balls[0]?.bowler?.name || 'Bowler';
                 const batsmanName = ball.batsmanName || ball.batsmanOnStrike?.name || 'Batsman';
-                const summaryLine = `${over.overNumber}.${ball.ballNumber || ball.ballIndex + 1} ${bowlerName} to ${batsmanName}, ${getRunText(ball)}`;
+                const summaryLine = `${over.overNumber}.${ball.displayBall || ball.ballNumber || ball.ballIndex + 1} ${bowlerName} to ${batsmanName}, ${getRunText(ball)}`;
                 const meta = getBallMeta(ball);
                 return (
                   <div

@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 const ballSchema = new mongoose.Schema({
   ballNumber: { type: Number, required: true },
+  displayBallNumber: { type: Number },
   batsmanOnStrike: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
   batsmanNonStrike: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
   bowler: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },

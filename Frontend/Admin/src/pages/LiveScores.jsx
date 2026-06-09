@@ -59,11 +59,12 @@ export default function LiveScores() {
     useEffect(() => {
         dispatch(fetchMatches());
         const socket = initSocket();
-        socket.on('match:scoreUpdate', () => dispatch(fetchMatches()));
-        socket.on('match:updated', () => dispatch(fetchMatches()));
+        const refreshMatches = () => dispatch(fetchMatches());
+        socket.on('match:scoreUpdate', refreshMatches);
+        socket.on('match:updated', refreshMatches);
         return () => {
-            socket.off('match:scoreUpdate');
-            socket.off('match:updated');
+            socket.off('match:scoreUpdate', refreshMatches);
+            socket.off('match:updated', refreshMatches);
         };
     }, [dispatch]);
 

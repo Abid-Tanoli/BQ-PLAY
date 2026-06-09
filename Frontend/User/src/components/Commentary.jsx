@@ -39,6 +39,8 @@ const getRunText = (ball) => {
   return `${ball.runs} runs`;
 };
 
+const isIllegalDelivery = (ball) => !!(ball?.isWide || ball?.isNoBall);
+
 const labelize = (value) =>
   String(value || "")
     .replace(/_/g, "-")
@@ -69,11 +71,14 @@ export default function Commentary({ matchId, className = "" }) {
     res.data.innings?.forEach(innings => {
       innings?.oversHistory?.forEach(over => {
         const overNum = over.overNumber;
+        let legalBalls = 0;
         (over.balls || []).forEach(ball => {
+          const displayBallNumber = ball.displayBallNumber || ball.legalBallNumber || legalBalls + 1;
           allBalls.push({
             overNumber: overNum,
-            ballNumber: ball.ballNumber,
-            over: `${overNum}.${ball.ballNumber}`,
+            ballNumber: displayBallNumber,
+            rawBallNumber: ball.ballNumber,
+            over: `${overNum}.${displayBallNumber}`,
             text: ball.vividCommentary || ball.commentary || "",
             runs: ball.runs,
             runText: ball.runText,
@@ -98,6 +103,9 @@ export default function Commentary({ matchId, className = "" }) {
             timestamp: ball.timestamp || ball.createdAt || new Date().toISOString(),
             _over: over,
           });
+          if (!isIllegalDelivery(ball)) {
+            legalBalls += 1;
+          }
         });
       });
     });
@@ -132,10 +140,12 @@ export default function Commentary({ matchId, className = "" }) {
     const handleBallUpdate = (data) => {
       if (data.matchId === matchId && (data.ball?.commentary || data.ball?.vividCommentary || data.ball?.runs !== undefined)) {
         const ball = data.ball || data.delivery || {};
+        const displayBallNumber = ball.displayBallNumber || ball.legalBallNumber || data.displayBallNumber || data.ballNumber || ball.ballNumber || 1;
         const newItem = {
           overNumber: data.currentOver ?? data.overNumber ?? 0,
-          ballNumber: ball.ballNumber || data.ballNumber || 1,
-          over: `${data.currentOver ?? data.overNumber ?? 0}.${ball.ballNumber || data.ballNumber || 1}`,
+          ballNumber: displayBallNumber,
+          rawBallNumber: ball.ballNumber,
+          over: `${data.currentOver ?? data.overNumber ?? 0}.${displayBallNumber}`,
           text: ball.vividCommentary || ball.commentary || "",
           runs: ball.runs,
           runText: ball.runText,
@@ -160,7 +170,11 @@ export default function Commentary({ matchId, className = "" }) {
           timestamp: ball.timestamp || new Date().toISOString(),
         };
         setCommentary(prev => {
-          const exists = prev.some(c => c.over === newItem.over && c.batsmanName === newItem.batsmanName);
+          const exists = prev.some(c =>
+            c.overNumber === newItem.overNumber &&
+            c.rawBallNumber &&
+            c.rawBallNumber === newItem.rawBallNumber
+          );
           if (exists) return prev;
           return [newItem, ...prev];
         });

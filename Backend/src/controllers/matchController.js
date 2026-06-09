@@ -71,11 +71,59 @@ const populateMatch = (query) => {
     .populate("teamRoles.wicketKeepers", "name playingRole role");
 };
 
+const populateMatchList = (query) => {
+  return query
+    .select([
+      "title",
+      "venue",
+      "matchType",
+      "matchCategory",
+      "matchSubcategory",
+      "category",
+      "subCategory",
+      "ageGroup",
+      "organization",
+      "address",
+      "tournament",
+      "totalOvers",
+      "startAt",
+      "teams",
+      "innings.team",
+      "innings.runs",
+      "innings.wickets",
+      "innings.overs",
+      "innings.balls",
+      "innings.status",
+      "innings.target",
+      "innings.runRate",
+      "innings.requiredRunRate",
+      "currentInnings",
+      "status",
+      "result",
+      "tossWinner",
+      "tossDecision",
+      "manOfMatch",
+      "series",
+      "seriesMatchNumber",
+      "slug",
+      "resultText",
+      "statusText",
+      "createdAt",
+      "updatedAt"
+    ].join(" "))
+    .populate("teams", "name shortName logo")
+    .populate("tournament", "name shortName slug")
+    .populate("innings.team", "name shortName logo")
+    .populate("result.winner", "name shortName logo")
+    .populate("tossWinner", "name shortName")
+    .populate("manOfMatch", "name playingRole role");
+};
+
 const matchRoom = (matchId) => `match-${matchId}`;
 
 export const getMatches = async (req, res) => {
   try {
-    const matches = await populateMatch(Match.find())
+    const matches = await populateMatchList(Match.find())
       .sort({ startAt: -1 });
 
     res.status(200).json(normalizeBallRunText(matches));

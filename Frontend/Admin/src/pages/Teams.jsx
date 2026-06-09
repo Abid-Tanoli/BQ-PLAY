@@ -44,8 +44,7 @@ const Teams = () => {
     dispatch(fetchTeams());
     dispatch(fetchPlayers());
     fetchOrganizations();
-    const socket = initSocket();
-    return () => { if (socket) socket.disconnect(); };
+    initSocket();
   }, [dispatch]);
 
   const fetchOrganizations = async () => {

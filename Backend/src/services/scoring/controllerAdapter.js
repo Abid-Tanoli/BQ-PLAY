@@ -23,6 +23,7 @@ function enrichBallRecord(engineBall, deliveryData, batsmanName, bowlerName) {
   return {
     ...engineBall,
     ballNumber: engineBall.ballNumber,
+    displayBallNumber: engineBall.displayBallNumber || engineBall.legalBallNumber,
     batsmanName: engineBall.batsmanName || batsmanName || deliveryData.batsmanOnStrikeName || 'Batsman',
     bowlerName: engineBall.bowlerName || bowlerName || deliveryData.bowlerName || 'Bowler',
     fielderName: engineBall.fielderName || deliveryData.fielderName || '',
@@ -42,6 +43,21 @@ function enrichBallRecord(engineBall, deliveryData, batsmanName, bowlerName) {
     pitchX: deliveryData.pitchX != null ? deliveryData.pitchX : null,
     pitchY: deliveryData.pitchY != null ? deliveryData.pitchY : null,
   };
+}
+
+function displayBallNumberFor(over, targetBall) {
+  let legalBallsBefore = 0;
+  for (const ball of over?.balls || []) {
+    const displayBallNumber = ball.displayBallNumber || ball.legalBallNumber || legalBallsBefore + 1;
+    if ((targetBall?._id && String(ball._id || '') === String(targetBall._id)) ||
+        Number(ball.ballNumber) === Number(targetBall?.ballNumber)) {
+      return displayBallNumber;
+    }
+    if (!ball.isWide && !ball.isNoBall) {
+      legalBallsBefore += 1;
+    }
+  }
+  return targetBall?.displayBallNumber || targetBall?.legalBallNumber || legalBallsBefore + 1;
 }
 
 function mapBattingStats(engineBatting) {
@@ -225,7 +241,8 @@ export function processDeliveryWithEngine(mongooseMatch, deliveryData) {
   const ballsBeforeThisDelivery = Math.max((curInnings?.balls || 0) - (isLegalDelivery ? 1 : 0), 0);
   const currentOverNumber = Math.floor(ballsBeforeThisDelivery / 6);
   const currentOver = curInnings?.oversHistory?.find(o => o.overNumber === currentOverNumber);
-  const ballNumberInOver = result.ball.ballNumber || ((currentOver?.balls || []).length || 1);
+  const ballNumberInOver = displayBallNumberFor(currentOver, result.ball);
+  enrichedBall.displayBallNumber = ballNumberInOver;
 
   return {
     ball: enrichedBall,

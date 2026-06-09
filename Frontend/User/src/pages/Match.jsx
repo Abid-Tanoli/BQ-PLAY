@@ -47,6 +47,29 @@ const Match = () => {
       }
     };
 
+    const applyScoreUpdate = (payload = {}) => {
+      if (!mounted || payload.matchId !== matchId) return;
+      setMatch(prev => {
+        if (!prev?.innings?.[payload.inningsIndex ?? prev.currentInnings ?? 0]) return prev;
+        const inningsIndex = payload.inningsIndex ?? prev.currentInnings ?? 0;
+        const innings = prev.innings.map((inn, index) => (
+          index === inningsIndex
+            ? {
+                ...inn,
+                runs: payload.runs ?? inn.runs,
+                wickets: payload.wickets ?? inn.wickets,
+                overs: payload.overs ?? inn.overs,
+                balls: payload.balls ?? inn.balls,
+                runRate: payload.runRate ?? inn.runRate,
+                requiredRunRate: payload.requiredRunRate ?? inn.requiredRunRate,
+              }
+            : inn
+        ));
+
+        return { ...prev, innings };
+      });
+    };
+
     const refreshMatch = (payload) => {
       if (!mounted) return;
       const payloadMatchId = payload?.matchId || payload?.match?._id || payload?._id;
@@ -55,17 +78,20 @@ const Match = () => {
 
     const handleBallUpdate = (payload) => {
       if (!mounted) return;
+      const payloadMatchId = payload?.matchId || payload?.match?._id;
+      if (payloadMatchId && payloadMatchId !== matchId) return;
       if (payload?.match?._id === matchId) {
         setMatch(payload.match);
       }
-      if (payload?.delivery?.isWicket) {
-        addEvent({ type: 'wicket', message: 'WICKET!', player: payload.delivery?.commentary });
+      const delivery = payload?.delivery || payload?.ball || payload;
+      if (delivery?.isWicket) {
+        addEvent({ type: 'wicket', message: 'WICKET!', player: delivery?.commentary });
       }
-      if (payload?.delivery?.runs === 4) {
-        addEvent({ type: 'four', message: 'FOUR!', player: payload.delivery?.commentary });
+      if (delivery?.runs === 4) {
+        addEvent({ type: 'four', message: 'FOUR!', player: delivery?.commentary });
       }
-      if (payload?.delivery?.runs === 6) {
-        addEvent({ type: 'six', message: 'SIX!', player: payload.delivery?.commentary });
+      if (delivery?.runs === 6) {
+        addEvent({ type: 'six', message: 'SIX!', player: delivery?.commentary });
       }
     };
 
@@ -94,12 +120,12 @@ const Match = () => {
     socket.on("connect", joinRoom);
     socket.on("match:updated", applyIncomingMatch);
     socket.on("match:update", applyIncomingMatch);
-    socket.on("match:scoreUpdate", refreshMatch);
-    socket.on("match:ballUpdate", refreshMatch);
-    socket.on("match:ballWithCommentary", refreshMatch);
+    socket.on("match:scoreUpdate", applyScoreUpdate);
+    socket.on("match:ballUpdate", handleBallUpdate);
+    socket.on("match:ballWithCommentary", handleBallUpdate);
     socket.on("match:ballReverted", refreshMatch);
     socket.on("match:bowlerSet", refreshMatch);
-    socket.on("match:overComplete", refreshMatch);
+    socket.on("match:overComplete", handleBallUpdate);
     socket.on("match:aiCommentary", refreshMatch);
     socket.on("scoreUpdate", refreshMatch);
     socket.on("ballRecorded", refreshMatch);
@@ -120,12 +146,12 @@ const Match = () => {
       socket.off("connect", joinRoom);
       socket.off("match:updated", applyIncomingMatch);
       socket.off("match:update", applyIncomingMatch);
-      socket.off("match:scoreUpdate", refreshMatch);
-      socket.off("match:ballUpdate", refreshMatch);
-      socket.off("match:ballWithCommentary", refreshMatch);
+      socket.off("match:scoreUpdate", applyScoreUpdate);
+      socket.off("match:ballUpdate", handleBallUpdate);
+      socket.off("match:ballWithCommentary", handleBallUpdate);
       socket.off("match:ballReverted", refreshMatch);
       socket.off("match:bowlerSet", refreshMatch);
-      socket.off("match:overComplete", refreshMatch);
+      socket.off("match:overComplete", handleBallUpdate);
       socket.off("match:aiCommentary", refreshMatch);
       socket.off("scoreUpdate", refreshMatch);
       socket.off("ballRecorded", refreshMatch);

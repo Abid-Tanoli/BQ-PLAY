@@ -36,14 +36,20 @@ const ManageMatches = () => {
         dispatch(fetchMatches());
         dispatch(fetchTeams());
         const socket = initSocket();
+        const refreshMatches = () => dispatch(fetchMatches());
         if (socket) {
-            socket.on('match:created', () => dispatch(fetchMatches()));
-            socket.on('match:updated', () => dispatch(fetchMatches()));
-            socket.on('match:deleted', () => dispatch(fetchMatches()));
-            socket.on('match:updateList', () => dispatch(fetchMatches()));
+            socket.on('match:created', refreshMatches);
+            socket.on('match:updated', refreshMatches);
+            socket.on('match:deleted', refreshMatches);
+            socket.on('match:updateList', refreshMatches);
         }
         return () => {
-            if (socket) socket.disconnect();
+            if (socket) {
+                socket.off('match:created', refreshMatches);
+                socket.off('match:updated', refreshMatches);
+                socket.off('match:deleted', refreshMatches);
+                socket.off('match:updateList', refreshMatches);
+            }
         };
     }, [dispatch]);
 

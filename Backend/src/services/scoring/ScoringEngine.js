@@ -66,9 +66,11 @@ class ScoringEngine {
     const isValidDismissal = this._isValidDismissal(delivery, ballType, isFreeHit);
 
     const over = this._getCurrentOver(innings, delivery.bowler);
+    const legalBallsBeforeDelivery = over.balls.filter(b => !b.isWide && !b.isNoBall).length;
     const ballNum = over.balls.length + 1;
+    const displayBallNum = legalBallsBeforeDelivery + 1;
 
-    const ballRecord = this._buildBallRecord(delivery, ballType, isValidDismissal, isFreeHit, ballNum);
+    const ballRecord = this._buildBallRecord(delivery, ballType, isValidDismissal, isFreeHit, ballNum, displayBallNum);
 
     this._applyRuns(innings, ballRecord, ballType, delivery);
     this._applyExtras(innings, ballRecord, ballType);
@@ -189,9 +191,10 @@ class ScoringEngine {
   // BALL RECORD
   // ══════════════════════════════════════════════════════════════════════════════
 
-  _buildBallRecord(d, ballType, isValidDismissal, isFreeHit, ballNum) {
+  _buildBallRecord(d, ballType, isValidDismissal, isFreeHit, ballNum, displayBallNum) {
     return {
       ballNumber: ballNum,
+      displayBallNumber: displayBallNum,
       batsmanOnStrike: d.batsmanOnStrike,
       batsmanNonStrike: d.batsmanNonStrike,
       bowler: d.bowler,
