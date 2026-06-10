@@ -26,6 +26,19 @@ const userSchema = new mongoose.Schema({
     default: "viewer",
     select: true,
   },
+  accountType: {
+    type: String,
+    enum: ["player", "handler", "organization_admin", "viewer"],
+    default: "viewer",
+  },
+  organizationCategory: {
+    type: String,
+    enum: ["School", "College", "University", "Organization", "Business", "Industry", "Club", "Academy", "League", "Other", ""],
+    default: "",
+  },
+  organizationName: { type: String, trim: true, default: "" },
+  phone: { type: String, trim: true, default: "" },
+  joinIntent: { type: String, trim: true, default: "" },
 }, { timestamps: true });
 
 userSchema.pre("save", async function () {

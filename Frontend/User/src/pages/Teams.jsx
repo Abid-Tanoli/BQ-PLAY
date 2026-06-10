@@ -13,7 +13,6 @@ const ICONS = {
 
 export default function Teams() {
   const [authUser, setAuthUser] = useState(null);
-  const [categories, setCategories] = useState([]);
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("all");
@@ -21,21 +20,35 @@ export default function Teams() {
 
   useEffect(() => {
     setAuthUser(getStoredUser());
-    fetchData();
   }, []);
 
-  const fetchData = async () => {
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      fetchTeams();
+    }, 300);
+
+    return () => window.clearTimeout(timer);
+  }, [activeCategory, searchTerm]);
+
+  const fetchTeams = async () => {
     try {
-      const [catRes, teamsRes] = await Promise.all([
-        api.get("/team-categories"),
-        api.get("/teams"),
-      ]);
-      setCategories(Array.isArray(catRes.data) ? catRes.data : []);
-      setTeams(Array.isArray(teamsRes.data) ? teamsRes.data : []);
+      setLoading(true);
+      const params = {
+        limit: 120,
+        includePlayers: false,
+      };
+      if (activeCategory !== "all") params.category = activeCategory;
+      if (searchTerm.trim()) params.search = searchTerm.trim();
+
+      const teamsRes = await api.get("/teams", { params, timeout: 8000 });
+      const payload = Array.isArray(teamsRes.data) ? teamsRes.data : (teamsRes.data?.teams || []);
+      setTeams(payload);
     } catch (e) {
       console.error(e);
+      setTeams([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleLogout = () => { doLogout(); setAuthUser(null); };

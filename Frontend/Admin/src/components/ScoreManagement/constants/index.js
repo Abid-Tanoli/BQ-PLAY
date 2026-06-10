@@ -11,6 +11,15 @@ export const TAB_ROUTE_BY_ID = {
   blogs: 'blogs'
 };
 
+export const SHOT_TYPES = [
+  "Straight Drive", "Cover Drive", "Off Drive", "On Drive", "Square Drive", "Front Foot Defence",
+  "Square Cut", "Late Cut", "Back Foot Punch", "Pull", "Hook", "Back Foot Defence",
+  "Flick Shot", "Leg Glance", "Sweep Shot", "Paddle Sweep", "Slog Sweep",
+  "Reverse Sweep", "Switch Hit", "Scoop Shot", "Ramp Shot", "Upper Cut", "Helicopter Shot", "Dil Scoop",
+  "Lofted Drive", "Inside Out Shot", "Slog", "Chip Shot",
+  "Defended", "Left / Padded Away", "Missed / Beaten", "Edged", "No Shot Offered"
+];
+
 export const TAB_ID_BY_ROUTE = Object.entries(TAB_ROUTE_BY_ID).reduce((acc, [id, route]) => {
   if (route) acc[route] = id;
   return acc;

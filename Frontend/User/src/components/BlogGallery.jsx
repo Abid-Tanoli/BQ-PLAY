@@ -12,12 +12,12 @@ export default function BlogGallery({ category, relatedId }) {
         let url = `/blogs?category=${category}`;
         if (relatedId) url += `&relatedId=${relatedId}`;
         
-        const res = await api.get(url);
+        const res = await api.get(url, { params: { limit: 8 }, timeout: 6000 });
         // Ensure we handle arrays correctly depending on API response
         const data = Array.isArray(res.data) ? res.data : (res.data.blogs || []);
         setBlogs(data);
       } catch (err) {
-        console.error("Failed to fetch blogs:", err);
+        setBlogs([]);
       } finally {
         setLoading(false);
       }

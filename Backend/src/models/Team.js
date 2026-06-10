@@ -131,7 +131,12 @@ teamSchema.index({ category: 1 });
 teamSchema.index({ categoryRef: 1 });
 teamSchema.index({ organizationRef: 1 });
 teamSchema.index({ incubationGroup: 1 });
+teamSchema.index({ shortName: 1 });
+teamSchema.index({ organization: 1 });
+teamSchema.index({ "address.town": 1 });
+teamSchema.index({ "address.district": 1 });
 teamSchema.index({ "address.city": 1 });
+teamSchema.index({ "address.country": 1 });
 teamSchema.index({ isActive: 1 });
 
 export default mongoose.model("Team", teamSchema);

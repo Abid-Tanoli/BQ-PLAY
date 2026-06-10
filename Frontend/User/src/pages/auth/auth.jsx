@@ -14,8 +14,8 @@ function clearAuth() {
   setAuthToken(null);
 }
 
-export async function register(name, email, password) {
-  const res = await api.post('/auth/register', { name, email, password });
+export async function register(name, email, password, profile = {}) {
+  const res = await api.post('/auth/register', { name, email, password, ...profile });
   const { token, user } = res.data;
   persistAuth(token, user);
   return user;

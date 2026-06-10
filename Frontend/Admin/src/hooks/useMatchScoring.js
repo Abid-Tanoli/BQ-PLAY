@@ -44,7 +44,10 @@ export default function useMatchScoring() {
     const [drsData, setDrsData] = useState({ result: 'upheld', type: 'lbw' });
 
     const [showSelectionModal, setShowSelectionModal] = useState('');
-    const [useAICommentary, setUseAICommentary] = useState(true);
+    const [useAICommentary, setUseAICommentary] = useState(() => {
+        if (typeof window === 'undefined') return true;
+        return window.localStorage.getItem('bq_use_ai_commentary') !== 'false';
+    });
     const [activeGroundZone, setActiveGroundZone] = useState(null);
 
     const [pitchMapLine, setPitchMapLine] = useState('');
@@ -180,6 +183,12 @@ export default function useMatchScoring() {
     }, []);
 
     useEffect(() => {
+        if (typeof window !== 'undefined') {
+            window.localStorage.setItem('bq_use_ai_commentary', useAICommentary ? 'true' : 'false');
+        }
+    }, [useAICommentary]);
+
+    useEffect(() => {
         if (matchId && (!selectedMatch || selectedMatch._id !== matchId)) {
             handleSelectMatch(matchId);
         }
@@ -288,8 +297,6 @@ export default function useMatchScoring() {
         const b2Id = curInn.currentBatsman2?._id || curInn.currentBatsman2;
         const batsmanNonStrike = (String(b1Id) === String(batsmanOnStrike) ? b2Id : b1Id);
 
-        let aiLine1 = manualCommentary || "Played securely.";
-
         const ballData = {
             inningsIndex: selectedMatch.currentInnings,
             runs: selectedRuns,
@@ -314,8 +321,8 @@ export default function useMatchScoring() {
             pitchShotType: pitchMapShot || '',
             pitchX: pitchMapClickPos ? Math.round(((pitchMapClickPos.x - 60) / 140) * 100) : null,
             pitchY: pitchMapClickPos ? Math.round(((pitchMapClickPos.y - 40) / 440) * 100) : null,
-            commentaryText: manualCommentary,
-            customCommentary: !useAICommentary && !!manualCommentary,
+            commentaryText: useAICommentary ? manualCommentary : (manualCommentary || "Ball recorded."),
+            customCommentary: !useAICommentary,
             nextBatsmanId: setupState.wicketNewBatter || undefined
         };
 
@@ -685,6 +692,7 @@ export default function useMatchScoring() {
     return {
         matches,
         selectedMatch,
+        setSelectedMatch,
         loading,
         showSettings,
         setShowSettings,

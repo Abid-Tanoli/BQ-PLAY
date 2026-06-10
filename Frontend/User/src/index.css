@@ -2,9 +2,6 @@
 
 @import "tailwindcss";
 
-/* Dark mode configuration */
-@custom-variant dark (&:where(.dark, .dark *));
-
 @theme {
   --color-cric-bg: var(--cric-bg);
   --color-cric-card: var(--cric-card);
@@ -15,18 +12,17 @@
 }
 
 :root {
+  /* Light Mode (Default) */
   --cric-bg: #f8fafc;
   --cric-card: #ffffff;
   --cric-accent: #ff6b35;
-  --cric-blue: #009cff;
-  --cric-gold: #ffb400;
-  --cric-red: #ff3b3b;
   --cric-text: #0f172a;
   --cric-muted: #64748b;
   --cric-border: #e2e8f0;
 }
 
 .dark {
+  /* Dark Mode */
   --cric-bg: #0a0e14;
   --cric-card: #141b24;
   --cric-accent: #ff6b35;

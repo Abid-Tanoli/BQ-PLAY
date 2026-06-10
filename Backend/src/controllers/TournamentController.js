@@ -4,17 +4,33 @@ import Team from "../models/Team.js";
 import { getIO } from "../socket/socket.js";
 import mongoose from "mongoose";
 
+const isTransientDbError = (error) => (
+  error?.name === "MongooseError" ||
+  error?.name === "MongoServerSelectionError" ||
+  error?.name === "MongoNetworkTimeoutError" ||
+  /timed out|buffering|not connected/i.test(error?.message || "")
+);
+
 export const getTournaments = async (req, res) => {
   try {
+    const limit = Math.min(Math.max(Number(req.query.limit) || 100, 1), 500);
+    const page = Math.max(Number(req.query.page) || 1, 1);
     const tournaments = await Tournament.find()
       .populate("teams", "name shortName logo")
       .populate("winner", "name shortName logo")
       .populate("runnerUp", "name shortName logo")
-      .sort({ startDate: -1 });
+      .sort({ startDate: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .maxTimeMS(5000)
+      .lean();
 
     res.status(200).json(tournaments);
   } catch (error) {
     console.error("Error fetching tournaments:", error);
+    if (isTransientDbError(error)) {
+      return res.status(200).json([]);
+    }
     res.status(500).json({
       message: "Failed to fetch tournaments",
       error: error.message

@@ -3,9 +3,18 @@ import Match from "../models/Match.js";
 import Team from "../models/Team.js";
 import { getIO } from "../socket/socket.js";
 
+const isTransientDbError = (error) => (
+  error?.name === "MongooseError" ||
+  error?.name === "MongoServerSelectionError" ||
+  error?.name === "MongoNetworkTimeoutError" ||
+  /timed out|buffering|not connected/i.test(error?.message || "")
+);
+
 export const getEvents = async (req, res) => {
   try {
     const { eventType, status, category, subCategory, ageGroup, organization, city, search } = req.query;
+    const limit = Math.min(Math.max(Number(req.query.limit) || 100, 1), 500);
+    const page = Math.max(Number(req.query.page) || 1, 1);
     const query = {};
     
     if (eventType) query.eventType = eventType;
@@ -28,13 +37,19 @@ export const getEvents = async (req, res) => {
 
     const events = await Event.find(query)
       .populate("teams", "name shortName logo")
-      .populate("matches")
       .populate("winner", "name shortName logo")
       .populate("runnerUp", "name shortName logo")
-      .sort({ startDate: -1 });
+      .sort({ startDate: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .maxTimeMS(5000)
+      .lean();
 
     res.status(200).json(events);
   } catch (error) {
+    if (isTransientDbError(error)) {
+      return res.status(200).json([]);
+    }
     res.status(500).json({ message: "Failed to fetch events", error: error.message });
   }
 };

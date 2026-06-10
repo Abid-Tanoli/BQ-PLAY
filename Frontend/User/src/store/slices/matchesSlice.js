@@ -4,9 +4,9 @@ import { api } from "../../services/api";
 // Async thunk to fetch matches
 export const fetchMatches = createAsyncThunk(
   "matches/fetchMatches",
-  async (_, { rejectWithValue }) => {
+  async (params = {}, { rejectWithValue }) => {
     try {
-      const res = await api.get("/matches");
+      const res = await api.get("/matches", { params: { limit: 250, ...params } });
       const data = res.data?.matches || res.data;
       return Array.isArray(data) ? data : [];
     } catch (err) {

@@ -2,39 +2,59 @@ import Player from "../models/Player.js";
 import Team from "../models/Team.js";
 import { getIO } from "../socket/socket.js";
 
+const isTransientDbError = (error) => (
+  error?.name === "MongooseError" ||
+  error?.name === "MongoServerSelectionError" ||
+  error?.name === "MongoNetworkTimeoutError" ||
+  /timed out|buffering|not connected/i.test(error?.message || "")
+);
+
 export const getPlayers = async (req, res) => {
-  const { page = 1, limit = 10, search = "", team = "", campus = "", category, subCategory, ageGroup, organization, city } = req.query;
-  const query = {};
+  try {
+    const { page = 1, limit = 10, search = "", team = "", campus = "", category, subCategory, ageGroup, organization, city } = req.query;
+    const safeLimit = Math.min(Math.max(Number(limit) || 10, 1), 100);
+    const safePage = Math.max(Number(page) || 1, 1);
+    const query = {};
 
-  if (search) {
-    query.$or = [
-      { name: { $regex: search, $options: "i" } },
-      { role: { $regex: search, $options: "i" } },
-      { organization: { $regex: search, $options: "i" } }
-    ];
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { role: { $regex: search, $options: "i" } },
+        { organization: { $regex: search, $options: "i" } }
+      ];
+    }
+    if (team) query.team = team;
+    if (campus) query.campus = { $regex: campus, $options: "i" };
+    if (category) query.category = category;
+    if (subCategory) query.subCategory = { $regex: subCategory, $options: "i" };
+    if (ageGroup) query.ageGroup = ageGroup;
+    if (organization) query.organization = { $regex: organization, $options: "i" };
+    if (city) query["address.city"] = { $regex: city, $options: "i" };
+
+    const skip = (safePage - 1) * safeLimit;
+    const [totalPlayers, players] = await Promise.all([
+      Player.countDocuments(query).maxTimeMS(5000),
+      Player.find(query)
+        .populate("team", "name")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(safeLimit)
+        .maxTimeMS(5000)
+        .lean()
+    ]);
+
+    res.json({
+      players,
+      totalPlayers,
+      totalPages: Math.ceil(totalPlayers / safeLimit),
+      currentPage: safePage,
+    });
+  } catch (error) {
+    if (isTransientDbError(error)) {
+      return res.json({ players: [], totalPlayers: 0, totalPages: 0, currentPage: Number(req.query.page || 1) });
+    }
+    res.status(500).json({ message: "Failed to fetch players", error: error.message });
   }
-  if (team) query.team = team;
-  if (campus) query.campus = { $regex: campus, $options: "i" };
-  if (category) query.category = category;
-  if (subCategory) query.subCategory = { $regex: subCategory, $options: "i" };
-  if (ageGroup) query.ageGroup = ageGroup;
-  if (organization) query.organization = { $regex: organization, $options: "i" };
-  if (city) query["address.city"] = { $regex: city, $options: "i" };
-
-  const skip = (page - 1) * limit;
-  const totalPlayers = await Player.countDocuments(query);
-  const players = await Player.find(query)
-    .populate("team", "name")
-    .sort({ createdAt: -1 })
-    .skip(skip)
-    .limit(Number(limit));
-
-  res.json({
-    players,
-    totalPlayers,
-    totalPages: Math.ceil(totalPlayers / limit),
-    currentPage: Number(page),
-  });
 };
 
 export const getPlayer = async (req, res) => {

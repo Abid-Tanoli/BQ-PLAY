@@ -18,6 +18,7 @@ export default function ManageScore() {
     const {
         matches,
         selectedMatch,
+        setSelectedMatch,
         loading,
         showSettings,
         setShowSettings,
@@ -118,12 +119,60 @@ export default function ManageScore() {
         reloadMatch
     } = useMatchScoring();
 
-    if (loading && !selectedMatch) return <div className="p-10 text-center text-xl font-bold bg-[#f1f5f9] min-h-screen">Loading matches...</div>;
+    if (loading && !selectedMatch && matches.length === 0) {
+        return (
+            <div className="p-10 text-center text-xl font-bold bg-cric-bg min-h-screen text-cric-text">
+                Loading matches...
+            </div>
+        );
+    }
 
     if (!selectedMatch) {
+        const isMatchIdInUrl = window.location.pathname.split('/').pop();
+        const isValidMatchId = isMatchIdInUrl && isMatchIdInUrl !== 'score';
+        
+        if (isValidMatchId && matches.length > 0) {
+            return (
+                <div className="p-8 max-w-[1200px] mx-auto min-h-screen bg-cric-bg transition-colors duration-300 text-center">
+                    <div className="bg-cric-card rounded-[2.5rem] p-12 border border-cric-border shadow-xl max-w-md mx-auto">
+                        <div className="w-16 h-16 mx-auto mb-6 bg-amber-500/10 rounded-full flex items-center justify-center">
+                            <svg className="w-8 h-8 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                        </div>
+                        <h2 className="text-2xl font-black font-raj text-cric-text mb-3">Match Not Found</h2>
+                        <p className="text-cric-muted mb-6">The match you're looking for doesn't exist or has been removed.</p>
+                        <button 
+                            onClick={() => navigate('/admin/score')}
+                            className="px-6 py-3 bg-cric-accent text-white font-black rounded-xl hover:scale-105 transition-all"
+                        >
+                            Back to Match List
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+        
         return (
             <div className="p-8 max-w-[1200px] mx-auto min-h-screen bg-cric-bg transition-colors duration-300">
                 <h1 className="text-3xl font-black text-cric-text mb-8 uppercase tracking-tight">Select Match to Score</h1>
+                {matches.length === 0 && !loading && (
+                    <div className="bg-cric-card rounded-[2.5rem] p-12 border border-cric-border shadow-xl text-center">
+                        <div className="w-16 h-16 mx-auto mb-6 bg-cric-accent/10 rounded-full flex items-center justify-center">
+                            <svg className="w-8 h-8 text-cric-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <h2 className="text-xl font-black font-raj text-cric-text mb-2">No Matches Available</h2>
+                        <p className="text-cric-muted mb-6">Create a match from the Events panel to start scoring.</p>
+                        <button 
+                            onClick={() => navigate('/admin/events')}
+                            className="px-6 py-3 bg-cric-accent text-white font-black rounded-xl hover:scale-105 transition-all"
+                        >
+                            Go to Events
+                        </button>
+                    </div>
+                )}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {matches.map(m => (
                         <div key={m._id} onClick={() => navigate(`/admin/score/${m._id}`)} className="bg-cric-card p-8 rounded-3xl shadow-sm border border-cric-border hover:border-cric-accent cursor-pointer transition-all relative group overflow-hidden">
@@ -473,6 +522,8 @@ export default function ManageScore() {
                 setBallMovement={setBallMovement}
                 ballOutcome={ballOutcome}
                 setBallOutcome={setBallOutcome}
+                useAICommentary={useAICommentary}
+                setUseAICommentary={setUseAICommentary}
             />
 
             {/* MODALS */}

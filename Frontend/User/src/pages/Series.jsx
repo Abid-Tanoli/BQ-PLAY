@@ -31,7 +31,7 @@ export default function Series() {
 
       for (const ep of endpoints) {
         try {
-          const res = await api.get(ep.url);
+          const res = await api.get(ep.url, { timeout: 8000 });
           seriesData = res.data;
           matchesData = seriesData.matches || [];
           if (ep.squadsField) {
@@ -45,7 +45,7 @@ export default function Series() {
 
       if (!seriesData) {
         try {
-          const matchRes = await api.get(`/matches/${seriesId}`);
+          const matchRes = await api.get(`/matches/${seriesId}`, { timeout: 8000 });
           seriesData = {
             _id: matchRes.data._id,
             name: matchRes.data.title || "Match",
@@ -64,40 +64,40 @@ export default function Series() {
         }
       }
 
-      // Resolve match IDs or populate matches if they come as references
-      const matchIds = matchesData.map(m => m._id || m).filter(Boolean);
-      const allMatches = await Promise.all(
-        matchIds.map(id => api.get(`/matches/${id}`).catch(() => null))
-      );
-      let validMatches = allMatches.filter(r => r?.data).map(r => r.data);
-
+      let validMatches = matchesData.filter(match => typeof match === "object" && match?._id);
       try {
-        const groupedRes = await api.get(`/series/${seriesId}/matches`);
+        const groupedRes = await api.get(`/series/${seriesId}/matches`, { timeout: 8000 });
         validMatches = [
           ...(groupedRes.data.live || []),
           ...(groupedRes.data.completed || []),
           ...(groupedRes.data.upcoming || [])
         ];
       } catch (groupErr) {
-        console.log("Grouped series matches unavailable, using embedded matches:", groupErr.message);
+        const matchIds = matchesData.map(m => m._id || m).filter(Boolean).slice(0, 100);
+        if (matchIds.length && validMatches.length !== matchIds.length) {
+          const allMatches = await Promise.all(
+            matchIds.map(id => api.get(`/matches/${id}`, { timeout: 5000 }).catch(() => null))
+          );
+          validMatches = allMatches.filter(r => r?.data).map(r => r.data);
+        }
       }
 
       setSeries(seriesData);
       setMatches(validMatches);
       try {
-        const squadRes = await api.get(`/series/${seriesId}/squads`);
+        const squadRes = await api.get(`/series/${seriesId}/squads`, { timeout: 8000 });
         setSquads(squadRes.data.teams || []);
       } catch (squadErr) {
         setSquads(squadData);
       }
 
       try {
-        const statsRes = await api.get(`/series/${seriesId}/stats`);
+        const statsRes = await api.get(`/series/${seriesId}/stats`, { timeout: 8000 });
         setStats(statsRes.data);
       } catch (statsErr) {
-        const completedMatches = validMatches.filter(m => m?.status === "completed");
+        const completedMatches = validMatches.filter(m => m?.status === "completed").slice(0, 100);
         const matchDetails = await Promise.all(
-          completedMatches.map(m => api.get(`/matches/${m._id}`).catch(() => ({ data: m })))
+          completedMatches.map(m => api.get(`/matches/${m._id}`, { timeout: 5000 }).catch(() => ({ data: m })))
         );
         const playerStats = calculateStats(matchDetails.map(r => r.data));
         setStats(playerStats);

@@ -93,9 +93,24 @@ const playerSchema = new mongoose.Schema(
       fourWickets: { type: Number, default: 0 },
       fiveWickets: { type: Number, default: 0 },
       dotBalls: { type: Number, default: 0 },
+      catches: { type: Number, default: 0 },
+      stumpings: { type: Number, default: 0 },
+      runOuts: { type: Number, default: 0 },
     },
   },
   { timestamps: true }
 );
+
+playerSchema.index({ team: 1 });
+playerSchema.index({ category: 1 });
+playerSchema.index({ "address.town": 1 });
+playerSchema.index({ "address.district": 1 });
+playerSchema.index({ "address.city": 1 });
+playerSchema.index({ "address.country": 1 });
+playerSchema.index({ playingRole: 1 });
+playerSchema.index({ "stats.runs": -1 });
+playerSchema.index({ "stats.wickets": -1 });
+playerSchema.index({ "stats.catches": -1 });
+playerSchema.index({ "stats.stumpings": -1 });
 
 export default mongoose.model("Player", playerSchema);

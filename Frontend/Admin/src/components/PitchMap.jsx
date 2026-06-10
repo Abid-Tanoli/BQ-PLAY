@@ -27,9 +27,12 @@ const LENGTH_ZONES = [
 ];
 
 const SHOT_TYPES = [
-    "Defended", "Driven", "Cut", "Pull", "Flick / Glance",
-    "Sweep", "Reverse Sweep", "Lofted / Slog", "Left / Padded Away",
-    "Missed / Beaten", "Edged", "No Shot Offered"
+    "Straight Drive", "Cover Drive", "Off Drive", "On Drive", "Square Drive", "Front Foot Defence",
+    "Square Cut", "Late Cut", "Back Foot Punch", "Pull", "Hook", "Back Foot Defence",
+    "Flick Shot", "Leg Glance", "Sweep Shot", "Paddle Sweep", "Slog Sweep",
+    "Reverse Sweep", "Switch Hit", "Scoop Shot", "Ramp Shot", "Upper Cut", "Helicopter Shot", "Dil Scoop",
+    "Lofted Drive", "Inside Out Shot", "Slog", "Chip Shot",
+    "Defended", "Left / Padded Away", "Missed / Beaten", "Edged", "No Shot Offered"
 ];
 
 const shotToId = (shot) => shot.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");

@@ -120,15 +120,44 @@ const populateMatchList = (query) => {
 };
 
 const matchRoom = (matchId) => `match-${matchId}`;
+const isTransientDbError = (error) => (
+  error?.name === "MongooseError" ||
+  error?.name === "MongoServerSelectionError" ||
+  error?.name === "MongoNetworkTimeoutError" ||
+  /timed out|buffering|not connected/i.test(error?.message || "")
+);
 
 export const getMatches = async (req, res) => {
   try {
-    const matches = await populateMatchList(Match.find())
-      .sort({ startAt: -1 });
+    const limit = Math.min(Math.max(Number(req.query.limit) || 250, 1), 500);
+    const page = Math.max(Number(req.query.page) || 1, 1);
+    const skip = (page - 1) * limit;
+    const query = {};
+
+    if (req.query.status) {
+      const statuses = String(req.query.status)
+        .split(",")
+        .map((status) => status.trim())
+        .filter(Boolean);
+      if (statuses.length) query.status = { $in: statuses };
+    }
+
+    if (req.query.series) query.series = req.query.series;
+    if (req.query.tournament) query.tournament = req.query.tournament;
+
+    const matches = await populateMatchList(Match.find(query))
+      .sort({ startAt: -1, updatedAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .maxTimeMS(5000)
+      .lean();
 
     res.status(200).json(normalizeBallRunText(matches));
   } catch (error) {
     console.error("Error fetching matches:", error);
+    if (isTransientDbError(error)) {
+      return res.status(200).json([]);
+    }
     res.status(500).json({
       message: "Failed to fetch matches",
       error: error.message

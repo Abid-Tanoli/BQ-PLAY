@@ -3,12 +3,22 @@ import TeamCategory from "../models/TeamCategory.js";
 import * as teamService from "../services/teamService.js";
 import * as playerService from "../services/playerService.js";
 
+const isTransientDbError = (error) => (
+  error?.name === "MongooseError" ||
+  error?.name === "MongoServerSelectionError" ||
+  error?.name === "MongoNetworkTimeoutError" ||
+  /timed out|buffering|not connected/i.test(error?.message || "")
+);
+
 export const listTeams = async (req, res) => {
   try {
-    const { category, categoryRef, organizationRef, city, search, type } = req.query;
-    const teams = await teamService.listTeams({ category, categoryRef, organizationRef, city, search, type });
+    const { category, categoryRef, organizationRef, city, search, type, page, limit, includePlayers } = req.query;
+    const teams = await teamService.listTeams({ category, categoryRef, organizationRef, city, search, type, page, limit, includePlayers });
     res.status(200).json(teams);
   } catch (error) {
+    if (isTransientDbError(error)) {
+      return res.status(200).json([]);
+    }
     res.status(500).json({ message: "Failed to fetch teams", error: error.message });
   }
 };

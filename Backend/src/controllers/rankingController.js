@@ -1,10 +1,18 @@
 import * as rankingService from "../services/rankingService.js";
 
+const isTransientDbError = (error) => (
+  error?.name === "MongooseError" ||
+  error?.name === "MongoServerSelectionError" ||
+  error?.name === "MongoNetworkTimeoutError" ||
+  /timed out|buffering|not connected/i.test(error?.message || "")
+);
+
 export const getOverallRankings = async (req, res) => {
   try {
-    const rankings = await rankingService.getOverallRankings();
+    const rankings = await rankingService.getOverallRankings(req.query);
     res.status(200).json(rankings);
   } catch (error) {
+    if (isTransientDbError(error)) return res.status(200).json([]);
     res.status(500).json({ message: "Failed to fetch rankings", error: error.message });
   }
 };

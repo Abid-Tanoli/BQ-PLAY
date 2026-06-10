@@ -3,7 +3,16 @@ import { generateToken } from "../utils/jwt.js";
 
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const {
+      name,
+      email,
+      password,
+      accountType = "viewer",
+      organizationCategory = "",
+      organizationName = "",
+      phone = "",
+      joinIntent = ""
+    } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({ message: "All fields are required" });
@@ -14,7 +23,22 @@ export const registerUser = async (req, res) => {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    const newUser = await User.create({ name, email, password });
+    const requestedType = ["player", "handler", "organization_admin", "viewer"].includes(accountType)
+      ? accountType
+      : "viewer";
+    const role = requestedType === "handler" || requestedType === "organization_admin" ? "scorer" : "viewer";
+
+    const newUser = await User.create({
+      name,
+      email,
+      password,
+      role,
+      accountType: requestedType,
+      organizationCategory,
+      organizationName,
+      phone,
+      joinIntent
+    });
 
     const token = generateToken(newUser);
 
@@ -25,6 +49,9 @@ export const registerUser = async (req, res) => {
         name: newUser.name,
         email: newUser.email,
         role: newUser.role,
+        accountType: newUser.accountType,
+        organizationCategory: newUser.organizationCategory,
+        organizationName: newUser.organizationName,
       },
     });
   } catch (err) {
@@ -65,6 +92,9 @@ export const loginUser = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        accountType: user.accountType,
+        organizationCategory: user.organizationCategory,
+        organizationName: user.organizationName,
       },
     });
   } catch (err) {
@@ -86,6 +116,9 @@ export const getProfile = async (req, res) => {
       name: user.name,
       email: user.email,
       role: user.role,
+      accountType: user.accountType,
+      organizationCategory: user.organizationCategory,
+      organizationName: user.organizationName,
     });
   } catch (err) {
     console.error("Profile Error:", err);

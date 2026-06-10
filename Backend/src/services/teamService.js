@@ -9,9 +9,13 @@ import { getIO } from "../socket/socket.js";
 
 export async function listTeams(filters = {}) {
   const query = {};
+  const limit = Math.min(Math.max(Number(filters.limit) || 120, 1), 500);
+  const page = Math.max(Number(filters.page) || 1, 1);
+
   if (filters.category) query.category = filters.category;
   if (filters.categoryRef) query.categoryRef = filters.categoryRef;
   if (filters.organizationRef) query.organizationRef = filters.organizationRef;
+  if (filters.type) query.type = filters.type;
   if (filters.city) query["address.city"] = { $regex: filters.city, $options: "i" };
   if (filters.search) {
     query.$or = [
@@ -24,13 +28,21 @@ export async function listTeams(filters = {}) {
   }
   if (filters.isActive !== undefined) query.isActive = filters.isActive;
 
-  const teams = await Team.find(query)
-    .populate("players")
-    .populate("categoryRef")
-    .populate("organizationRef")
-    .sort({ name: 1 });
+  const teamsQuery = Team.find(query)
+    .select("name shortName logo type category categoryRef organization organizationRef branchName address area city players teamColorPrimary teamColorSecondary isActive profileComplete")
+    .populate("categoryRef", "name slug icon")
+    .populate("organizationRef", "name slug type")
+    .sort({ name: 1 })
+    .skip((page - 1) * limit)
+    .limit(limit)
+    .maxTimeMS(5000)
+    .lean();
 
-  return teams;
+  if (filters.includePlayers === "true" || filters.includePlayers === true) {
+    teamsQuery.populate("players", "name role playingRole imageUrl");
+  }
+
+  return teamsQuery;
 }
 
 export async function getTeamProfile(teamId) {

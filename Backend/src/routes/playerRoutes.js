@@ -12,6 +12,8 @@ import {
   getBattingRankings,
   getBowlingRankings,
   getAllRounderRankings,
+  getFielderRankings,
+  getWicketKeeperRankings,
   getPlayerRankings
 } from "../controllers/rankingsController.js";
 import validate from "../middleware/validate.js";
@@ -34,6 +36,8 @@ router.get("/free-agents", async (req, res) => {
 router.get("/rankings/batting", getBattingRankings);
 router.get("/rankings/bowling", getBowlingRankings);
 router.get("/rankings/all-rounder", getAllRounderRankings);
+router.get("/rankings/fielder", getFielderRankings);
+router.get("/rankings/wicket-keeper", getWicketKeeperRankings);
 router.get("/rankings", getPlayerRankings);
 router.get("/:id", getPlayer);
 

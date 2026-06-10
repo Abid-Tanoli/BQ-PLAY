@@ -11,7 +11,8 @@ const LOCAL_TYPES = ["single-match", "series", "tri-series", "tournament", "worl
 export default function SeriesList() {
   const [events, setEvents] = useState([]);
   const [providerSeries, setProviderSeries] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [providerLoading, setProviderLoading] = useState(true);
+  const [localLoading, setLocalLoading] = useState(true);
   const [localError, setLocalError] = useState(null);
   const [providerError, setProviderError] = useState(null);
   const [apiStatus, setApiStatus] = useState(null);
@@ -19,41 +20,51 @@ export default function SeriesList() {
   const [search, setSearch] = useState("");
 
   const loadData = useCallback(async () => {
-    setLoading(true);
+    setProviderLoading(true);
+    setLocalLoading(true);
     setLocalError(null);
     setProviderError(null);
 
-    try {
-      const [rapidRes, statusRes] = await Promise.all([
-        api.get("/international/series"),
-        api.get("/international/status").catch(() => ({ data: { data: null } })),
-      ]);
-      setProviderSeries(Array.isArray(rapidRes.data?.data) ? rapidRes.data.data : []);
-      setApiStatus(statusRes.data.data || null);
-    } catch (error) {
-      setProviderError(error.response?.data?.message || error.message || "Failed to load external series.");
-      setProviderSeries([]);
-    }
-
-    try {
-      const res = await api.get("/events");
-      const eventsData = Array.isArray(res.data) ? res.data : (res.data?.events || []);
-      if (eventsData.length) {
-        setEvents(eventsData);
-      } else {
-        const tournamentRes = await api.get("/tournaments");
-        setEvents(Array.isArray(tournamentRes.data) ? tournamentRes.data : (tournamentRes.data?.tournaments || []));
-      }
-    } catch (error) {
+    const loadProvider = async () => {
       try {
-        const tournamentRes = await api.get("/tournaments");
-        setEvents(Array.isArray(tournamentRes.data) ? tournamentRes.data : (tournamentRes.data?.tournaments || []));
-      } catch {
-        setLocalError(error.message || "Failed to load local events");
+        const [rapidRes, statusRes] = await Promise.all([
+          api.get("/international/series", { timeout: 8000 }),
+          api.get("/international/status", { timeout: 5000 }).catch(() => ({ data: { data: null } })),
+        ]);
+        setProviderSeries(Array.isArray(rapidRes.data?.data) ? rapidRes.data.data : []);
+        setApiStatus(statusRes.data.data || null);
+      } catch (error) {
+        setProviderError(error.response?.data?.message || error.message || "Live cricket provider is unavailable.");
+        setProviderSeries([]);
+      } finally {
+        setProviderLoading(false);
       }
-    } finally {
-      setLoading(false);
-    }
+    };
+
+    const loadLocal = async () => {
+      try {
+        const res = await api.get("/events", { params: { limit: 100 }, timeout: 8000 });
+        const eventsData = Array.isArray(res.data) ? res.data : (res.data?.events || []);
+        if (eventsData.length) {
+          setEvents(eventsData);
+        } else {
+          const tournamentRes = await api.get("/tournaments", { params: { limit: 100 }, timeout: 8000 });
+          setEvents(Array.isArray(tournamentRes.data) ? tournamentRes.data : (tournamentRes.data?.tournaments || []));
+        }
+      } catch (error) {
+        try {
+          const tournamentRes = await api.get("/tournaments", { params: { limit: 100 }, timeout: 8000 });
+          setEvents(Array.isArray(tournamentRes.data) ? tournamentRes.data : (tournamentRes.data?.tournaments || []));
+        } catch {
+          setEvents([]);
+          setLocalError(error.response?.data?.message || error.message || "Failed to load local events.");
+        }
+      } finally {
+        setLocalLoading(false);
+      }
+    };
+
+    await Promise.allSettled([loadProvider(), loadLocal()]);
   }, []);
 
   useEffect(() => {
@@ -100,7 +111,7 @@ export default function SeriesList() {
             </button>
           </div>
 
-          {loading && !providerSeries.length ? (
+          {providerLoading && !providerSeries.length ? (
             <Loader label="Loading live series..." />
           ) : (providerError || apiStatus?.lastError) && !providerSeries.length ? (
             <ErrorState
@@ -136,7 +147,7 @@ export default function SeriesList() {
             ))}
           </div>
 
-          {loading ? (
+          {localLoading ? (
             <Loader label="Loading local events..." />
           ) : localError ? (
             <ErrorState title="Local events unavailable" message={localError} onRetry={loadData} />

@@ -1,8 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import CricketGround from '../CricketGround';
-import PitchMap, { LINE_ZONES, LENGTH_ZONES, SHOT_TYPES } from '../PitchMap';
+import PitchMap, { LINE_ZONES, LENGTH_ZONES } from '../PitchMap';
+import ShotReferenceModal from '../ShotReferenceModal';
+import ShotDiagram from '../ShotDiagram';
+import { SHOTS, SHOT_CATEGORIES } from '../../data/shotsData';
+import { SHOT_TYPES } from '../ScoreManagement/constants/index.js';
 
 const shotToId = (shot) => shot.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+const SHOT_ID_MAP = {
+  driven: 'straight_drive',
+  left_padded_away: 'left_padded',
+  no_shot_offered: 'no_shot',
+};
+const findShot = (id) => SHOTS.find(s => s.id === (SHOT_ID_MAP[id] || id)) || null;
 
 const RightSidebarControls = ({
     curInn,
@@ -41,8 +51,28 @@ const RightSidebarControls = ({
     ballMovement = 'none',
     setBallMovement,
     ballOutcome = 'played',
-    setBallOutcome
+    setBallOutcome,
+    useAICommentary = true,
+    setUseAICommentary
 }) => {
+    const [showShotRef, setShowShotRef] = useState(false);
+    const currentShot = findShot(shotToId(pitchMapShot || ''));
+    const CAT_COLORS = {
+      front_foot: '#3b82f6',
+      back_foot: '#8b5cf6',
+      leg_side: '#22c55e',
+      unorthodox: '#f59e0b',
+      power: '#ef4444',
+      defensive: '#6b7280'
+    };
+    const CAT_LABELS = {
+      front_foot: 'Front-Foot',
+      back_foot: 'Back-Foot',
+      leg_side: 'Leg-Side',
+      unorthodox: 'Unorthodox',
+      power: 'Power',
+      defensive: 'Defensive'
+    };
     const movementOptions = [
         ['none', 'None'],
         ['inswing', 'Inswing'],
@@ -65,6 +95,7 @@ const RightSidebarControls = ({
     ];
 
     return (
+        <>
         <div className="lg:w-[480px] shrink-0 sticky top-0 mt-0 pt-2 pb-12 px-8 h-screen flex flex-col bg-cric-card rounded-[3.5rem] border border-cric-border shadow-2xl overflow-y-auto no-scrollbar">
             <div className="mb-8 mt-4 flex justify-between items-start">
                 <div>
@@ -84,6 +115,29 @@ const RightSidebarControls = ({
             </div>
 
             <div className="space-y-12">
+                <div className="rounded-3xl border border-cric-border bg-black/5 p-5 dark:bg-white/5">
+                    <div className="flex items-center justify-between gap-4">
+                        <div>
+                            <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-[0.3em]">AI Commentary</h4>
+                            <p className="mt-1 text-xs font-semibold text-cric-muted">
+                                {useAICommentary ? 'On by default. AI lines will be generated for scored balls.' : 'Off. Manual or simple recorded commentary will be used.'}
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setUseAICommentary?.(!useAICommentary)}
+                            className={`relative h-10 w-20 shrink-0 rounded-full transition-all ${useAICommentary ? 'bg-green-600' : 'bg-slate-400 dark:bg-slate-700'}`}
+                            aria-pressed={useAICommentary}
+                            title="Toggle AI commentary"
+                        >
+                            <span className={`absolute top-1 h-8 w-8 rounded-full bg-white shadow-lg transition-all ${useAICommentary ? 'left-11' : 'left-1'}`} />
+                            <span className={`absolute inset-y-0 ${useAICommentary ? 'left-3' : 'right-3'} flex items-center text-[9px] font-black uppercase tracking-widest text-white`}>
+                                {useAICommentary ? 'On' : 'Off'}
+                            </span>
+                        </button>
+                    </div>
+                </div>
+
                 {/* Role Selectors Section */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -157,11 +211,35 @@ const RightSidebarControls = ({
                         </div>
                     </div>
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase text-slate-500 tracking-[0.3em] pl-2">Shot Type</label>
+                        <div className="flex items-center gap-2">
+                            <label className="text-[10px] font-black uppercase text-slate-500 tracking-[0.3em] pl-2 flex-1">Shot Type</label>
+                            <button
+                                onClick={() => setShowShotRef(true)}
+                                className="text-[8px] font-black px-3 py-1.5 rounded-full bg-cric-accent/10 text-cric-accent hover:bg-cric-accent hover:text-white transition-all uppercase tracking-widest border border-cric-accent/20"
+                            >
+                                Reference
+                            </button>
+                        </div>
                         <select value={pitchMapShot || ''} onChange={e => setPitchMapShot(e.target.value)} className="w-full bg-black/5 dark:bg-white/5 border border-cric-border rounded-2xl p-4 text-cric-text font-bold outline-none appearance-none cursor-pointer hover:bg-black/10 transition-all">
                             <option value="">Select Shot ▼</option>
                             {SHOT_TYPES.map(shot => <option key={shot} value={shotToId(shot)}>{shot}</option>)}
                         </select>
+                        {currentShot && (
+                            <div className="mt-3 flex items-start gap-3 bg-black/[0.04] dark:bg-white/[0.04] rounded-2xl p-3 border border-cric-border/40">
+                                <ShotDiagram shot={currentShot} size={64} />
+                                <div className="min-w-0">
+                                    <h4 className="text-xs font-black text-cric-text uppercase leading-tight">{currentShot.name}</h4>
+                                    <p className="text-[9px] text-slate-500 mt-1 leading-relaxed">{currentShot.desc}</p>
+                                    <span className="inline-block mt-1.5 text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest"
+                                        style={{
+                                            background: CAT_COLORS[currentShot.category] + '20',
+                                            color: CAT_COLORS[currentShot.category]
+                                        }}>
+                                        {CAT_LABELS[currentShot.category]}
+                                    </span>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -253,6 +331,13 @@ const RightSidebarControls = ({
                 BQ-PLAY Elite Scoring Engine 2026
             </div>
         </div>
+
+        <ShotReferenceModal
+            isOpen={showShotRef}
+            onClose={() => setShowShotRef(false)}
+            onSelectShot={(shot) => setPitchMapShot(shot.id)}
+        />
+        </>
     );
 };
 

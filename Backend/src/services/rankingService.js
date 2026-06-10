@@ -4,6 +4,7 @@ import TeamPlayerRanking from "../models/TeamPlayerRanking.js";
 import TeamCategory from "../models/TeamCategory.js";
 import Player from "../models/Player.js";
 import Match from "../models/Match.js";
+import mongoose from "mongoose";
 
 export async function computeTeamRanking(teamId) {
   const team = await Team.findById(teamId);
@@ -139,11 +140,72 @@ export async function computeAllRankings() {
   }
 }
 
-export async function getOverallRankings() {
-  return TeamRanking.find()
-    .populate("team", "name shortName logo category branchName city")
+const number = (value, fallback = 0) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const rankingLimit = (value) => Math.min(Math.max(number(value, 100), 1), 250);
+const isObjectId = (value) => mongoose.Types.ObjectId.isValid(String(value || ""));
+const escapeRegex = (value) => String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const textRegex = (value) => ({ $regex: escapeRegex(value), $options: "i" });
+
+function buildTeamScopeQuery(filters = {}) {
+  const { scope = "", scopeValue = "", category, city, district, town, country } = filters;
+  const value = String(scopeValue || "").trim();
+  const query = {};
+
+  if (category) query.category = category;
+  if (city) query["address.city"] = textRegex(city);
+  if (district) query["address.district"] = textRegex(district);
+  if (town) query["address.town"] = textRegex(town);
+  if (country) query["address.country"] = textRegex(country);
+
+  if (value) {
+    if (scope === "team") {
+      if (isObjectId(value)) {
+        query._id = value;
+      } else {
+        query.$or = [
+          { name: textRegex(value) },
+          { shortName: textRegex(value) },
+          { organization: textRegex(value) },
+          { branchName: textRegex(value) },
+        ];
+      }
+    }
+    if (scope === "pre-town" || scope === "pre_town" || scope === "area") {
+      query.$or = [
+        { area: textRegex(value) },
+        { "address.town": textRegex(value) },
+      ];
+    }
+    if (scope === "town") query["address.town"] = textRegex(value);
+    if (scope === "district") query["address.district"] = textRegex(value);
+    if (scope === "city") query["address.city"] = textRegex(value);
+    if (scope === "country") query["address.country"] = textRegex(value);
+  }
+
+  return query;
+}
+
+export async function getOverallRankings(filters = {}) {
+  const limit = rankingLimit(filters.limit);
+  const teamScopeQuery = buildTeamScopeQuery(filters);
+  const rankingQuery = {};
+
+  if (Object.keys(teamScopeQuery).length) {
+    const teams = await Team.find(teamScopeQuery).select("_id").limit(5000).maxTimeMS(5000).lean();
+    rankingQuery.team = { $in: teams.map((team) => team._id) };
+  }
+
+  return TeamRanking.find(rankingQuery)
+    .populate("team", "name shortName logo category branchName address area")
     .populate("category", "name slug icon")
-    .sort({ overallRank: 1 });
+    .sort({ overallRank: 1, rating: -1, points: -1 })
+    .limit(limit)
+    .maxTimeMS(5000)
+    .lean();
 }
 
 export async function getCategoryRankings(categoryId) {

@@ -3,7 +3,7 @@ import http from "http";
 import dotenv from "dotenv";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import connectDB from "./utils/db.js";
+import connectDB, { getDbState, isDbConnected } from "./utils/db.js";
 import { initSocket } from "./socket/socket.js";
 
 import authRoutes from "./routes/authRoutes.js";
@@ -37,7 +37,7 @@ dotenv.config();
 
 const app = express();
 
-connectDB();
+const dbReadyPromise = connectDB();
 
 const corsOptions = {
   origin: true, // Allow all origins during development
@@ -65,6 +65,77 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.originalUrl}`);
   next();
+});
+
+const databaseBackedPrefixes = [
+  "/api/auth",
+  "/api/admin",
+  "/api/players",
+  "/api/matches",
+  "/api/teams",
+  "/api/livematch",
+  "/api/tournaments",
+  "/api/events",
+  "/api/bulk-import",
+  "/api/rankings",
+  "/api/blogs",
+  "/api/categories",
+  "/api/series",
+  "/api/team-categories",
+  "/api/organizations",
+  "/api/rankings-v2",
+  "/api/sync"
+];
+
+const emptyCollectionResponses = {
+  "/api/blogs": [],
+  "/api/categories": [],
+  "/api/events": [],
+  "/api/matches": [],
+  "/api/series": [],
+  "/api/team-categories": [],
+  "/api/teams": [],
+  "/api/tournaments": []
+};
+
+app.use((req, res, next) => {
+  if (isDbConnected()) return next();
+
+  const isDatabaseBacked = databaseBackedPrefixes.some((prefix) => (
+    req.path === prefix || req.path.startsWith(`${prefix}/`)
+  ));
+
+  if (!isDatabaseBacked) return next();
+
+  if (req.method === "GET" && Object.hasOwn(emptyCollectionResponses, req.path)) {
+    res.set("X-BQ-DB-State", getDbState());
+    return res.status(200).json(emptyCollectionResponses[req.path]);
+  }
+
+  if (req.method === "GET" && req.path === "/api/players") {
+    res.set("X-BQ-DB-State", getDbState());
+    return res.status(200).json({
+      players: [],
+      totalPlayers: 0,
+      totalPages: 0,
+      currentPage: Number(req.query.page || 1)
+    });
+  }
+
+  if (req.method === "GET" && req.path.startsWith("/api/players/rankings")) {
+    res.set("X-BQ-DB-State", getDbState());
+    return res.status(200).json([]);
+  }
+
+  if (req.method === "GET" && (req.path === "/api/rankings" || req.path.startsWith("/api/rankings-v2"))) {
+    res.set("X-BQ-DB-State", getDbState());
+    return res.status(200).json([]);
+  }
+
+  return res.status(503).json({
+    message: "Database is not connected yet.",
+    dbState: getDbState()
+  });
 });
 
 app.use("/api/auth", authRoutes);
@@ -95,6 +166,8 @@ app.use("/api/sync", syncRoutes);
 app.get("/api/health", (req, res) => {
   res.json({
     status: "ok",
+    dbState: getDbState(),
+    dbConnected: isDbConnected(),
     message: "Server is running",
     timestamp: new Date().toISOString()
   });
@@ -132,6 +205,8 @@ const externalSyncEnabled = process.env.ENABLE_EXTERNAL_SYNC === "true" || proce
 import TeamCategory from "./models/TeamCategory.js";
 (async () => {
   try {
+    const connection = await dbReadyPromise;
+    if (!connection) return;
     await TeamCategory.seedDefaults();
     console.log("Default team categories seeded");
   } catch (e) {
