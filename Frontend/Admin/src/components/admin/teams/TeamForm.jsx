@@ -216,8 +216,8 @@ export default function TeamForm({ editMode, currentTeam, onSave, onCancel }) {
             onClick={() => setActiveTab(tab.key)}
             className={`px-6 py-3 font-bold text-xs uppercase tracking-wider transition-all rounded-t-xl ${
               activeTab === tab.key
-                ? 'bg-[#031d44] text-white'
-                : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
+                ? 'bg-cric-accent text-white'
+                : 'text-cric-muted hover:text-cric-text hover:bg-cric-bg'
             }`}
           >
             {tab.label}
@@ -229,33 +229,33 @@ export default function TeamForm({ editMode, currentTeam, onSave, onCancel }) {
       {activeTab === 'basic' && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div>
-              <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Category *</label>
-              <select {...register('category', { required: true })} className="w-full border border-slate-300 rounded-xl px-4 py-3">
-                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
+              <div>
+                <label className="text-[10px] font-black uppercase text-cric-muted block mb-1">Category *</label>
+                <select {...register('category', { required: true })} className="w-full bg-cric-card border border-cric-border rounded-xl px-4 py-3 text-cric-text">
+                  {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
           </div>
 
           {selectedCategory && (
-            <div className="bg-blue-50/50 rounded-2xl p-6 border border-blue-100">
-              <h4 className="text-xs font-black text-[#031d44] uppercase tracking-widest mb-4 flex items-center gap-2">
+            <div className="bg-cric-bg rounded-2xl p-6 border border-cric-border">
+              <h4 className="text-xs font-black text-cric-text uppercase tracking-widest mb-4 flex items-center gap-2">
                 🏢 Organization / Institution Hierarchy — {selectedCategory}
               </h4>
-              <p className="text-xs text-slate-500 mb-4">
+              <p className="text-xs text-cric-muted mb-4">
                 Select the organization chain from top to bottom. Each level filters the next.
                 You can stop at any level — the deepest selected org becomes the parent.
               </p>
               <div className="space-y-4">
                 {orgChain.map((level, i) => (
                   <div key={i}>
-                    <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">
+                    <label className="text-[10px] font-black uppercase text-cric-muted block mb-1">
                       {i === 0 ? 'Main Organization' : `Sub Level ${i}`}
                     </label>
                     <select
                       value={level.selected?._id || ''}
                       onChange={(e) => handleOrgSelect(i, e.target.value)}
-                      className="w-full border border-slate-300 rounded-xl px-4 py-3"
+                      className="w-full bg-cric-card border border-cric-border rounded-xl px-4 py-3 text-cric-text"
                     >
                       <option value="">-- Select --</option>
                       {level.orgs.map(org => (
@@ -265,24 +265,24 @@ export default function TeamForm({ editMode, currentTeam, onSave, onCancel }) {
                   </div>
                 ))}
                 {orgChain.length > 0 && (
-                  <p className="text-xs text-slate-400 italic">
+                  <p className="text-xs text-cric-muted italic">
                     Chain: {orgChain.filter(l => l.selected).map(l => l.selected?.name).join(' → ')}
                   </p>
                 )}
                 {orgChain.length === 0 && (
-                  <p className="text-xs text-slate-400 italic">No organizations found. You can type one below or leave empty.</p>
+                  <p className="text-xs text-cric-muted italic">No organizations found. You can type one below or leave empty.</p>
                 )}
               </div>
               <input type="hidden" {...register('organizationRef')} />
               <input type="hidden" {...register('categoryRef')} />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
                 <div>
-                  <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">OR Type Organization Name (free text)</label>
-                  <input {...register('organization')} placeholder="e.g., BanoQabil, Al-Khidmat" className="w-full border border-slate-300 rounded-xl px-4 py-3" />
+                  <label className="text-[10px] font-black uppercase text-cric-muted block mb-1">OR Type Organization Name (free text)</label>
+                  <input {...register('organization')} placeholder="e.g., BanoQabil, Al-Khidmat" className="w-full bg-cric-card border border-cric-border rounded-xl px-4 py-3 text-cric-text" />
                 </div>
                 <div>
-                  <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Branch / Campus Name</label>
-                  <input {...register('branchName')} placeholder="e.g., North Campus, Gulberg" className="w-full border border-slate-300 rounded-xl px-4 py-3" />
+                  <label className="text-[10px] font-black uppercase text-cric-muted block mb-1">Branch / Campus Name</label>
+                  <input {...register('branchName')} placeholder="e.g., North Campus, Gulberg" className="w-full bg-cric-card border border-cric-border rounded-xl px-4 py-3 text-cric-text" />
                 </div>
               </div>
             </div>
@@ -290,55 +290,55 @@ export default function TeamForm({ editMode, currentTeam, onSave, onCancel }) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
-              <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Team Name *</label>
-              <input {...register('name', { required: true })} placeholder="Team Name" className="w-full border border-slate-300 rounded-xl px-4 py-3" />
+              <label className="text-[10px] font-black uppercase text-cric-muted block mb-1">Team Name *</label>
+              <input {...register('name', { required: true })} placeholder="Team Name" className="w-full bg-cric-card border border-cric-border rounded-xl px-4 py-3 text-cric-text" />
             </div>
             <div>
-              <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Short Name</label>
-              <input {...register('shortName')} placeholder="Short Name" className="w-full border border-slate-300 rounded-xl px-4 py-3" />
+              <label className="text-[10px] font-black uppercase text-cric-muted block mb-1">Short Name</label>
+              <input {...register('shortName')} placeholder="Short Name" className="w-full bg-cric-card border border-cric-border rounded-xl px-4 py-3 text-cric-text" />
             </div>
             <div>
-              <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Established Year</label>
-              <input {...register('establishedYear')} type="number" placeholder="2024" className="w-full border border-slate-300 rounded-xl px-4 py-3" />
+              <label className="text-[10px] font-black uppercase text-cric-muted block mb-1">Established Year</label>
+              <input {...register('establishedYear')} type="number" placeholder="2024" className="w-full bg-cric-card border border-cric-border rounded-xl px-4 py-3 text-cric-text" />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
-              <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Home Ground</label>
-              <input {...register('homeGround')} placeholder="Home Ground" className="w-full border border-slate-300 rounded-xl px-4 py-3" />
+              <label className="text-[10px] font-black uppercase text-cric-muted block mb-1">Home Ground</label>
+              <input {...register('homeGround')} placeholder="Home Ground" className="w-full bg-cric-card border border-cric-border rounded-xl px-4 py-3 text-cric-text" />
             </div>
             <div>
-              <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Primary Color</label>
-              <input {...register('teamColorPrimary')} type="color" className="w-full border border-slate-300 rounded-xl px-4 py-2 h-12" />
+              <label className="text-[10px] font-black uppercase text-cric-muted block mb-1">Primary Color</label>
+              <input {...register('teamColorPrimary')} type="color" className="w-full bg-cric-card border border-cric-border rounded-xl px-4 py-2 h-12" />
             </div>
             <div>
-              <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Secondary Color</label>
-              <input {...register('teamColorSecondary')} type="color" className="w-full border border-slate-300 rounded-xl px-4 py-2 h-12" />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Logo URL</label>
-              <input {...register('logo')} placeholder="Logo URL" className="w-full border border-slate-300 rounded-xl px-4 py-3" />
-            </div>
-            <div>
-              <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Owner Name</label>
-              <input {...register('ownername')} placeholder="Owner" className="w-full border border-slate-300 rounded-xl px-4 py-3" />
+              <label className="text-[10px] font-black uppercase text-cric-muted block mb-1">Secondary Color</label>
+              <input {...register('teamColorSecondary')} type="color" className="w-full bg-cric-card border border-cric-border rounded-xl px-4 py-2 h-12" />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Age Group</label>
-              <select {...register('ageGroup')} className="w-full border border-slate-300 rounded-xl px-4 py-3">
+              <label className="text-[10px] font-black uppercase text-cric-muted block mb-1">Logo URL</label>
+              <input {...register('logo')} placeholder="Logo URL" className="w-full bg-cric-card border border-cric-border rounded-xl px-4 py-3 text-cric-text" />
+            </div>
+            <div>
+              <label className="text-[10px] font-black uppercase text-cric-muted block mb-1">Owner Name</label>
+              <input {...register('ownername')} placeholder="Owner" className="w-full bg-cric-card border border-cric-border rounded-xl px-4 py-3 text-cric-text" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-[10px] font-black uppercase text-cric-muted block mb-1">Age Group</label>
+              <select {...register('ageGroup')} className="w-full bg-cric-card border border-cric-border rounded-xl px-4 py-3 text-cric-text">
                 {AGE_GROUPS.map(a => <option key={a} value={a}>{a}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Sub Category</label>
-              <input {...register('subCategory')} placeholder="e.g., Pre-Medical" className="w-full border border-slate-300 rounded-xl px-4 py-3" />
+              <label className="text-[10px] font-black uppercase text-cric-muted block mb-1">Sub Category</label>
+              <input {...register('subCategory')} placeholder="e.g., Pre-Medical" className="w-full bg-cric-card border border-cric-border rounded-xl px-4 py-3 text-cric-text" />
             </div>
           </div>
         </div>
@@ -347,25 +347,25 @@ export default function TeamForm({ editMode, currentTeam, onSave, onCancel }) {
       {/* Tab 2: Location & Contact */}
       {activeTab === 'location' && (
         <div className="space-y-6">
-          <div className="bg-blue-50 rounded-2xl p-6 border border-blue-100">
-            <h4 className="font-black text-xs uppercase tracking-widest text-blue-800 mb-4">📍 Google Maps Location</h4>
+          <div className="bg-cric-bg rounded-2xl p-6 border border-cric-border">
+            <h4 className="font-black text-xs uppercase tracking-widest text-cric-text mb-4">📍 Google Maps Location</h4>
             <div className="flex gap-4 mb-4">
               <input
                 {...register('fullAddress')}
                 placeholder="Search address or school/college name..."
-                className="flex-1 border border-slate-300 rounded-xl px-4 py-3"
+                className="flex-1 bg-cric-card border border-cric-border rounded-xl px-4 py-3 text-cric-text"
               />
               <button
                 type="button"
                 onClick={handleLocationSearch}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-widest rounded-xl px-6 py-3"
+                className="bg-cric-accent hover:bg-[#e55a2b] text-white font-black text-xs uppercase tracking-widest rounded-xl px-6 py-3 transition-all"
               >
                 Search
               </button>
             </div>
             {(locationData || watch('latitude')) && (
               <div className="mt-4">
-                <div className="h-48 bg-slate-200 rounded-xl overflow-hidden mb-2">
+                <div className="h-48 bg-cric-bg rounded-xl overflow-hidden mb-2">
                   <iframe
                     width="100%"
                     height="100%"
@@ -374,8 +374,8 @@ export default function TeamForm({ editMode, currentTeam, onSave, onCancel }) {
                     src={`https://www.google.com/maps?q=${watch('latitude') || locationData?.latitude},${watch('longitude') || locationData?.longitude}&z=15&output=embed`}
                   />
                 </div>
-                <p className="text-xs text-slate-500">
-                  Lat: {watch('latitude') || locationData?.latitude}, Lng: {watch('longitude') || locationData?.longitude}
+              <p className="text-xs text-cric-muted">
+                Lat: {watch('latitude') || locationData?.latitude}, Lng: {watch('longitude') || locationData?.longitude}
                 </p>
               </div>
             )}
@@ -387,29 +387,29 @@ export default function TeamForm({ editMode, currentTeam, onSave, onCancel }) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">City</label>
-              <input {...register('city')} placeholder="City" className="w-full border border-slate-300 rounded-xl px-4 py-3" />
+              <label className="text-[10px] font-black uppercase text-cric-muted block mb-1">City</label>
+              <input {...register('city')} placeholder="City" className="w-full bg-cric-card border border-cric-border rounded-xl px-4 py-3 text-cric-text" />
             </div>
             <div>
-              <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Area / Locality</label>
-              <input {...register('area')} placeholder="Area" className="w-full border border-slate-300 rounded-xl px-4 py-3" />
+              <label className="text-[10px] font-black uppercase text-cric-muted block mb-1">Area / Locality</label>
+              <input {...register('area')} placeholder="Area" className="w-full bg-cric-card border border-cric-border rounded-xl px-4 py-3 text-cric-text" />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Phone</label>
-              <input {...register('phone')} placeholder="Phone" className="w-full border border-slate-300 rounded-xl px-4 py-3" />
+              <label className="text-[10px] font-black uppercase text-cric-muted block mb-1">Phone</label>
+              <input {...register('phone')} placeholder="Phone" className="w-full bg-cric-card border border-cric-border rounded-xl px-4 py-3 text-cric-text" />
             </div>
             <div>
-              <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Email</label>
-              <input {...register('email')} type="email" placeholder="Email" className="w-full border border-slate-300 rounded-xl px-4 py-3" />
+              <label className="text-[10px] font-black uppercase text-cric-muted block mb-1">Email</label>
+              <input {...register('email')} type="email" placeholder="Email" className="w-full bg-cric-card border border-cric-border rounded-xl px-4 py-3 text-cric-text" />
             </div>
           </div>
 
           <div>
-            <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Website</label>
-            <input {...register('website')} placeholder="Website URL" className="w-full border border-slate-300 rounded-xl px-4 py-3" />
+            <label className="text-[10px] font-black uppercase text-cric-muted block mb-1">Website</label>
+            <input {...register('website')} placeholder="Website URL" className="w-full bg-cric-card border border-cric-border rounded-xl px-4 py-3 text-cric-text" />
           </div>
         </div>
       )}
@@ -417,19 +417,19 @@ export default function TeamForm({ editMode, currentTeam, onSave, onCancel }) {
       {/* Tab 3: Players */}
       {activeTab === 'players' && (
         <div className="space-y-6">
-          <div className="bg-green-50 rounded-2xl p-6 border border-green-100">
-            <h4 className="font-black text-xs uppercase tracking-widest text-green-800 mb-4">👥 Current Squad ({selectedPlayers.length})</h4>
+          <div className="bg-cric-bg rounded-2xl p-6 border border-cric-border">
+            <h4 className="font-black text-xs uppercase tracking-widest text-cric-text mb-4">👥 Current Squad ({selectedPlayers.length})</h4>
             <div className="space-y-2 max-h-48 overflow-y-auto">
               {selectedPlayers.length === 0 ? (
-                <p className="text-slate-400 text-sm">No players added yet. Select from Free Agents below.</p>
+                <p className="text-cric-muted text-sm">No players added yet. Select from Free Agents below.</p>
               ) : (
                 selectedPlayers.map(pid => {
                   const player = freeAgents.find(p => p._id === pid) || { _id: pid, name: pid, role: '' };
                   return (
-                    <div key={pid} className="flex items-center justify-between bg-white rounded-xl px-4 py-3 border border-green-200">
+                    <div key={pid} className="flex items-center justify-between bg-cric-card rounded-xl px-4 py-3 border border-cric-border">
                       <div>
-                        <p className="font-bold text-slate-800">{player.name}</p>
-                        <p className="text-xs text-slate-500">{player.role || 'Player'}</p>
+                        <p className="font-bold text-cric-text">{player.name}</p>
+                        <p className="text-xs text-cric-muted">{player.role || 'Player'}</p>
                       </div>
                       <button
                         type="button"
@@ -445,28 +445,28 @@ export default function TeamForm({ editMode, currentTeam, onSave, onCancel }) {
             </div>
           </div>
 
-          <div className="bg-amber-50 rounded-2xl p-6 border border-amber-100">
-            <h4 className="font-black text-xs uppercase tracking-widest text-amber-800 mb-4">🔓 Free Agents</h4>
+          <div className="bg-cric-bg rounded-2xl p-6 border border-cric-border">
+            <h4 className="font-black text-xs uppercase tracking-widest text-cric-text mb-4">🔓 Free Agents</h4>
             <input
               type="text"
               placeholder="Search free agents..."
               value={playerSearch}
               onChange={(e) => setPlayerSearch(e.target.value)}
-              className="w-full border border-slate-300 rounded-xl px-4 py-3 mb-4"
+              className="w-full bg-cric-card border border-cric-border rounded-xl px-4 py-3 mb-4 text-cric-text"
             />
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {filteredFreeAgents.length === 0 ? (
-                <p className="text-slate-400 text-sm">No free agents available.</p>
+                <p className="text-cric-muted text-sm">No free agents available.</p>
               ) : (
                 filteredFreeAgents.map(player => (
                   <div
                     key={player._id}
-                    className="flex items-center justify-between bg-white rounded-xl px-4 py-3 border border-slate-200 hover:border-amber-300 transition-all cursor-pointer"
+                    className="flex items-center justify-between bg-cric-card rounded-xl px-4 py-3 border border-cric-border hover:border-cric-accent transition-all cursor-pointer"
                     onClick={() => togglePlayerSelection(player._id)}
                   >
                     <div>
-                      <p className="font-bold text-slate-800">{player.name}</p>
-                      <p className="text-xs text-slate-500">{player.role || 'Player'}</p>
+                      <p className="font-bold text-cric-text">{player.name}</p>
+                      <p className="text-xs text-cric-muted">{player.role || 'Player'}</p>
                     </div>
                     <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
                       selectedPlayers.includes(player._id)
@@ -489,25 +489,25 @@ export default function TeamForm({ editMode, currentTeam, onSave, onCancel }) {
       {activeTab === 'stats' && (
         <div className="space-y-6">
           {editMode && currentTeam ? (
-            <div className="bg-white rounded-2xl p-8 border border-slate-200 text-center">
-              <p className="text-slate-400 mb-4">View complete stats and rankings on the Team Detail page.</p>
-              <p className="text-3xl font-black text-[#031d44]">{selectedPlayers.length}</p>
-              <p className="text-xs text-slate-500 uppercase tracking-widest">Players in Squad</p>
+            <div className="bg-cric-card rounded-2xl p-8 border border-cric-border text-center">
+              <p className="text-cric-muted mb-4">View complete stats and rankings on the Team Detail page.</p>
+              <p className="text-3xl font-black text-cric-text">{selectedPlayers.length}</p>
+              <p className="text-xs text-cric-muted uppercase tracking-widest">Players in Squad</p>
             </div>
           ) : (
-            <div className="bg-blue-50 rounded-2xl p-8 border border-blue-100 text-center">
-              <p className="text-slate-500">Save the team first to see stats and rankings.</p>
+            <div className="bg-cric-bg rounded-2xl p-8 border border-cric-border text-center">
+              <p className="text-cric-muted">Save the team first to see stats and rankings.</p>
             </div>
           )}
         </div>
       )}
 
       {/* Submit */}
-      <div className="flex gap-3 pt-4 border-t border-slate-200">
+      <div className="flex gap-3 pt-4 border-t border-cric-border">
         <button
           type="submit"
           disabled={loading}
-          className="bg-[#031d44] hover:bg-slate-800 text-white font-black text-xs uppercase tracking-widest rounded-xl px-8 py-4 transition-all disabled:opacity-50"
+          className="bg-cric-accent hover:bg-[#e55a2b] text-white font-black text-xs uppercase tracking-widest rounded-xl px-8 py-4 transition-all disabled:opacity-50"
         >
           {loading ? 'Saving...' : editMode ? 'Update Team' : 'Create Team'}
         </button>
@@ -515,7 +515,7 @@ export default function TeamForm({ editMode, currentTeam, onSave, onCancel }) {
           <button
             type="button"
             onClick={onCancel}
-            className="bg-slate-200 hover:bg-slate-300 text-[#031d44] font-black text-xs uppercase tracking-widest rounded-xl px-8 py-4 transition-all"
+            className="bg-cric-bg hover:bg-cric-border text-cric-text font-black text-xs uppercase tracking-widest rounded-xl px-8 py-4 transition-all"
           >
             Cancel
           </button>

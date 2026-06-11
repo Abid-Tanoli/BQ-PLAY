@@ -57,6 +57,8 @@ export default function useMatchScoring() {
     const [pitchMapViewMode, setPitchMapViewMode] = useState('this_over');
     const [ballMovement, setBallMovement] = useState('none');
     const [ballOutcome, setBallOutcome] = useState('played');
+    const [fieldedById, setFieldedById] = useState('');
+    const [fieldedByPosition, setFieldedByPosition] = useState('');
 
     const [setupState, setSetupState] = useState({
         team1XI: [],
@@ -323,7 +325,11 @@ export default function useMatchScoring() {
             pitchY: pitchMapClickPos ? Math.round(((pitchMapClickPos.y - 40) / 440) * 100) : null,
             commentaryText: useAICommentary ? manualCommentary : (manualCommentary || "Ball recorded."),
             customCommentary: !useAICommentary,
-            nextBatsmanId: setupState.wicketNewBatter || undefined
+            nextBatsmanId: setupState.wicketNewBatter || undefined,
+            groundZone: activeGroundZone?.shotName || activeGroundZone?.nearestPosition || '',
+            fieldedByPosition: fieldedByPosition,
+            fieldedById: fieldedById,
+            shotTypeName: pitchMapShot || ''
         };
 
         try {
@@ -345,6 +351,8 @@ export default function useMatchScoring() {
             setPitchMapClickPos(null);
             setBallMovement('none');
             setBallOutcome('played');
+            setFieldedById('');
+            setFieldedByPosition('');
 
             if (res.data.shouldEndInnings) {
                 setToast("Innings should be ended!");
@@ -739,6 +747,10 @@ export default function useMatchScoring() {
         setBallMovement,
         ballOutcome,
         setBallOutcome,
+        fieldedById,
+        setFieldedById,
+        fieldedByPosition,
+        setFieldedByPosition,
         setupState,
         setSetupState,
         wizardStep,

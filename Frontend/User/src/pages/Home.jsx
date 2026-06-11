@@ -10,6 +10,7 @@ import BlogGallery from "../components/BlogGallery";
 import { api } from "../services/api";
 import GlobalSearch from "../components/GlobalSearch";
 import { initSocket } from "../services/socket";
+import CreatePlayerProfile from "../components/CreatePlayerProfile";
 
 const statusBadge = (match) => {
   const s = match.status;
@@ -38,6 +39,7 @@ export function Home() {
   const [authUser, setAuthUser] = useState(null);
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
+  const [showCreatePlayer, setShowCreatePlayer] = useState(false);
   const [collapseCompleted, setCollapseCompleted] = useState(false);
 
   const matchesLoading = matchesStatus === "loading";
@@ -297,8 +299,8 @@ export function Home() {
             <div className="space-y-6">
 
             {/* Quick Links */}
-            <div className="bg-white rounded-xl border border-slate-200 p-4">
-              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Quick Links</h3>
+            <div className="bg-cric-card rounded-xl border border-cric-border p-4">
+              <h3 className="text-[10px] font-black text-cric-muted uppercase tracking-widest mb-3">Quick Links</h3>
               <div className="grid grid-cols-2 gap-2">
                 {[
                   { label: "Live Scores", accent: "bg-red-500", path: "/live" },
@@ -309,9 +311,9 @@ export function Home() {
                   { label: "Players", accent: "bg-orange-500", path: "/players" },
                   { label: "Series", accent: "bg-purple-500", path: "/series" },
                 ].map(link => (
-                  <Link key={link.path} to={link.path} className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-100 transition-all">
+                  <Link key={link.path} to={link.path} className="flex items-center gap-2 p-2 rounded-lg hover:bg-cric-bg transition-all">
                     <span className={`h-7 w-7 rounded-lg ${link.accent} shadow-sm`} />
-                    <span className="text-[11px] font-bold text-slate-700 uppercase tracking-tight">{link.label}</span>
+                    <span className="text-[11px] font-bold text-cric-text uppercase tracking-tight">{link.label}</span>
                   </Link>
                 ))}
               </div>
@@ -325,7 +327,14 @@ export function Home() {
               <p className="mt-2 text-xs font-semibold leading-relaxed text-cric-muted/80">
                 You manage your own teams, squads, playing XI, matches and tournaments. BQ-PLAY provides the scoring and ranking platform.
               </p>
-              {!authUser && (
+              {authUser ? (
+                <button
+                  onClick={() => setShowCreatePlayer(true)}
+                  className="mt-4 w-full rounded-xl bg-cric-accent px-4 py-3 text-[10px] font-black uppercase tracking-widest text-white hover:bg-orange-600"
+                >
+                  Create Player Profile
+                </button>
+              ) : (
                 <button
                   onClick={() => { setShowRegister(true); setShowLogin(false); }}
                   className="mt-4 w-full rounded-xl bg-cric-accent px-4 py-3 text-[10px] font-black uppercase tracking-widest text-white hover:bg-orange-600"
@@ -387,6 +396,7 @@ export function Home() {
 
         {showLogin && <Login onSuccess={handleLoginSuccess} onCancel={() => setShowLogin(false)} />}
         {showRegister && <Register onSuccess={handleRegisterSuccess} onCancel={() => setShowRegister(false)} />}
+        {showCreatePlayer && <CreatePlayerProfile onSuccess={() => setShowCreatePlayer(false)} onCancel={() => setShowCreatePlayer(false)} />}
       </div>
     </div>
     );

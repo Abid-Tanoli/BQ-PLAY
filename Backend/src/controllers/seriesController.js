@@ -83,8 +83,9 @@ const groupMatchesByStatus = (matches) => {
 const aggregateSeriesStats = (matches) => {
   const batting = new Map();
   const bowling = new Map();
+  const fielding = new Map();
 
-  matches.filter((match) => normalStatus(match.status) === 'completed').forEach((match) => {
+  matches.filter((match) => normalStatus(match.status) === 'completed' || normalStatus(match.status) === 'live' || normalStatus(match.status) === 'innings_break').forEach((match) => {
     (match.innings || []).forEach((innings) => {
       const battingTeam = teamName(innings.team);
       (innings.batting || []).forEach((row) => {
@@ -116,6 +117,29 @@ const aggregateSeriesStats = (matches) => {
         if (number(row.runs) >= 100) current.hundreds += 1;
         else if (number(row.runs) >= 50) current.fifties += 1;
         batting.set(key, current);
+      });
+
+      (innings.batting || []).forEach((row) => {
+        if (row.dismissalType && row.fielder) {
+          const fielderKey = idOf(row.fielder);
+          if (!fielderKey) return;
+          const fielderName = row.fielder?.name || playerName(row.fielder) || "Unknown";
+          const fielderTeam = teamName(innings.team);
+          const current = fielding.get(fielderKey) || {
+            playerId: fielderKey,
+            name: fielderName,
+            team: fielderTeam,
+            matches: 0,
+            catches: 0,
+            stumpings: 0,
+            runOuts: 0
+          };
+          current.matches += 1;
+          if (row.dismissalType === "caught") current.catches += 1;
+          else if (row.dismissalType === "stumped") current.stumpings += 1;
+          else if (row.dismissalType === "run out") current.runOuts += 1;
+          fielding.set(fielderKey, current);
+        }
       });
 
       (innings.bowling || []).forEach((row) => {
@@ -179,7 +203,10 @@ const aggregateSeriesStats = (matches) => {
     mostFours: boundaryPlayers.filter((player) => player.fours > 0).sort((a, b) => b.fours - a.fours).slice(0, 5).map((player) => ({ playerId: player.playerId, name: player.name, team: player.team, count: player.fours }))
   };
 
-  return { topRunScorers, topWicketTakers, boundaryMeter };
+  const topFielders = Array.from(fielding.values())
+    .sort((a, b) => (b.catches + b.stumpings + b.runOuts) - (a.catches + a.stumpings + a.runOuts));
+
+  return { topRunScorers, topWicketTakers, topFielders, boundaryMeter };
 };
 
 const aggregateSeriesSquads = async (entity, matches) => {
@@ -346,13 +373,13 @@ export const getSeriesStatsById = async (req, res) => {
     if (!found) return res.status(404).json({ message: 'Series not found' });
 
     const matches = await getSeriesMatches(req.params.id, found.entity);
-    const completedMatches = matches.filter((match) => normalStatus(match.status) === 'completed');
-    const stats = aggregateSeriesStats(completedMatches);
+    const activeMatches = matches.filter((match) => ['completed', 'live', 'innings_break', 'innings-break'].includes(normalStatus(match.status)));
+    const stats = aggregateSeriesStats(activeMatches);
 
     res.json({
       seriesId: found.entity._id,
-      hasCompletedMatches: completedMatches.length > 0,
-      emptyMessage: completedMatches.length ? "" : "Stats will be available after matches are played.",
+      hasCompletedMatches: activeMatches.length > 0,
+      emptyMessage: activeMatches.length ? "" : "Stats will be available after matches are played.",
       ...stats
     });
   } catch (error) {

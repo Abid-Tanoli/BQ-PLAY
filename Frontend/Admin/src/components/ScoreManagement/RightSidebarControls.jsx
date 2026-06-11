@@ -2,7 +2,10 @@ import React, { useState } from 'react';
 import CricketGround from '../CricketGround';
 import PitchMap, { LINE_ZONES, LENGTH_ZONES } from '../PitchMap';
 import ShotReferenceModal from '../ShotReferenceModal';
+import ShotTypePicker from '../ShotTypePicker';
 import ShotDiagram from '../ShotDiagram';
+import FielderSelector from './FielderSelector';
+import CommentaryBox from './CommentaryBox';
 import { SHOTS, SHOT_CATEGORIES } from '../../data/shotsData';
 import { SHOT_TYPES } from '../ScoreManagement/constants/index.js';
 
@@ -53,10 +56,21 @@ const RightSidebarControls = ({
     ballOutcome = 'played',
     setBallOutcome,
     useAICommentary = true,
-    setUseAICommentary
+    setUseAICommentary,
+    // Fielder props
+    fieldedById,
+    setFieldedById,
+    fieldedByPosition,
+    setFieldedByPosition,
+    // Commentary
+    formattedHistory,
+    matchId,
 }) => {
     const [showShotRef, setShowShotRef] = useState(false);
+    const [showShotPicker, setShowShotPicker] = useState(false);
     const currentShot = findShot(shotToId(pitchMapShot || ''));
+    const showFielderSelector = [1, 2, 3].includes(selectedRuns) && !selectedExtra && !selectedWicket;
+    const fieldingTeamXI = bowlingXI || [];
     const CAT_COLORS = {
       front_foot: '#3b82f6',
       back_foot: '#8b5cf6',
@@ -214,16 +228,28 @@ const RightSidebarControls = ({
                         <div className="flex items-center gap-2">
                             <label className="text-[10px] font-black uppercase text-slate-500 tracking-[0.3em] pl-2 flex-1">Shot Type</label>
                             <button
+                                onClick={() => setShowShotPicker(true)}
+                                className="text-[8px] font-black px-3 py-1.5 rounded-full bg-cric-accent/10 text-cric-accent hover:bg-cric-accent hover:text-white transition-all uppercase tracking-widest border border-cric-accent/20"
+                            >
+                                {pitchMapShot ? 'Change Shot' : 'Pick Shot'}
+                            </button>
+                            <button
                                 onClick={() => setShowShotRef(true)}
                                 className="text-[8px] font-black px-3 py-1.5 rounded-full bg-cric-accent/10 text-cric-accent hover:bg-cric-accent hover:text-white transition-all uppercase tracking-widest border border-cric-accent/20"
                             >
                                 Reference
                             </button>
                         </div>
-                        <select value={pitchMapShot || ''} onChange={e => setPitchMapShot(e.target.value)} className="w-full bg-black/5 dark:bg-white/5 border border-cric-border rounded-2xl p-4 text-cric-text font-bold outline-none appearance-none cursor-pointer hover:bg-black/10 transition-all">
-                            <option value="">Select Shot ▼</option>
-                            {SHOT_TYPES.map(shot => <option key={shot} value={shotToId(shot)}>{shot}</option>)}
-                        </select>
+                        <button
+                            onClick={() => setShowShotPicker(true)}
+                            className="w-full bg-black/5 dark:bg-white/5 border border-cric-border rounded-2xl p-4 text-cric-text font-bold outline-none text-left hover:bg-black/10 dark:hover:bg-white/10 transition-all"
+                        >
+                            {pitchMapShot ? (
+                                <span>{SHOT_TYPES.find(s => shotToId(s) === pitchMapShot) || pitchMapShot}</span>
+                            ) : (
+                                <span className="text-cric-muted">Select Shot ▼</span>
+                            )}
+                        </button>
                         {currentShot && (
                             <div className="mt-3 flex items-start gap-3 bg-black/[0.04] dark:bg-white/[0.04] rounded-2xl p-3 border border-cric-border/40">
                                 <ShotDiagram shot={currentShot} size={64} />
@@ -273,6 +299,17 @@ const RightSidebarControls = ({
                         ))}
                     </div>
                 </div>
+
+                {/* FIELDER SELECTOR - Only for 1/2/3 runs */}
+                {showFielderSelector && (
+                    <FielderSelector
+                        players={fieldingTeamXI}
+                        selectedPlayer={fieldedById}
+                        onPlayerChange={setFieldedById}
+                        selectedPosition={fieldedByPosition}
+                        onPositionChange={setFieldedByPosition}
+                    />
+                )}
 
                 {/* 5. Ball Movement */}
                 <div className="space-y-4">
@@ -325,12 +362,25 @@ const RightSidebarControls = ({
                         Submit Ball
                     </button>
                 </div>
+
+                {/* 8. Commentary Box */}
+                <CommentaryBox
+                    matchId={matchId}
+                    formattedHistory={formattedHistory}
+                />
             </div>
 
             <div className="mt-auto pt-12 text-center opacity-30 text-[9px] font-black tracking-[0.5em] uppercase">
                 BQ-PLAY Elite Scoring Engine 2026
             </div>
         </div>
+
+        <ShotTypePicker
+            isOpen={showShotPicker}
+            onClose={() => setShowShotPicker(false)}
+            onSelect={(shotName) => setPitchMapShot(shotToId(shotName))}
+            currentShot={pitchMapShot}
+        />
 
         <ShotReferenceModal
             isOpen={showShotRef}

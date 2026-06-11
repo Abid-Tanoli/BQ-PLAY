@@ -18,7 +18,15 @@ const ballSchema = new mongoose.Schema({
   isWicket: Boolean,
   wicketType: String,
   fielderName: { type: String, default: "" },
-  commentary: String
+  shotType: { type: mongoose.Schema.Types.ObjectId, ref: "CricketShot" },
+  shotTypeName: { type: String, default: "" },
+  pitchLine: { type: String, default: "" },
+  pitchLength: { type: String, default: "" },
+  groundZone: { type: String, default: "" },
+  fieldedBy: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
+  fieldedByPosition: { type: String, default: "" },
+  commentary: { type: String, default: "" },
+  commentaryGeneratedAt: Date,
 }, { timestamps: true });
 
 ballSchema.index({ matchId: 1, over: 1, ball: 1 });

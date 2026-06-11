@@ -4,7 +4,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
+import { GoogleLogin } from "@react-oauth/google";
 import { login, clearError } from "../../store/slices/authSlice";
+import api from "../../services/api";
+
+const hasGoogleClientId = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID && import.meta.env.VITE_GOOGLE_CLIENT_ID !== 'your_google_client_id.apps.googleusercontent.com');
 
 const LoginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -39,6 +43,18 @@ export default function AdminLogin() {
     await dispatch(login(data));
   };
 
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      const res = await api.post("/auth/google/admin", {
+        credential: credentialResponse.credential,
+      });
+      const { token, user } = res.data;
+      dispatch({ type: "auth/login/fulfilled", payload: { token, user } });
+    } catch (err) {
+      dispatch({ type: "auth/login/rejected", payload: err.response?.data?.message || "Google login failed" });
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 to-slate-900 p-6">
       <div className="w-full max-w-md">
@@ -52,6 +68,31 @@ export default function AdminLogin() {
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
               {error}
             </div>
+          )}
+
+          {hasGoogleClientId && (
+            <>
+              <div className="mb-6">
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={() => dispatch({ type: "auth/login/rejected", payload: "Google sign-in failed" })}
+                  theme="outline"
+                  size="large"
+                  text="signin_with"
+                  shape="rectangular"
+                  width="100%"
+                />
+              </div>
+
+              <div className="relative mb-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-slate-200" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-white px-4 text-slate-400 font-bold">or continue with email</span>
+                </div>
+              </div>
+            </>
           )}
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">

@@ -84,7 +84,9 @@ const databaseBackedPrefixes = [
   "/api/team-categories",
   "/api/organizations",
   "/api/rankings-v2",
-  "/api/sync"
+  "/api/sync",
+  "/api/shots",
+  "/api/fielding-positions"
 ];
 
 const emptyCollectionResponses = {
@@ -95,7 +97,9 @@ const emptyCollectionResponses = {
   "/api/series": [],
   "/api/team-categories": [],
   "/api/teams": [],
-  "/api/tournaments": []
+  "/api/tournaments": [],
+  "/api/shots": { shots: [], grouped: { attacking: [], defensive: [], glancing: [] } },
+  "/api/fielding-positions": []
 };
 
 app.use((req, res, next) => {
@@ -163,6 +167,14 @@ app.use("/api/rankings-v2", rankingRoutes);
 // Optional external sync routes.
 app.use("/api/sync", syncRoutes);
 
+// Cricket shots & fielding positions routes
+import shotRoutes from "./routes/shotRoutes.js";
+import fieldingPositionRoutes from "./routes/fieldingPositionRoutes.js";
+import commentaryRoutes from "./routes/commentaryRoutes.js";
+app.use("/api/shots", shotRoutes);
+app.use("/api/fielding-positions", fieldingPositionRoutes);
+app.use("/api/commentary", commentaryRoutes);
+
 app.get("/api/health", (req, res) => {
   res.json({
     status: "ok",
@@ -214,6 +226,18 @@ import TeamCategory from "./models/TeamCategory.js";
   }
 })();
 
+// Seed master data (cricket shots & fielding positions) on startup
+import { seedCricketShots } from "./seed/cricketShots.js";
+import { seedFieldingPositions } from "./seed/fieldingPositions.js";
+(async () => {
+  try {
+    await seedCricketShots();
+    await seedFieldingPositions();
+  } catch (e) {
+    // ignore if already seeded
+  }
+})();
+
 if (shouldListen) {
   server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
@@ -250,6 +274,16 @@ if (shouldListen) {
 server.on("error", (error) => {
   console.error("Server error:", error);
   process.exit(1);
+});
+
+server.on('upgrade', (req, socket, head) => {
+  const url = req.url || '';
+  // Allow Vite HMR WebSocket to pass through when proxied
+  if (url.includes('/@vite') || url.includes('/@react-refresh') || url.includes('__vite_ping')) {
+    socket.destroy();
+    return;
+  }
+  // Socket.IO will handle its own upgrades
 });
 
 process.on("SIGTERM", () => {

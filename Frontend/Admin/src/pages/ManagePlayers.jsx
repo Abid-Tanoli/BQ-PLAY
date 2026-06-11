@@ -2,10 +2,10 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchPlayers, createPlayer, updatePlayer, updatePlayerStats, deletePlayer, bulkDeletePlayers } from "../store/slices/playersSlice";
 import { fetchTeams } from "../store/slices/teamSlice";
-import { useForm } from "react-hook-form";
 import { Link } from "react-router-dom";
 import { useToast } from "../components/Toast";
 import ConfirmModal from "../components/ConfirmModal";
+import PlayerForm from "../components/PlayerForm";
 
 export default function ManagePlayers() {
   const dispatch = useDispatch();
@@ -17,9 +17,9 @@ export default function ManagePlayers() {
   const [page, setPage] = useState(1);
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [editingId, setEditingId] = useState(null);
+  const [editingData, setEditingData] = useState({});
   const [selectedPlayers, setSelectedPlayers] = useState([]);
   const [bulkDeleting, setBulkDeleting] = useState(false);
-  const { register, handleSubmit, reset, setValue } = useForm();
   const { showToast } = useToast();
   const [confirmModal, setConfirmModal] = useState({ open: false, title: '', message: '', onConfirm: null, variant: 'danger' });
 
@@ -48,10 +48,10 @@ export default function ManagePlayers() {
       if (editingId) {
         await dispatch(updatePlayer({ id: editingId, data }));
         setEditingId(null);
+        setEditingData({});
       } else {
         await dispatch(createPlayer(data));
       }
-      reset();
     } catch (err) {
       console.error(err);
       showToast(editingId ? "Failed to update player" : "Failed to create player", 'error');
@@ -60,23 +60,24 @@ export default function ManagePlayers() {
 
   const handleEdit = (p) => {
     setEditingId(p._id);
-    setValue("name", p.name);
-    setValue("playingRole", p.playingRole || p.role || "");
-    setValue("battingStyle", p.battingStyle || "");
-    setValue("bowlingStyle", p.bowlingStyle || "");
-    setValue("Campus", p.Campus || "");
-    setValue("imageUrl", p.imageUrl || "");
-    setValue("team", p.team?._id || p.team || "");
-    setValue("category", p.category || "Other");
-    setValue("subCategory", p.subCategory || "");
-    setValue("ageGroup", p.ageGroup || "Open");
-    setValue("organization", p.organization || "");
-    setValue("address", p.address || { town: "", district: "", city: "", province: "", country: "Pakistan" });
+    setEditingData({
+      name: p.name,
+      playingRole: p.playingRole || p.role || "",
+      battingStyle: p.battingStyle || "",
+      bowlingStyle: p.bowlingStyle || "",
+      imageUrl: p.imageUrl || "",
+      team: p.team?._id || p.team || "",
+      category: p.category || "Other",
+      subCategory: p.subCategory || "",
+      ageGroup: p.ageGroup || "Open",
+      organization: p.organization || "",
+      address: p.address || { town: "", district: "", city: "", province: "" },
+    });
   };
 
   const cancelEdit = () => {
     setEditingId(null);
-    reset();
+    setEditingData({});
   };
 
   const handleDelete = (id) => {
@@ -123,14 +124,14 @@ export default function ManagePlayers() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-100 to-slate-50 p-6 lg:p-10">
+    <div className="min-h-screen bg-cric-bg p-6 lg:p-10">
       {/* Header */}
       <div className="mb-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-4xl lg:text-5xl font-black text-[#031d44] tracking-tight">
+          <h1 className="text-4xl lg:text-5xl font-black text-cric-text tracking-tight">
             PLAYER REGISTRY
           </h1>
-          <p className="text-slate-500 mt-2 font-medium">
+          <p className="text-cric-muted mt-2 font-medium">
             Manage your league's official talent pool
           </p>
         </div>
@@ -144,9 +145,9 @@ export default function ManagePlayers() {
           <button
             onClick={() => {
               setEditingId(null);
-              reset();
+              setEditingData({});
             }}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-900/40 transition-all active:scale-95"
+            className="px-6 py-3 bg-cric-accent hover:bg-[#e55a2b] text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-cric-accent/40 transition-all active:scale-95"
           >
             Assign Entry
           </button>
@@ -157,149 +158,29 @@ export default function ManagePlayers() {
         {/* Left Side: Filter & Form Sidebar */}
         <div className="xl:col-span-1 space-y-6">
           {/* Add/Edit Form */}
-          <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 p-6 border border-slate-100">
-            <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-6 pb-4 border-b border-slate-100">
+          <div className="bg-cric-card rounded-2xl shadow-xl p-6 border border-cric-border">
+            <h2 className="text-sm font-black text-cric-text uppercase tracking-widest mb-6 pb-4 border-b border-cric-border">
               {editingId ? "Edit Personnel" : "Draft New Player"}
             </h2>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-              <div>
-                <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2">
-                  Full Name
-                </label>
-                <input
-                  {...register("name")}
-                  required
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-800 transition-all"
-                  placeholder="Enter full name"
-                />
-              </div>
-              <div>
-                <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2">
-                  Playing Role
-                </label>
-                <select
-                  {...register("playingRole")}
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-800"
-                >
-                  <option value="">Select Role</option>
-                  <option value="Batsman">Batsman</option>
-                  <option value="Bowler">Bowler</option>
-                  <option value="All-Rounder">All-Rounder</option>
-                  <option value="Batting-All-Rounder">Batting-All-Rounder</option>
-                  <option value="Bowling-All-Rounder">Bowling-All-Rounder</option>
-                  <option value="Wicket-Keeper">Wicket-Keeper</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2">
-                  Batting Style
-                </label>
-                <select
-                  {...register("battingStyle")}
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-800"
-                >
-                  <option value="">Select Style</option>
-                  <option value="Right-handed">Right-handed</option>
-                  <option value="Left-handed">Left-handed</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2">
-                  Bowling Style
-                </label>
-                <select
-                  {...register("bowlingStyle")}
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-800"
-                >
-                  <option value="">Select Style</option>
-                  <option value="Right-arm Fast">Right-arm Fast</option>
-                  <option value="Right-arm Fast-Medium">Right-arm Fast-Medium</option>
-                  <option value="Right-arm Medium">Right-arm Medium</option>
-                  <option value="Right-arm Off-break">Right-arm Off-break</option>
-                  <option value="Right-arm Leg-break">Right-arm Leg-break</option>
-                  <option value="Left-arm Fast">Left-arm Fast</option>
-                  <option value="Left-arm Orthodox">Left-arm Orthodox</option>
-                  <option value="Not Applicable">Not Applicable</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2">
-                  Team Assignment
-                </label>
-                <select
-                  {...register("team")}
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-800"
-                >
-                  <option value="">Agent (No Team)</option>
-                  {teams.map((t) => (
-                    <option key={t._id} value={t._id}>
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2">
-                  Photo URL
-                </label>
-                <input
-                  {...register("imageUrl")}
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-800 transition-all"
-                  placeholder="https://..."
-                />
-              </div>
-
-              {/* Deep Categorization Section */}
-              <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 space-y-3">
-                <label className="block text-[9px] font-black uppercase tracking-widest text-blue-900 mb-1">
-                  Categorization
-                </label>
-                <select {...register("category")} className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800">
-                  {["School", "College", "University", "Organization", "Business", "Industry", "Club", "International", "Other"].map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-                <input {...register("subCategory")} placeholder="Sub-Category (e.g. CS, Eng)" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800" />
-                <select {...register("ageGroup")} className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800">
-                  {["U-10", "U-13", "U-15", "U-17", "U-19", "Open"].map(a => <option key={a} value={a}>{a}</option>)}
-                </select>
-                <input {...register("organization")} placeholder="Institution Name" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800" />
-              </div>
-
-              {/* Location Section */}
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-                <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">
-                  Location
-                </label>
-                <input {...register("address.town")} placeholder="Town" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800" />
-                <input {...register("address.district")} placeholder="District" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800" />
-                <input {...register("address.city")} placeholder="City" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800" />
-                <input {...register("address.province")} placeholder="Province" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800" />
-              </div>
-              <button
-                type="submit"
-                className="w-full py-4 bg-[#031d44] hover:bg-slate-800 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-xl shadow-blue-900/10 active:scale-95"
-              >
-                {editingId ? "Update File" : "Enlist Player"}
-              </button>
-              {editingId && (
-                <button
-                  type="button"
-                  onClick={cancelEdit}
-                  className="w-full py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs uppercase tracking-widest rounded-xl transition-all"
-                >
-                  Cancel
-                </button>
-              )}
-            </form>
+            <PlayerForm
+              mode="admin"
+              onSubmit={onSubmit}
+              teams={teams}
+              loading={loading}
+              editingId={editingId}
+              defaultValues={editingData}
+              onCancel={cancelEdit}
+            />
           </div>
 
           {/* Quick Filters */}
-          <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 p-6 border border-slate-100">
-            <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-6 pb-4 border-b border-slate-100">
+          <div className="bg-cric-card rounded-2xl shadow-xl p-6 border border-cric-border">
+            <h2 className="text-sm font-black text-cric-text uppercase tracking-widest mb-6 pb-4 border-b border-cric-border">
               Advanced Filters
             </h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2">
+                <label className="block text-[9px] font-black uppercase tracking-widest text-cric-muted mb-2">
                   Filter by Franchise
                 </label>
                 <select
@@ -308,7 +189,7 @@ export default function ManagePlayers() {
                     setFilterTeam(e.target.value);
                     setPage(1);
                   }}
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-800 transition-all"
+                  className="w-full p-3 bg-cric-bg border border-cric-border rounded-xl focus:ring-2 focus:ring-cric-accent outline-none font-bold text-cric-text transition-all"
                 >
                   <option value="">All Regions</option>
                   {teams.map((t) => (
@@ -319,7 +200,7 @@ export default function ManagePlayers() {
                 </select>
               </div>
               <div>
-                <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2">
+                <label className="block text-[9px] font-black uppercase tracking-widest text-cric-muted mb-2">
                   Campus Location
                 </label>
                 <input
@@ -328,7 +209,7 @@ export default function ManagePlayers() {
                     setFilterCampus(e.target.value);
                     setPage(1);
                   }}
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-800 transition-all"
+                  className="w-full p-3 bg-cric-bg border border-cric-border rounded-xl focus:ring-2 focus:ring-cric-accent outline-none font-bold text-cric-text transition-all"
                   placeholder="Filter by campus..."
                 />
               </div>
@@ -339,17 +220,17 @@ export default function ManagePlayers() {
         {/* Right Side: Player Grid */}
         <div className="xl:col-span-3">
           <div className="mb-6">
-            <h2 className="text-lg font-black text-slate-800 uppercase tracking-widest mb-4">
+            <h2 className="text-lg font-black text-cric-text uppercase tracking-widest mb-4">
               Talent Roster ({pagination.totalPlayers || 0})
             </h2>
             <div className="relative">
-              <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-cric-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-12 pr-6 py-4 bg-white border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 font-bold text-slate-800 transition-all"
+                className="w-full pl-12 pr-6 py-4 bg-cric-card border border-cric-border rounded-2xl outline-none focus:ring-4 focus:ring-cric-accent/10 focus:border-cric-accent font-bold text-cric-text transition-all"
                 placeholder="Search players..."
               />
             </div>
@@ -357,8 +238,8 @@ export default function ManagePlayers() {
 
           {/* Bulk Delete Actions */}
           {selectedPlayers.length > 0 && (
-            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between">
-              <span className="text-sm font-black text-blue-900 uppercase tracking-widest">
+            <div className="mb-6 p-4 bg-cric-accent/5 border border-cric-accent/20 rounded-xl flex items-center justify-between">
+              <span className="text-sm font-black text-cric-text uppercase tracking-widest">
                 {selectedPlayers.length} Selected
               </span>
               <button
@@ -373,8 +254,8 @@ export default function ManagePlayers() {
 
           {loading && players.length === 0 && (
             <div className="text-center py-20">
-              <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
-              <p className="mt-4 text-xs font-black text-slate-400 uppercase tracking-widest">
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-cric-accent border-t-transparent"></div>
+              <p className="mt-4 text-xs font-black text-cric-muted uppercase tracking-widest">
                 Accessing Records...
               </p>
             </div>
@@ -384,9 +265,9 @@ export default function ManagePlayers() {
             {players.map((p) => (
               <div
                 key={p._id}
-                className={`bg-white rounded-2xl shadow-xl shadow-slate-200/50 border transition-all ${selectedPlayers.includes(p._id)
-                    ? "border-blue-500 ring-2 ring-blue-500/20"
-                    : "border-slate-100 hover:border-slate-200"
+                className={`bg-cric-card rounded-2xl shadow-xl border transition-all ${selectedPlayers.includes(p._id)
+                    ? "border-cric-accent ring-2 ring-cric-accent/20"
+                    : "border-cric-border hover:border-cric-border"
                   }`}
               >
                 <div className="p-6">
@@ -395,38 +276,38 @@ export default function ManagePlayers() {
                       type="checkbox"
                       checked={selectedPlayers.includes(p._id)}
                       onChange={() => handleSelectPlayer(p._id)}
-                      className="mt-1 w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                      className="mt-1 w-5 h-5 rounded border-cric-border text-cric-accent focus:ring-cric-accent cursor-pointer"
                     />
                     {p.imageUrl ? (
                       <img
                         src={p.imageUrl}
                         alt={p.name}
-                        className="w-16 h-16 rounded-xl object-cover border-2 border-slate-100"
+                        className="w-16 h-16 rounded-xl object-cover border-2 border-cric-border"
                       />
                     ) : (
-                      <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-600 to-[#031d44] flex items-center justify-center text-white font-black text-lg border-2 border-slate-100">
+                      <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-cric-accent to-[#e55a2b] flex items-center justify-center text-white font-black text-lg border-2 border-cric-border">
                         {p.name?.substring(0, 2).toUpperCase()}
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
                       <Link
                         to={`/admin/players/${p._id}`}
-                        className="text-base font-black text-slate-800 hover:text-blue-600 transition-colors truncate block"
+                        className="text-base font-black text-cric-text hover:text-cric-accent transition-colors truncate block"
                       >
                         {p.name}
                       </Link>
-                      <p className="text-xs font-bold text-slate-500 mt-1">
+                      <p className="text-xs font-bold text-cric-muted mt-1">
                         {p.role || "Prospect"}
                       </p>
-                      <p className="text-[10px] font-bold text-blue-600 mt-1">
+                      <p className="text-[10px] font-bold text-cric-accent mt-1">
                         {p.team?.name || "Free Agent"}
                       </p>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
-                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                    <div className="bg-cric-bg rounded-xl p-3 border border-cric-border">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-cric-muted">
                         Total Runs
                       </p>
                       <input
@@ -440,11 +321,11 @@ export default function ManagePlayers() {
                             })
                           )
                         }
-                        className="w-full bg-transparent font-black text-slate-800 outline-none focus:text-blue-600 transition-colors"
+                        className="w-full bg-transparent font-black text-cric-text outline-none focus:text-cric-accent transition-colors"
                       />
                     </div>
-                    <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
-                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                    <div className="bg-cric-bg rounded-xl p-3 border border-cric-border">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-cric-muted">
                         Wickets
                       </p>
                       <input
@@ -458,7 +339,7 @@ export default function ManagePlayers() {
                             })
                           )
                         }
-                        className="w-full bg-transparent font-black text-slate-800 outline-none focus:text-red-600 transition-colors"
+                        className="w-full bg-transparent font-black text-cric-text outline-none focus:text-red-600 transition-colors"
                       />
                     </div>
                   </div>
@@ -466,19 +347,19 @@ export default function ManagePlayers() {
                   <div className="flex gap-2">
                     <Link
                       to={`/admin/players/${p._id}`}
-                      className="flex-1 py-2.5 bg-slate-50 hover:bg-blue-600 hover:text-white text-slate-400 font-bold text-[9px] uppercase tracking-widest rounded-xl transition-all border border-slate-100 text-center"
+                      className="flex-1 py-2.5 bg-cric-bg hover:bg-cric-accent hover:text-white text-cric-muted font-bold text-[9px] uppercase tracking-widest rounded-xl transition-all border border-cric-border text-center"
                     >
                       Profile
                     </Link>
                     <button
                       onClick={() => handleEdit(p)}
-                      className="flex-1 py-2.5 bg-slate-50 hover:bg-blue-600 hover:text-white text-slate-400 font-bold text-[9px] uppercase tracking-widest rounded-xl transition-all border border-slate-100"
+                      className="flex-1 py-2.5 bg-cric-bg hover:bg-cric-accent hover:text-white text-cric-muted font-bold text-[9px] uppercase tracking-widest rounded-xl transition-all border border-cric-border"
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => handleDelete(p._id)}
-                      className="px-3 py-2.5 bg-slate-50 hover:bg-red-600 hover:text-white text-slate-400 font-bold rounded-xl transition-all border border-slate-100"
+                      className="px-3 py-2.5 bg-cric-bg hover:bg-red-600 hover:text-white text-cric-muted font-bold rounded-xl transition-all border border-cric-border"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -491,11 +372,11 @@ export default function ManagePlayers() {
           </div>
 
           {players.length === 0 && !loading && (
-            <div className="text-center py-20 bg-white rounded-2xl border border-slate-100">
-              <p className="text-sm font-black text-slate-300 uppercase tracking-widest">
+            <div className="text-center py-20 bg-cric-card rounded-2xl border border-cric-border">
+              <p className="text-sm font-black text-cric-muted uppercase tracking-widest">
                 No Personnel Recorded
               </p>
-              <p className="text-xs text-slate-400 mt-2">
+              <p className="text-xs text-cric-muted mt-2">
                 Try adjusting your filters or search criteria.
               </p>
             </div>
@@ -503,23 +384,23 @@ export default function ManagePlayers() {
 
           {/* Pagination */}
           {pagination.totalPages > 1 && (
-            <div className="mt-10 flex items-center justify-center gap-4">
+            <div className="mt-10 flex items-center justify-center gap-2 sm:gap-4">
               <button
                 onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
                 disabled={page === 1}
-                className="px-6 py-3 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed text-[10px] font-black uppercase tracking-widest transition-all"
+                className="px-3 sm:px-6 py-2 sm:py-3 bg-cric-card border border-cric-border rounded-xl hover:bg-cric-bg disabled:opacity-30 disabled:cursor-not-allowed text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all text-cric-text"
               >
-                Previous
+                Prev
               </button>
-              <span className="text-xs font-black text-slate-500">
-                Page {pagination.currentPage} of {pagination.totalPages}
+              <span className="text-[10px] sm:text-xs font-black text-cric-muted whitespace-nowrap">
+                Page {pagination.currentPage} / {pagination.totalPages}
               </span>
               <button
                 onClick={() => setPage((prev) => Math.min(prev + 1, pagination.totalPages))}
                 disabled={page === pagination.totalPages}
-                className="px-6 py-3 bg-[#031d44] text-white rounded-xl hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-blue-900/10"
+                className="px-3 sm:px-6 py-2 sm:py-3 bg-cric-accent text-white rounded-xl hover:bg-[#e55a2b] disabled:opacity-30 disabled:cursor-not-allowed text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all shadow-xl"
               >
-                Next Page
+                Next
               </button>
             </div>
           )}

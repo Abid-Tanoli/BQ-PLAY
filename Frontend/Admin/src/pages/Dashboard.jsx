@@ -43,13 +43,13 @@ export default function Dashboard() {
     }, [matches]);
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-slate-100 to-slate-50 p-6 lg:p-10">
+        <div className="min-h-screen bg-cric-bg p-6 lg:p-10">
             {/* Header */}
             <div className="mb-10">
-                <h1 className="text-4xl lg:text-5xl font-black text-[#031d44] tracking-tight">
+                <h1 className="text-4xl lg:text-5xl font-black text-cric-text tracking-tight">
                     WELCOME BACK, {user?.name?.toUpperCase() || "ADMIN"}!
                 </h1>
-                <p className="text-slate-500 mt-2 font-medium">
+                <p className="text-cric-muted mt-2 font-medium">
                     Here's what's happening with your cricket management system today.
                 </p>
             </div>
@@ -61,20 +61,20 @@ export default function Dashboard() {
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-                <div className="bg-white rounded-2xl shadow-lg p-6 border border-slate-100">
-                    <p className="text-xs font-black uppercase tracking-widest text-slate-400">Total Matches</p>
-                    <p className="text-4xl font-black text-[#031d44] mt-2">{stats.totalMatches}</p>
+                <div className="bg-cric-card rounded-2xl shadow-lg p-6 border border-cric-border">
+                    <p className="text-xs font-black uppercase tracking-widest text-cric-muted">Total Matches</p>
+                    <p className="text-4xl font-black text-cric-text mt-2">{stats.totalMatches}</p>
                 </div>
-                <div className="bg-white rounded-2xl shadow-lg p-6 border border-slate-100">
-                    <p className="text-xs font-black uppercase tracking-widest text-slate-400">Live Matches</p>
+                <div className="bg-cric-card rounded-2xl shadow-lg p-6 border border-cric-border">
+                    <p className="text-xs font-black uppercase tracking-widest text-cric-muted">Live Matches</p>
                     <p className="text-4xl font-black text-green-600 mt-2">{stats.liveMatches}</p>
                 </div>
-                <div className="bg-white rounded-2xl shadow-lg p-6 border border-slate-100">
-                    <p className="text-xs font-black uppercase tracking-widest text-slate-400">Total Teams</p>
+                <div className="bg-cric-card rounded-2xl shadow-lg p-6 border border-cric-border">
+                    <p className="text-xs font-black uppercase tracking-widest text-cric-muted">Total Teams</p>
                     <p className="text-4xl font-black text-blue-600 mt-2">{teams.length}</p>
                 </div>
-                <div className="bg-white rounded-2xl shadow-lg p-6 border border-slate-100">
-                    <p className="text-xs font-black uppercase tracking-widest text-slate-400">Total Players</p>
+                <div className="bg-cric-card rounded-2xl shadow-lg p-6 border border-cric-border">
+                    <p className="text-xs font-black uppercase tracking-widest text-cric-muted">Total Players</p>
                     <p className="text-4xl font-black text-purple-600 mt-2">{players.length}</p>
                 </div>
             </div>
@@ -105,12 +105,12 @@ export default function Dashboard() {
             </div>
 
             {/* Recent Matches */}
-            <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-6">
+            <div className="bg-cric-card rounded-2xl shadow-xl border border-cric-border p-6">
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-lg font-black text-slate-800 uppercase tracking-widest">
+                    <h2 className="text-lg font-black text-cric-text uppercase tracking-widest">
                         Recent Matches
                     </h2>
-                    <Link to="/admin/events" className="text-xs font-bold text-blue-600 hover:underline">
+                    <Link to="/admin/events" className="text-xs font-bold text-cric-accent hover:underline">
                         View All →
                     </Link>
                 </div>
@@ -119,19 +119,19 @@ export default function Dashboard() {
                     {matches.slice(0, 5).map((match) => (
                         <div
                             key={match._id}
-                            className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100"
+                            className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-cric-bg rounded-xl border border-cric-border"
                         >
                             <div>
-                                <p className="font-bold text-slate-800">
+                                <p className="font-bold text-cric-text">
                                     {match.teams?.[0]?.name || "Team A"} vs{" "}
                                     {match.teams?.[1]?.name || "Team B"}
                                 </p>
-                                <p className="text-xs text-slate-400 mt-1">
+                                <p className="text-xs text-cric-muted mt-1">
                                     {new Date(match.startAt).toLocaleDateString()}
                                 </p>
                             </div>
                             <div className="flex items-center gap-4 mt-2 sm:mt-0">
-                                <p className="text-sm font-bold text-slate-600">
+                                <p className="text-sm font-bold text-cric-text">
                                     {match.innings?.[0]?.runs || 0}/{match.innings?.[0]?.wickets || 0}
                                     {" | "}
                                     {match.innings?.[1]?.runs || 0}/{match.innings?.[1]?.wickets || 0}
@@ -153,7 +153,7 @@ export default function Dashboard() {
 
                 {matches.length === 0 && (
                     <div className="text-center py-10">
-                        <p className="text-sm font-black text-slate-300 uppercase tracking-widest">
+                        <p className="text-sm font-black text-cric-muted uppercase tracking-widest">
                             No matches found
                         </p>
                     </div>

@@ -28,6 +28,12 @@ export async function login(email, password) {
   return user;
 }
 
+export async function loginWithGoogle(credential) {
+  const res = await api.post('/auth/google', { credential });
+  const { token, user } = res.data;
+  persistAuth(token, user);
+  return user;
+}
 
 export function logout() {
   clearAuth();

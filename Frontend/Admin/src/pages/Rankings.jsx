@@ -90,40 +90,43 @@ export default function Rankings() {
         <div className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
           {/* Header Row */}
           <div className="bg-[#031d44] px-6 py-4">
-            <div className="grid grid-cols-12 gap-4 text-white text-[10px] font-black uppercase tracking-widest">
-              <span className="col-span-1">Rank</span>
-              <span className="col-span-4">Name</span>
-              {activeTab === 'overall' && (
-                <>
-                  <span className="col-span-1 text-center">P</span>
-                  <span className="col-span-1 text-center">W</span>
-                  <span className="col-span-1 text-center">L</span>
-                  <span className="col-span-1 text-center">Pts</span>
-                  <span className="col-span-1 text-center">NRR</span>
-                  <span className="col-span-2 text-center">Form</span>
-                </>
-              )}
-              {(activeTab === 'batting' || activeTab === 'bowling' || activeTab === 'allrounder') && (
-                <>
-                  <span className="col-span-2 text-center">Team</span>
-                  <span className="col-span-1 text-center">{activeTab === 'batting' ? 'Runs' : activeTab === 'bowling' ? 'Wkts' : 'Pts'}</span>
-                  <span className="col-span-1 text-center">Mat</span>
-                  <span className="col-span-2 text-center">Rating</span>
-                </>
-              )}
+            <div className="overflow-x-auto no-scrollbar">
+              <div className="grid grid-cols-12 gap-4 text-white text-[10px] font-black uppercase tracking-widest min-w-[600px]">
+                <span className="col-span-1">Rank</span>
+                <span className="col-span-4">Name</span>
+                {activeTab === 'overall' && (
+                  <>
+                    <span className="col-span-1 text-center">P</span>
+                    <span className="col-span-1 text-center">W</span>
+                    <span className="col-span-1 text-center">L</span>
+                    <span className="col-span-1 text-center">Pts</span>
+                    <span className="col-span-1 text-center">NRR</span>
+                    <span className="col-span-2 text-center">Form</span>
+                  </>
+                )}
+                {(activeTab === 'batting' || activeTab === 'bowling' || activeTab === 'allrounder') && (
+                  <>
+                    <span className="col-span-2 text-center">Team</span>
+                    <span className="col-span-1 text-center">{activeTab === 'batting' ? 'Runs' : activeTab === 'bowling' ? 'Wkts' : 'Pts'}</span>
+                    <span className="col-span-1 text-center">Mat</span>
+                    <span className="col-span-2 text-center">Rating</span>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
           {/* Data Rows */}
-          <div className="divide-y divide-slate-100">
-            {rankings.map((item, idx) => {
-              const rank = item.overallRank || item.rank || item.categoryRank || idx + 1;
-              const isTeam = activeTab === 'overall';
-              return (
-                <div
-                  key={item._id || idx}
-                  className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-slate-50 transition-all items-center"
-                >
+          <div className="overflow-x-auto no-scrollbar">
+            <div className="min-w-[600px] divide-y divide-slate-100">
+              {rankings.map((item, idx) => {
+                const rank = item.overallRank || item.rank || item.categoryRank || idx + 1;
+                const isTeam = activeTab === 'overall';
+                return (
+                  <div
+                    key={item._id || idx}
+                    className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-slate-50 transition-all items-center"
+                  >
                   <div className="col-span-1">
                     <span className="text-xl font-black text-slate-300">{getRankBadge(rank)}</span>
                   </div>
@@ -189,6 +192,7 @@ export default function Rankings() {
               );
             })}
           </div>
+        </div>
         </div>
       )}
     </div>

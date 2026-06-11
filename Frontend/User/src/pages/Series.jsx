@@ -1,22 +1,22 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { api } from "../services/api";
 import Header from "../components/Header";
 import BlogGallery from "../components/BlogGallery";
 import BoundaryMeter from "../components/BoundaryMeter";
+import { initSocket } from "../services/socket";
+import SeriesLiveCommentary from "../components/SeriesLiveCommentary";
 
 export default function Series() {
   const { seriesId } = useParams();
   const [series, setSeries] = useState(null);
   const [matches, setMatches] = useState([]);
   const [squads, setSquads] = useState([]);
-  const [stats, setStats] = useState({ topRunScorers: [], topWicketTakers: [], boundaryMeter: { sixes: 0, fours: 0, mostSixes: [], mostFours: [] } });
+  const [stats, setStats] = useState({ topRunScorers: [], topWicketTakers: [], topFielders: [], boundaryMeter: { sixes: 0, fours: 0, mostSixes: [], mostFours: [] } });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("matches");
 
-  useEffect(() => { loadData(); }, [seriesId]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       let seriesData = null;
@@ -95,9 +95,9 @@ export default function Series() {
         const statsRes = await api.get(`/series/${seriesId}/stats`, { timeout: 8000 });
         setStats(statsRes.data);
       } catch (statsErr) {
-        const completedMatches = validMatches.filter(m => m?.status === "completed").slice(0, 100);
+        const activeForStats = validMatches.filter(m => ["completed", "live", "innings_break", "innings-break"].includes(m?.status)).slice(0, 100);
         const matchDetails = await Promise.all(
-          completedMatches.map(m => api.get(`/matches/${m._id}`, { timeout: 5000 }).catch(() => ({ data: m })))
+          activeForStats.map(m => api.get(`/matches/${m._id}`, { timeout: 5000 }).catch(() => ({ data: m })))
         );
         const playerStats = calculateStats(matchDetails.map(r => r.data));
         setStats(playerStats);
@@ -107,20 +107,36 @@ export default function Series() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [seriesId]);
 
-  const calculateStats = (completedMatches) => {
+  useEffect(() => { loadData(); }, [loadData]);
+
+  useEffect(() => {
+    const socket = initSocket();
+    const refresh = () => loadData();
+    socket.on("match:updated", refresh);
+    socket.on("match:scoreUpdate", refresh);
+    socket.on("match:ballUpdate", refresh);
+    return () => {
+      socket.off("match:updated", refresh);
+      socket.off("match:scoreUpdate", refresh);
+      socket.off("match:ballUpdate", refresh);
+    };
+  }, [loadData]);
+
+  const calculateStats = (matches) => {
     const battingStats = {};
     const bowlingStats = {};
+    const fieldingStats = {};
 
-    completedMatches.forEach(match => {
+    matches.forEach(match => {
       if (!match.innings) return;
       match.innings.forEach(innings => {
-        // Batting stats
         (innings.batting || []).forEach(b => {
-          if (!battingStats[b.player?._id || b.player]) {
-            battingStats[b.player?._id || b.player] = {
-              playerId: b.player?._id || b.player,
+          const key = b.player?._id || b.player;
+          if (!battingStats[key]) {
+            battingStats[key] = {
+              playerId: key,
               name: b.player?.name || "Unknown",
               team: innings.team?.name || "Unknown",
               teamId: innings.team?._id,
@@ -128,7 +144,7 @@ export default function Series() {
               highest: 0, notOuts: 0, average: 0, strikeRate: 0, fifties: 0, hundreds: 0
             };
           }
-          const s = battingStats[b.player?._id || b.player];
+          const s = battingStats[key];
           s.matches = Math.max(s.matches, 1);
           s.innings += 1;
           s.runs += b.runs || 0;
@@ -139,13 +155,30 @@ export default function Series() {
           if (!b.isOut) s.notOuts += 1;
           if (b.runs >= 50 && b.runs < 100) s.fifties += 1;
           if (b.runs >= 100) s.hundreds += 1;
+
+          if (b.dismissalType && b.fielder) {
+            const fk = b.fielder?._id || b.fielder;
+            if (!fieldingStats[fk]) {
+              fieldingStats[fk] = {
+                playerId: fk,
+                name: b.fielder?.name || "Unknown",
+                team: innings.team?.name || "Unknown",
+                matches: 0, catches: 0, stumpings: 0, runOuts: 0
+              };
+            }
+            const fs = fieldingStats[fk];
+            fs.matches = Math.max(fs.matches, 1);
+            if (b.dismissalType === "caught") fs.catches += 1;
+            else if (b.dismissalType === "stumped") fs.stumpings += 1;
+            else if (b.dismissalType === "run out") fs.runOuts += 1;
+          }
         });
 
-        // Bowling stats
         (innings.bowling || []).forEach(b => {
-          if (!bowlingStats[b.player?._id || b.player]) {
-            bowlingStats[b.player?._id || b.player] = {
-              playerId: b.player?._id || b.player,
+          const key = b.player?._id || b.player;
+          if (!bowlingStats[key]) {
+            bowlingStats[key] = {
+              playerId: key,
               name: b.player?.name || "Unknown",
               team: innings.team?.name || "Unknown",
               teamId: innings.team?._id,
@@ -153,7 +186,7 @@ export default function Series() {
               average: 0, economy: 0, best: "0/0", fourWickets: 0, fiveWickets: 0
             };
           }
-          const s = bowlingStats[b.player?._id || b.player];
+          const s = bowlingStats[key];
           s.matches = Math.max(s.matches, 1);
           s.overs += b.overs || 0;
           s.balls += b.balls || 0;
@@ -173,7 +206,6 @@ export default function Series() {
       });
     });
 
-    // Calculate averages
     Object.values(battingStats).forEach(s => {
       s.average = s.innings - s.notOuts > 0 ? (s.runs / (s.innings - s.notOuts)).toFixed(2) : s.runs.toFixed(2);
       s.strikeRate = s.balls > 0 ? ((s.runs / s.balls) * 100).toFixed(2) : "0.00";
@@ -185,6 +217,7 @@ export default function Series() {
 
     const topRunScorers = Object.values(battingStats).sort((a, b) => b.runs - a.runs).slice(0, 20);
     const topWicketTakers = Object.values(bowlingStats).sort((a, b) => b.wickets - a.wickets).slice(0, 20);
+    const topFielders = Object.values(fieldingStats).sort((a, b) => (b.catches + b.stumpings + b.runOuts) - (a.catches + a.stumpings + a.runOuts));
     const boundaryPlayers = Object.values(battingStats);
     const boundaryMeter = {
       sixes: boundaryPlayers.reduce((sum, player) => sum + (player.sixes || 0), 0),
@@ -201,23 +234,23 @@ export default function Series() {
         .map(player => ({ playerId: player.playerId, name: player.name, team: player.team, count: player.fours }))
     };
 
-    return { topRunScorers, topWicketTakers, boundaryMeter };
+    return { topRunScorers, topWicketTakers, topFielders, boundaryMeter };
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f0f2f5] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
+      <div className="min-h-screen bg-cric-bg flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-cric-accent border-t-transparent"></div>
       </div>
     );
   }
 
   if (!series) {
     return (
-      <div className="min-h-screen bg-[#f0f2f5] flex items-center justify-center">
+      <div className="min-h-screen bg-cric-bg flex items-center justify-center">
         <div className="text-center">
-          <p className="text-2xl font-black text-[#031d44] uppercase">Series not found</p>
-          <Link to="/series" className="text-blue-600 hover:underline mt-4 block">Back to Series</Link>
+          <p className="text-2xl font-black text-cric-text uppercase">Series not found</p>
+          <Link to="/series" className="text-cric-accent hover:text-orange-600 mt-4 block">Back to Series</Link>
         </div>
       </div>
     );
@@ -236,13 +269,13 @@ export default function Series() {
   const upcomingMatches = matches.filter(m => ["upcoming", "scheduled"].includes(normalizeStatus(m.status)));
 
   return (
-    <div className="bg-[#f0f2f5] min-h-screen">
+    <div className="bg-cric-bg min-h-screen">
       <Header />
 
       {/* Series Header */}
-      <div className="bg-gradient-to-r from-[#031d44] via-[#0a2d5e] to-[#031d44] text-white">
+      <div className="bg-gradient-to-r from-cric-text via-slate-800 to-cric-text text-white">
         <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="flex items-center gap-3 text-sm text-blue-300 mb-4">
+          <div className="flex items-center gap-3 text-sm text-white/60 mb-4">
             <Link to="/" className="hover:text-white transition-colors">Home</Link>
             <span>-</span>
             <span>{series.name}</span>
@@ -258,7 +291,7 @@ export default function Series() {
             )}
             <div>
               <h1 className="text-3xl font-black uppercase tracking-tight mb-2">{series.name}</h1>
-              <div className="flex items-center gap-4 text-sm text-blue-200 flex-wrap">
+              <div className="flex items-center gap-4 text-sm text-white/60 flex-wrap">
                 <span className="px-3 py-1 bg-white/10 rounded-full text-xs font-bold uppercase">{series.eventType?.replace('-', ' ') || series.type}</span>
                 <span className="px-3 py-1 bg-white/10 rounded-full text-xs font-bold uppercase">{series.format}</span>
                 <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${series.status === "live" ? "bg-red-600 text-white animate-pulse" :
@@ -266,7 +299,7 @@ export default function Series() {
                   }`}>{series.status}</span>
                 <span className="text-xs">{series.totalMatches || matches.length} Matches</span>
               </div>
-              <p className="text-sm text-blue-200 mt-2">
+              <p className="text-sm text-white/60 mt-2">
                 {series.startDate ? new Date(series.startDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : ""}
                 {series.endDate && ` - ${new Date(series.endDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`}
                 {series.venue && ` - ${series.venue}`}
@@ -282,15 +315,20 @@ export default function Series() {
               <button
                 key={t.key}
                 onClick={() => setActiveTab(t.key)}
-                className={`px-6 py-4 text-xs font-black uppercase tracking-widest transition-all relative shrink-0 ${activeTab === t.key ? "text-white" : "text-blue-200/50 hover:text-white"
+                className={`px-6 py-4 text-xs font-black uppercase tracking-widest transition-all relative shrink-0 ${activeTab === t.key ? "text-white" : "text-white/50 hover:text-white"
                   }`}
               >
                 {t.label}
-                {activeTab === t.key && <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-red-600 rounded-t" />}
+                {activeTab === t.key && <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-cric-accent rounded-t" />}
               </button>
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Live Commentary Panel */}
+      <div className="max-w-7xl mx-auto px-4 pt-6">
+        <SeriesLiveCommentary seriesId={seriesId} />
       </div>
 
       {/* Content */}
@@ -300,7 +338,7 @@ export default function Series() {
           <div className="space-y-8">
             {liveMatches.length > 0 && (
               <div>
-                <h2 className="text-xl font-black text-[#031d44] uppercase tracking-tight mb-4 flex items-center gap-2">
+                <h2 className="text-xl font-black text-cric-text uppercase tracking-tight mb-4 flex items-center gap-2">
                   <span className="w-2 h-6 bg-red-600 rounded-full"></span>
                   Live ({liveMatches.length})
                 </h2>
@@ -309,7 +347,7 @@ export default function Series() {
                     <Link
                       key={match._id}
                       to={`/match/${match._id}`}
-                      className="block bg-white rounded-xl shadow-md overflow-hidden border border-red-200 hover:shadow-lg transition-all"
+                      className="block bg-cric-card rounded-xl shadow-sm overflow-hidden border border-red-200 hover:shadow-md transition-all"
                     >
                       <div className="p-4">
                         <div className="flex items-center justify-between mb-3">
@@ -327,10 +365,10 @@ export default function Series() {
                               <div key={idx} className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                   {team.logo && <img src={team.logo} alt={team.name} className="w-6 h-6 rounded-full object-cover" />}
-                                  <span className="font-bold text-sm text-slate-800 uppercase">{team.shortName || team.name}</span>
+                                  <span className="font-bold text-sm text-cric-text uppercase">{team.shortName || team.name}</span>
                                 </div>
-                                <span className="font-black text-sm text-slate-800">
-                                  {inn.runs || 0}/{inn.wickets || 0} <span className="text-xs text-slate-500 font-bold">({Math.floor((inn.balls || 0) / 6)}.{(inn.balls || 0) % 6})</span>
+                                <span className="font-black text-sm text-cric-text">
+                                  {inn.runs || 0}/{inn.wickets || 0} <span className="text-xs text-cric-muted font-bold">({Math.floor((inn.balls || 0) / 6)}.{(inn.balls || 0) % 6})</span>
                                 </span>
                               </div>
                             );
@@ -346,7 +384,7 @@ export default function Series() {
             {/* Completed Matches */}
             {completedMatches.length > 0 && (
               <div>
-                <h2 className="text-xl font-black text-[#031d44] uppercase tracking-tight mb-4 flex items-center gap-2">
+                <h2 className="text-xl font-black text-cric-text uppercase tracking-tight mb-4 flex items-center gap-2">
                   <span className="w-2 h-6 bg-green-600 rounded-full"></span>
                   Results ({completedMatches.length})
                 </h2>
@@ -355,14 +393,14 @@ export default function Series() {
                     <Link
                       key={match._id}
                       to={`/match/${match._id}`}
-                      className="block bg-white rounded-xl shadow-md overflow-hidden border border-slate-200 hover:shadow-lg transition-all"
+                      className="block bg-cric-card rounded-xl shadow-sm overflow-hidden border border-cric-border hover:shadow-md transition-all"
                     >
                       <div className="p-4">
                         <div className="flex items-center justify-between mb-3">
-                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                          <span className="text-[10px] font-bold text-cric-muted uppercase tracking-wider">
                             {match.matchNumber ? `Match ${match.matchNumber}` : match.title}
                           </span>
-                          <span className="text-[10px] font-bold text-slate-400">
+                          <span className="text-[10px] font-bold text-cric-muted">
                             {match.venue}
                           </span>
                         </div>
@@ -373,17 +411,17 @@ export default function Series() {
                               <div key={idx} className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                   {team.logo && <img src={team.logo} alt={team.name} className="w-6 h-6 rounded-full object-cover" />}
-                                  <span className="font-bold text-sm text-slate-800 uppercase">{team.shortName || team.name}</span>
+                                  <span className="font-bold text-sm text-cric-text uppercase">{team.shortName || team.name}</span>
                                 </div>
-                                <span className="font-black text-sm text-slate-800">
-                                  {inn.runs || 0}/{inn.wickets || 0} <span className="text-xs text-slate-500 font-bold">({inn.overs || 0}.{inn.balls % 6 || 0})</span>
+                                <span className="font-black text-sm text-cric-text">
+                                  {inn.runs || 0}/{inn.wickets || 0} <span className="text-xs text-cric-muted font-bold">({inn.overs || 0}.{inn.balls % 6 || 0})</span>
                                 </span>
                               </div>
                             );
                           })}
                         </div>
                         {match.result?.description && (
-                          <div className="mt-3 pt-3 border-t border-slate-100">
+                          <div className="mt-3 pt-3 border-t border-cric-border">
                             <p className="text-sm font-bold text-green-700">{match.result.description}</p>
                           </div>
                         )}
@@ -397,7 +435,7 @@ export default function Series() {
             {/* Upcoming Matches */}
             {upcomingMatches.length > 0 && (
               <div>
-                <h2 className="text-xl font-black text-[#031d44] uppercase tracking-tight mb-4 flex items-center gap-2">
+                <h2 className="text-xl font-black text-cric-text uppercase tracking-tight mb-4 flex items-center gap-2">
                   <span className="w-2 h-6 bg-blue-600 rounded-full"></span>
                   Upcoming ({upcomingMatches.length})
                 </h2>
@@ -406,11 +444,11 @@ export default function Series() {
                     <Link
                       key={match._id}
                       to={`/match/${match._id}`}
-                      className="block bg-white rounded-xl shadow-md overflow-hidden border border-slate-200 hover:shadow-lg transition-all"
+                      className="block bg-cric-card rounded-xl shadow-sm overflow-hidden border border-cric-border hover:shadow-md transition-all"
                     >
                       <div className="p-4">
                         <div className="flex items-center justify-between mb-3">
-                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                          <span className="text-[10px] font-bold text-cric-muted uppercase tracking-wider">
                             {match.matchNumber ? `Match ${match.matchNumber}` : match.title}
                           </span>
                           <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-[9px] font-bold uppercase">
@@ -421,12 +459,12 @@ export default function Series() {
                           {match.teams?.map((team, idx) => (
                             <div key={idx} className="flex flex-col items-center flex-1">
                               {team.logo && <img src={team.logo} alt={team.name} className="w-10 h-10 rounded-full object-cover mb-2" />}
-                              <span className="font-bold text-sm text-slate-800 uppercase text-center">{team.shortName || team.name}</span>
+                              <span className="font-bold text-sm text-cric-text uppercase text-center">{team.shortName || team.name}</span>
                             </div>
                           ))}
-                          <span className="text-2xl font-black text-slate-300">VS</span>
+                          <span className="text-2xl font-black text-cric-muted">VS</span>
                         </div>
-                        <p className="text-center text-[10px] text-slate-500 font-bold mt-2">
+                        <p className="text-center text-[10px] text-cric-muted font-bold mt-2">
                           {new Date(match.startAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} - {match.venue}
                         </p>
                       </div>
@@ -441,10 +479,10 @@ export default function Series() {
         {/* Points Table Tab */}
         {activeTab === "points" && series.pointsTable && (
           <div className="space-y-6">
-            <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
-              <div className="p-6 border-b border-slate-200 bg-gradient-to-r from-[#031d44] to-[#0a2d5e] text-white">
+            <div className="bg-cric-card rounded-2xl shadow-sm overflow-hidden border border-cric-border">
+              <div className="p-6 border-b border-cric-border bg-gradient-to-r from-cric-text to-slate-800 text-white">
                 <h3 className="text-xl font-black uppercase tracking-tight">Points Table</h3>
-                <p className="text-xs text-blue-200 mt-1">{series.name}</p>
+                <p className="text-xs text-white/60 mt-1">{series.name}</p>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left">
@@ -519,8 +557,8 @@ export default function Series() {
             <BoundaryMeter stats={stats.boundaryMeter || {}} />
 
             {/* Most Runs */}
-            <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
-              <div className="p-6 border-b border-slate-200 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+            <div className="bg-cric-card rounded-2xl shadow-sm overflow-hidden border border-cric-border">
+              <div className="p-6 border-b border-cric-border bg-gradient-to-r from-blue-600 to-blue-700 text-white">
                 <h3 className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
                   <span className="text-2xl">🏏</span> Most Runs
                 </h3>
@@ -549,7 +587,7 @@ export default function Series() {
                       <tr key={s.playerId} className="hover:bg-slate-50 transition-colors">
                         <td className="px-4 py-3 font-bold text-slate-400">{idx + 1}</td>
                         <td className="px-4 py-3">
-                          <div className="font-bold text-slate-800">{s.name}</div>
+                          <Link to={`/players/${s.playerId}`} className="font-bold text-slate-800 hover:text-cric-accent">{s.name}</Link>
                           <div className="text-[10px] text-slate-500">{s.team}</div>
                         </td>
                         <td className="px-2 py-3 text-center">{s.matches}</td>
@@ -574,8 +612,8 @@ export default function Series() {
             </div>
 
             {/* Most Wickets */}
-            <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
-              <div className="p-6 border-b border-slate-200 bg-gradient-to-r from-green-600 to-green-700 text-white">
+            <div className="bg-cric-card rounded-2xl shadow-sm overflow-hidden border border-cric-border">
+              <div className="p-6 border-b border-cric-border bg-gradient-to-r from-green-600 to-green-700 text-white">
                 <h3 className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
                   <span className="text-2xl">⚾</span> Most Wickets
                 </h3>
@@ -602,7 +640,7 @@ export default function Series() {
                       <tr key={s.playerId} className="hover:bg-slate-50 transition-colors">
                         <td className="px-4 py-3 font-bold text-slate-400">{idx + 1}</td>
                         <td className="px-4 py-3">
-                          <div className="font-bold text-slate-800">{s.name}</div>
+                          <Link to={`/players/${s.playerId}`} className="font-bold text-slate-800 hover:text-cric-accent">{s.name}</Link>
                           <div className="text-[10px] text-slate-500">{s.team}</div>
                         </td>
                         <td className="px-2 py-3 text-center">{s.matches}</td>
@@ -623,25 +661,70 @@ export default function Series() {
                 </table>
               </div>
             </div>
+
+            {/* Fielding & Keeping */}
+            <div className="bg-cric-card rounded-2xl shadow-sm overflow-hidden border border-cric-border">
+              <div className="p-6 border-b border-cric-border bg-gradient-to-r from-orange-600 to-amber-700 text-white">
+                <h3 className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
+                  <span className="text-2xl">🧤</span> Fielding & Keeping
+                </h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-slate-50 text-slate-600 uppercase text-[11px] font-bold">
+                    <tr>
+                      <th className="px-4 py-3">#</th>
+                      <th className="px-4 py-3">Player</th>
+                      <th className="px-2 py-3 text-center">Mat</th>
+                      <th className="px-4 py-3 text-center font-black text-orange-800 bg-orange-50">Catches</th>
+                      <th className="px-4 py-3 text-center">Stumpings</th>
+                      <th className="px-4 py-3 text-center">Run Outs</th>
+                      <th className="px-4 py-3 text-center">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {(stats.topFielders || []).map((s, idx) => (
+                      <tr key={s.playerId} className="hover:bg-slate-50 transition-colors">
+                        <td className="px-4 py-3 font-bold text-slate-400">{idx + 1}</td>
+                        <td className="px-4 py-3">
+                          <Link to={`/players/${s.playerId}`} className="font-bold text-slate-800 hover:text-cric-accent">{s.name}</Link>
+                          <div className="text-[10px] text-slate-500">{s.team}</div>
+                        </td>
+                        <td className="px-2 py-3 text-center">{s.matches}</td>
+                        <td className="px-4 py-3 text-center font-black text-orange-800 bg-orange-50/50 text-lg">{s.catches}</td>
+                        <td className="px-4 py-3 text-center font-bold">{s.stumpings || "-"}</td>
+                        <td className="px-4 py-3 text-center font-bold">{s.runOuts || "-"}</td>
+                        <td className="px-4 py-3 text-center font-black">
+                          {(s.catches || 0) + (s.stumpings || 0) + (s.runOuts || 0)}
+                        </td>
+                      </tr>
+                    ))}
+                    {(!stats.topFielders || stats.topFielders.length === 0) && (
+                      <tr><td colSpan="7" className="px-4 py-8 text-center text-slate-500">{stats.emptyMessage || "No fielding stats available yet"}</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         )}
 
         {/* Squads Tab */}
         {activeTab === "squads" && (
           <div className="space-y-6">
-            <h2 className="text-xl font-black text-[#031d44] uppercase tracking-tight flex items-center gap-2">
+          <h2 className="text-xl font-black text-cric-text uppercase tracking-tight flex items-center gap-2">
               <span className="w-2 h-6 bg-purple-600 rounded-full"></span>
               Team Squads
             </h2>
             {squads.length === 0 ? (
-              <div className="bg-white rounded-2xl shadow-xl p-12 text-center border border-slate-200">
-                <p className="text-slate-500 font-bold">Squads not announced yet</p>
+              <div className="bg-cric-card rounded-2xl shadow-sm p-12 text-center border border-cric-border">
+                <p className="text-cric-muted font-bold">Squads not announced yet</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {squads.map(squad => (
-                  <div key={squad.team?._id || squad._id || squad.name} className="bg-white rounded-xl shadow-lg overflow-hidden border border-slate-200">
-                    <div className="bg-gradient-to-r from-[#031d44] to-[#0a2d5e] text-white p-4">
+                  <div key={squad.team?._id || squad._id || squad.name} className="bg-cric-card rounded-xl shadow-sm overflow-hidden border border-cric-border">
+                    <div className="bg-gradient-to-r from-cric-text to-slate-800 text-white p-4">
                       <div className="flex items-center gap-3">
                         {squad.team?.logo && <img src={squad.team.logo} alt={squad.team.name} className="w-10 h-10 rounded-lg object-cover" />}
                         <div>

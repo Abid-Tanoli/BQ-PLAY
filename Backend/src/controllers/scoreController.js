@@ -5,6 +5,9 @@ import { getIO, emitBallWithCommentary, emitBallUpdate, emitWicketAlert, emitMil
 import { updateTournamentPoints } from "../services/tournamentService.js";
 import fieldPositionMapper from "../services/fieldPositionMapper.js";
 import aiCommentary from "../services/aiCommentary.js";
+import CricketShot from "../models/CricketShot.js";
+import Ball from "../models/Ball.js";
+import { saveAndEmitCommentary } from "../services/commentaryService.js";
 import Delivery from "../models/Delivery.js";
 import Partnership from "../models/Partnership.js";
 import MatchAnalytics from "../models/MatchAnalytics.js";
@@ -141,7 +144,10 @@ export const updateScore = async (req, res) => {
       pitchShotType = "",
       pitchX = null,
       pitchY = null,
-      nextBatsmanId = null
+      nextBatsmanId = null,
+      groundZone = "",
+      fieldedByPosition = "",
+      shotTypeName = ""
     } = req.body;
 
     const match = await Match.findById(matchId)
@@ -217,6 +223,14 @@ export const updateScore = async (req, res) => {
     // Reassign to the outer let-declared isWicket so downstream code sees engine's decision
     isWicket = engineWicket;
 
+    // Validate fielder for 1/2/3 runs (non-wicket, non-extras)
+    const runsValue = parseInt(String(runs), 10);
+    if ([1, 2, 3].includes(runsValue) && !isWicket && !isWide && !isNoBall && !isBye && !isLegBye) {
+      if (!fielderId) {
+        console.warn(`[Scoring] Runs=${runsValue} but no fielderId provided for match ${matchId}`);
+      }
+    }
+
     // Get player names for commentary
     const batsmanOnStrike = await Player.findById(batsmanOnStrikeId);
     const bowlerPlayer = await Player.findById(bowlerId);
@@ -268,6 +282,14 @@ export const updateScore = async (req, res) => {
           timestamp: new Date()
         });
       }
+    }
+
+    // Look up shot type name from CricketShot if not provided in request
+    if (!shotTypeName && shotType) {
+      try {
+        const shotDoc = await CricketShot.findById(shotType).select("name").lean();
+        if (shotDoc) shotTypeName = shotDoc.name;
+      } catch (e) { /* ignore lookup errors */ }
     }
 
     // Generate AI commentary
@@ -355,6 +377,13 @@ export const updateScore = async (req, res) => {
     ball.extraType = isWide ? "wide" : isNoBall ? "no_ball" : isBye ? "bye" : isLegBye ? "leg_bye" : "";
     ball.extraRuns = extraRuns || 0;
 
+    // Set shot/fielding data on ball subdocument
+    ball.shotType = shotType || "";
+    ball.pitchLine = pitchLine || "";
+    ball.pitchLength = pitchLength || "";
+    ball.fieldingZone = groundZone || fieldingZone || "";
+    ball.shotTypeName = shotTypeName || "";
+
     const persistedOver = innings.oversHistory?.find(o => o.overNumber === currentOverNumber);
     const persistedBall = persistedOver?.balls?.[persistedOver.balls.length - 1];
     if (persistedBall) {
@@ -366,6 +395,11 @@ export const updateScore = async (req, res) => {
       persistedBall.runText = ball.runText || getBallRunText(ball);
       persistedBall.extraType = ball.extraType;
       persistedBall.extraRuns = ball.extraRuns;
+      persistedBall.shotType = ball.shotType;
+      persistedBall.pitchLine = ball.pitchLine;
+      persistedBall.pitchLength = ball.pitchLength;
+      persistedBall.fieldingZone = ball.fieldingZone;
+      persistedBall.shotTypeName = ball.shotTypeName;
     }
 
     // Set current bowler on innings
@@ -546,6 +580,52 @@ export const updateScore = async (req, res) => {
       });
       await delivery.save();
     } catch (e) { console.log("Delivery save error:", e.message); }
+
+    // Create standalone Ball document for commentary/shots/fielding
+    try {
+      const ballDoc = new Ball({
+        matchId: match._id,
+        over: currentOverNumber,
+        ball: ballNumberInOver,
+        batsman: batsmanOnStrikeId,
+        bowler: bowlerId,
+        batsmanName: batsmanOnStrike?.name || "",
+        bowlerName: bowlerPlayer?.name || "",
+        runs: batsmanRuns,
+        extraType: isWide ? "wide" : isNoBall ? "no_ball" : isBye ? "bye" : isLegBye ? "leg_bye" : null,
+        extraRuns,
+        isWide,
+        isNoBall,
+        isBye,
+        isLegBye,
+        isWicket,
+        wicketType: wicketType || null,
+        fielderName: fielderPlayer?.name || "",
+        shotType: shotType || null,
+        shotTypeName: shotTypeName || "",
+        pitchLine: pitchLine || "",
+        pitchLength: pitchLength || "",
+        groundZone: groundZone || fieldingZone || "",
+        fieldedBy: fielderId || null,
+        fieldedByPosition: fieldedByPosition || "",
+        commentary: ball?.commentary || "",
+        commentaryGeneratedAt: new Date(),
+      });
+      const savedBall = await ballDoc.save();
+      if (savedBall) {
+        saveAndEmitCommentary(savedBall._id, ball?.commentary || "", {
+          matchId: match._id,
+          bowlerName: bowlerPlayer?.name || "",
+          batsmanName: batsmanOnStrike?.name || "",
+          batsmanRuns,
+          runs: batsmanRuns,
+          isWicket,
+          currentOver: `${currentOverNumber}.${ballNumberInOver}`,
+          fieldedByName: fielderPlayer?.name || "",
+          fieldedByPosition: fieldedByPosition || "",
+        }).catch(e => console.warn("Commentary emit error:", e.message));
+      }
+    } catch (e) { console.log("Ball document creation error:", e.message); }
 
     // Update/manage partnerships
     try {

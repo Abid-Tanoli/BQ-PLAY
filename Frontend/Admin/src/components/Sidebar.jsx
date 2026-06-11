@@ -15,12 +15,28 @@ const menuItems = [
   { to: "/admin/sync", label: "Sync Panel", icon: "🔄" },
 ];
 
-export default function Sidebar({ onClose }) {
+export default function Sidebar({ open, onClose }) {
   return (
-    <aside className="w-64 bg-cric-card border-r border-cric-border flex flex-col h-full transition-colors duration-300">
+    <aside
+      className={`
+        fixed inset-y-0 left-0 z-50 w-64 bg-cric-card border-r border-cric-border
+        flex flex-col h-full transition-transform duration-300 ease-in-out
+        lg:translate-x-0
+        ${open ? "translate-x-0" : "-translate-x-full"}
+      `}
+    >
       <div className="p-6 border-b border-cric-border">
-        <h1 className="text-xl font-black font-raj text-cric-accent tracking-tight">BQ-PLAY</h1>
-        <p className="text-xs text-cric-muted mt-1 uppercase tracking-widest font-bold">Admin Panel</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-black font-raj text-cric-accent tracking-tight">BQ-PLAY</h1>
+            <p className="text-xs text-cric-muted mt-1 uppercase tracking-widest font-bold">Admin Panel</p>
+          </div>
+          <button onClick={onClose} className="lg:hidden text-cric-muted hover:text-cric-accent p-1">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
       </div>
       <nav className="flex-1 p-4 overflow-y-auto no-scrollbar">
         <ul className="space-y-1">
@@ -31,9 +47,10 @@ export default function Sidebar({ onClose }) {
                 end={item.to === "/admin"}
                 onClick={onClose}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all duration-200 ${isActive
-                    ? "bg-cric-accent text-white shadow-md shadow-cric-accent/20"
-                    : "text-cric-muted hover:bg-cric-bg hover:text-cric-text"
+                  `flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all duration-200 min-h-[44px] ${
+                    isActive
+                      ? "bg-cric-accent text-white shadow-md shadow-cric-accent/20"
+                      : "text-cric-muted hover:bg-cric-bg hover:text-cric-text"
                   }`
                 }
               >

@@ -1,4 +1,5 @@
 import User from "../models/User.js";
+import Player from "../models/Player.js";
 import { generateToken } from "../utils/jwt.js";
 
 export const registerUser = async (req, res) => {
@@ -11,7 +12,8 @@ export const registerUser = async (req, res) => {
       organizationCategory = "",
       organizationName = "",
       phone = "",
-      joinIntent = ""
+      joinIntent = "",
+      playerProfile
     } = req.body;
 
     if (!name || !email || !password) {
@@ -39,6 +41,26 @@ export const registerUser = async (req, res) => {
       phone,
       joinIntent
     });
+
+    if (requestedType === "player" && playerProfile) {
+      await Player.create({
+        name,
+        playingRole: playerProfile.playingRole || "",
+        battingStyle: playerProfile.battingStyle || "",
+        bowlingStyle: playerProfile.bowlingStyle || "",
+        category: playerProfile.category || "Other",
+        subCategory: playerProfile.subCategory || "",
+        ageGroup: playerProfile.ageGroup || "Open",
+        organization: playerProfile.organizationName || "",
+        address: {
+          town: playerProfile.location?.town || "",
+          district: playerProfile.location?.district || "",
+          city: playerProfile.location?.city || "",
+          province: playerProfile.location?.province || "",
+          country: "Pakistan"
+        },
+      });
+    }
 
     const token = generateToken(newUser);
 

@@ -1,5 +1,5 @@
-import React from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { NavLink, useParams, useNavigate } from 'react-router-dom';
 import useMatchScoring from '../hooks/useMatchScoring';
 import MatchSetupWizard from '../components/ScoreManagement/MatchSetupWizard';
 import RightSidebarControls from '../components/ScoreManagement/RightSidebarControls';
@@ -15,6 +15,7 @@ import { TABS, getScoreTabPath, formatOvers, FIELD_POSITIONS, WICKET_TYPES } fro
 
 export default function ManageScore() {
     const navigate = useNavigate();
+    const { matchId } = useParams();
     const {
         matches,
         selectedMatch,
@@ -116,13 +117,26 @@ export default function ManageScore() {
         getSquad,
         getSquadMeta,
         showToast,
-        reloadMatch
+        reloadMatch,
+        fieldedById,
+        setFieldedById,
+        fieldedByPosition,
+        setFieldedByPosition,
     } = useMatchScoring();
 
-    if (loading && !selectedMatch && matches.length === 0) {
+    const [loadTimeout, setLoadTimeout] = useState(false);
+
+    React.useEffect(() => {
+        const timer = setTimeout(() => setLoadTimeout(true), 4000);
+        return () => clearTimeout(timer);
+    }, []);
+
+    if (loading && !selectedMatch && !loadTimeout) {
         return (
-            <div className="p-10 text-center text-xl font-bold bg-cric-bg min-h-screen text-cric-text">
-                Loading matches...
+            <div className="p-10 text-center text-xl font-bold bg-cric-bg min-h-screen text-cric-text flex flex-col items-center justify-center">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-cric-accent border-t-transparent mb-4" />
+                <p>Loading match data...</p>
+                <p className="text-sm text-cric-muted mt-2">Connecting to server</p>
             </div>
         );
     }
@@ -130,24 +144,37 @@ export default function ManageScore() {
     if (!selectedMatch) {
         const isMatchIdInUrl = window.location.pathname.split('/').pop();
         const isValidMatchId = isMatchIdInUrl && isMatchIdInUrl !== 'score';
-        
-        if (isValidMatchId && matches.length > 0) {
+
+        if (isValidMatchId && loadTimeout) {
             return (
                 <div className="p-8 max-w-[1200px] mx-auto min-h-screen bg-cric-bg transition-colors duration-300 text-center">
                     <div className="bg-cric-card rounded-[2.5rem] p-12 border border-cric-border shadow-xl max-w-md mx-auto">
-                        <div className="w-16 h-16 mx-auto mb-6 bg-amber-500/10 rounded-full flex items-center justify-center">
-                            <svg className="w-8 h-8 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        <div className="w-16 h-16 mx-auto mb-6 bg-red-500/10 rounded-full flex items-center justify-center">
+                            <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.636 5.636a9 9 0 1012.728 0M12 9v4m0 4h.01" />
                             </svg>
                         </div>
-                        <h2 className="text-2xl font-black font-raj text-cric-text mb-3">Match Not Found</h2>
-                        <p className="text-cric-muted mb-6">The match you're looking for doesn't exist or has been removed.</p>
-                        <button 
-                            onClick={() => navigate('/admin/score')}
-                            className="px-6 py-3 bg-cric-accent text-white font-black rounded-xl hover:scale-105 transition-all"
-                        >
-                            Back to Match List
-                        </button>
+                        <h2 className="text-2xl font-black font-raj text-cric-text mb-3">Unable to Load Match</h2>
+                        <p className="text-cric-muted mb-2">Could not connect to the server. Please make sure:</p>
+                        <ul className="text-sm text-cric-muted mb-6 text-left list-disc list-inside">
+                            <li>The backend server is running on port 5000</li>
+                            <li>The match ID is correct</li>
+                            <li>Your network connection is working</li>
+                        </ul>
+                        <div className="flex gap-3 justify-center">
+                            <button 
+                                onClick={() => navigate('/admin/score')}
+                                className="px-6 py-3 bg-cric-accent text-white font-black rounded-xl hover:scale-105 transition-all"
+                            >
+                                Back to Match List
+                            </button>
+                            <button 
+                                onClick={() => window.location.reload()}
+                                className="px-6 py-3 bg-cric-bg text-cric-text border border-cric-border font-black rounded-xl hover:bg-cric-border transition-all"
+                            >
+                                Retry
+                            </button>
+                        </div>
                     </div>
                 </div>
             );
@@ -199,6 +226,114 @@ export default function ManageScore() {
         );
     }
 
+    const matchStatus = selectedMatch?.status;
+    const isUpcoming = matchStatus === 'upcoming' || matchStatus === 'scheduled';
+    const isCompleted = matchStatus === 'completed';
+
+    if (isUpcoming) {
+        return (
+            <div className="p-8 max-w-[1200px] mx-auto min-h-screen bg-cric-bg transition-colors duration-300">
+                <div className="bg-cric-card rounded-[2.5rem] p-12 border border-cric-border shadow-xl max-w-2xl mx-auto text-center">
+                    <div className="w-20 h-20 mx-auto mb-6 bg-amber-500/10 rounded-full flex items-center justify-center">
+                        <svg className="w-10 h-10 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <h2 className="text-3xl font-black font-raj text-cric-text mb-4 uppercase tracking-tight">Match Has Not Started Yet</h2>
+                    <div className="text-xl font-black text-cric-text mb-6">
+                        {selectedMatch.teams?.[0]?.name} <span className="text-cric-accent">VS</span> {selectedMatch.teams?.[1]?.name}
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 mb-8 text-left bg-cric-bg rounded-2xl p-6 border border-cric-border">
+                        <div>
+                            <p className="text-[9px] font-black text-cric-muted uppercase tracking-widest">Format</p>
+                            <p className="text-sm font-bold text-cric-text">{selectedMatch.format || 'N/A'}</p>
+                        </div>
+                        <div>
+                            <p className="text-[9px] font-black text-cric-muted uppercase tracking-widest">Venue</p>
+                            <p className="text-sm font-bold text-cric-text">{selectedMatch.venue || 'N/A'}</p>
+                        </div>
+                        <div>
+                            <p className="text-[9px] font-black text-cric-muted uppercase tracking-widest">Date</p>
+                            <p className="text-sm font-bold text-cric-text">{selectedMatch.startAt ? new Date(selectedMatch.startAt).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : 'TBD'}</p>
+                        </div>
+                        <div>
+                            <p className="text-[9px] font-black text-cric-muted uppercase tracking-widest">Time</p>
+                            <p className="text-sm font-bold text-cric-text">{selectedMatch.startAt ? new Date(selectedMatch.startAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : 'TBD'}</p>
+                        </div>
+                    </div>
+                    <div className="flex gap-4 justify-center">
+                        <button
+                            onClick={() => navigate('/admin/score')}
+                            className="px-6 py-3 bg-cric-accent text-white font-black rounded-xl hover:bg-[#e55a2b] transition-all uppercase tracking-widest text-xs"
+                        >
+                            Back to Match List
+                        </button>
+                        <button
+                            onClick={() => { setShowSettings(true); }}
+                            className="px-6 py-3 bg-cric-bg text-cric-text border border-cric-border font-black rounded-xl hover:bg-cric-border transition-all uppercase tracking-widest text-xs"
+                        >
+                            Match Settings
+                        </button>
+                    </div>
+                </div>
+                {showSettings && (
+                    <MatchSettings
+                        match={selectedMatch}
+                        onClose={() => setShowSettings(false)}
+                        onUpdate={() => { setShowSettings(false); reloadMatch(); }}
+                    />
+                )}
+            </div>
+        );
+    }
+
+    if (isCompleted) {
+        return (
+            <div className="p-8 max-w-[1200px] mx-auto min-h-screen bg-cric-bg transition-colors duration-300">
+                <div className="bg-cric-card rounded-[2.5rem] p-12 border border-cric-border shadow-xl max-w-2xl mx-auto text-center">
+                    <div className="w-20 h-20 mx-auto mb-6 bg-green-500/10 rounded-full flex items-center justify-center">
+                        <svg className="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <h2 className="text-3xl font-black font-raj text-cric-text mb-4 uppercase tracking-tight">Match Completed</h2>
+                    <div className="text-xl font-black text-cric-text mb-2">
+                        {selectedMatch.teams?.[0]?.name} <span className="text-cric-accent">VS</span> {selectedMatch.teams?.[1]?.name}
+                    </div>
+                    {selectedMatch.result?.description && (
+                        <p className="text-cric-accent font-bold text-lg mb-6">{selectedMatch.result.description}</p>
+                    )}
+                    <div className="flex justify-center gap-8 mb-8">
+                        {(selectedMatch.innings || []).map((inn, idx) => (
+                            <div key={idx} className="bg-cric-bg rounded-2xl p-6 border border-cric-border text-center min-w-[180px]">
+                                <p className="text-[9px] font-black text-cric-muted uppercase tracking-widest mb-2">
+                                    {selectedMatch.teams?.find(t => String(t._id) === String(inn.team?._id || inn.team))?.name || `Team ${idx + 1}`}
+                                </p>
+                                <p className="text-4xl font-black text-cric-text">{inn.runs}/{inn.wickets}</p>
+                                <p className="text-sm font-bold text-cric-muted">Overs {formatOvers(inn.balls)}</p>
+                                {inn.runRate && <p className="text-xs font-bold text-cric-muted">RR: {inn.runRate.toFixed(2)}</p>}
+                            </div>
+                        ))}
+                    </div>
+                    <div className="flex gap-4 justify-center">
+                        <button
+                            onClick={() => navigate('/admin/score')}
+                            className="px-6 py-3 bg-cric-accent text-white font-black rounded-xl hover:bg-[#e55a2b] transition-all uppercase tracking-widest text-xs"
+                        >
+                            Back to Match List
+                        </button>
+                        <button
+                            onClick={() => navigate(`/admin/score/${selectedMatch._id}/scorecard`)}
+                            className="px-6 py-3 bg-cric-bg text-cric-text border border-cric-border font-black rounded-xl hover:bg-cric-border transition-all uppercase tracking-widest text-xs"
+                        >
+                            View Scorecard
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     if (!isPreMatchComplete) {
         return (
             <MatchSetupWizard
@@ -221,7 +356,7 @@ export default function ManageScore() {
             {/* MAIN CONTENT (Left) */}
             <div className="flex-1 flex flex-col min-w-0">
                 {/* Header / Match Info */}
-                <div className="bg-cric-card rounded-[2.5rem] p-8 border border-cric-border shadow-xl mb-6">
+                <div className="bg-cric-card rounded-[1.5rem] lg:rounded-[2.5rem] p-4 md:p-8 border border-cric-border shadow-xl mb-6">
                     <div className="flex justify-between items-center mb-6">
                         <div className="flex items-center gap-4">
                             <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
@@ -244,7 +379,7 @@ export default function ManageScore() {
 
                     <div className="flex justify-between items-end">
                         <div className="space-y-2">
-                            <h1 className="text-5xl font-black font-raj italic tracking-tighter uppercase leading-none">
+                            <h1 className="text-3xl md:text-5xl font-black font-raj italic tracking-tighter uppercase leading-none">
                                 {battingTeamTeam?.name} <span className="text-[#ff6b35]">VS</span> {bowlingTeamTeam?.name}
                             </h1>
                             <div className="text-slate-400 font-medium">{selectedMatch.venue} • {selectedMatch.format}</div>
@@ -264,10 +399,10 @@ export default function ManageScore() {
                             )}
                         </div>
                         <div className="text-right">
-                            <div className="text-6xl font-black font-raj italic text-black leading-none">
+                            <div className="text-4xl md:text-6xl font-black font-raj italic text-black leading-none">
                                 {curInn?.runs}/{curInn?.wickets}
                             </div>
-                            <div className="text-xl font-bold text-slate-500 mt-2">OVERS {formatOvers(curInn?.balls)}</div>
+                            <div className="text-base md:text-xl font-bold text-slate-500 mt-2">OVERS {formatOvers(curInn?.balls)}</div>
                             {isInnings2 && target > 0 && (
                                 <div className="text-sm font-bold text-[#ff6b35] mt-1">
                                     Need {target - (curInn?.runs || 0)} runs from {selectedMatch.totalOvers * 6 - (curInn?.balls || 0)} balls
@@ -295,7 +430,7 @@ export default function ManageScore() {
                 </div>
 
                 {/* Tab Content Area */}
-                <div className="flex-1 bg-cric-card rounded-[3.5rem] border border-cric-border shadow-2xl p-8 overflow-y-auto no-scrollbar min-h-[600px]">
+                <div className="flex-1 bg-cric-card rounded-[2rem] lg:rounded-[3.5rem] border border-cric-border shadow-2xl p-4 md:p-8 overflow-y-auto no-scrollbar min-h-[400px] lg:min-h-[600px]">
                     {activeTab === 'live' && (
                         <LiveTab
                             battingXI={battingXI}
@@ -524,6 +659,12 @@ export default function ManageScore() {
                 setBallOutcome={setBallOutcome}
                 useAICommentary={useAICommentary}
                 setUseAICommentary={setUseAICommentary}
+                fieldedById={fieldedById}
+                setFieldedById={setFieldedById}
+                fieldedByPosition={fieldedByPosition}
+                setFieldedByPosition={setFieldedByPosition}
+                formattedHistory={formattedHistory}
+                matchId={matchId}
             />
 
             {/* MODALS */}

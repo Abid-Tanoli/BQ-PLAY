@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { api } from "../services/api";
 import EnhancedMatchTabs from "../components/EnhancedMatchTabs";
+import LiveCommentary from "../components/LiveCommentary";
 import ToastNotifications from "../components/ToastNotifications";
 import { initSocket, joinMatchRoom, leaveMatchRoom } from "../services/socket";
 
@@ -185,6 +186,9 @@ const Match = () => {
     <>
       <ToastNotifications events={events} />
       <EnhancedMatchTabs matchId={matchId} match={match} />
+      <div className="max-w-7xl mx-auto px-4 pb-8">
+        <LiveCommentary matchId={matchId} match={match} />
+      </div>
     </>
   );
 };

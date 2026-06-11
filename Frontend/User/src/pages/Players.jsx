@@ -63,7 +63,7 @@ export default function Players() {
   );
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans">
+    <div className="min-h-screen bg-cric-bg text-cric-text font-sans">
       <Header
         user={authUser}
         onShowLogin={() => { }}
