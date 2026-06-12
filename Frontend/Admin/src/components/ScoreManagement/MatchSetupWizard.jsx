@@ -1,5 +1,14 @@
 import React from 'react';
 
+const FORMATS = [
+  { value: 'Tape Ball', label: 'Tape Ball', overs: 8, maxBowlerOvers: null, powerplayDefault: false, powerplayOvers: 2 },
+  { value: 'T10', label: 'T10 (10 Overs)', overs: 10, maxBowlerOvers: 2, powerplayDefault: true, powerplayOvers: 3 },
+  { value: 'T20', label: 'T20 (20 Overs)', overs: 20, maxBowlerOvers: 4, powerplayDefault: true, powerplayOvers: 6 },
+  { value: 'ODI', label: 'One Day (50 Overs)', overs: 50, maxBowlerOvers: 10, powerplayDefault: true, powerplayOvers: 10 },
+  { value: 'Test', label: 'Test (No Over Limit)', overs: 90, maxBowlerOvers: null, powerplayDefault: false, powerplayOvers: 0 },
+  { value: 'Super Over', label: 'Super Over (Tiebreaker)', overs: 1, maxBowlerOvers: 1, powerplayDefault: false, powerplayOvers: 0 },
+];
+
 const MatchSetupWizard = ({
     wizardStep,
     selectedMatch,
@@ -9,9 +18,14 @@ const MatchSetupWizard = ({
     handleSavePlayingXI,
     handleSaveToss,
     handleSaveOpeners,
+    handleSaveFormat,
     battingXI,
     bowlingXI
 }) => {
+    const selectedFormat = FORMATS.find(f => f.value === setupState.matchFormat) || FORMATS[2];
+    const ppEnabled = setupState.powerplayEnabled ?? selectedFormat.powerplayDefault;
+    const ppOvers = setupState.powerplayOvers ?? selectedFormat.powerplayOvers;
+
     return (
         <div className="min-h-screen bg-cric-bg text-cric-text transition-colors duration-300 flex flex-col items-center justify-center p-8">
             <div className="w-full max-w-4xl bg-cric-card rounded-[4rem] border border-cric-border shadow-2xl p-16 relative overflow-hidden">
@@ -20,12 +34,108 @@ const MatchSetupWizard = ({
                 <div className="flex justify-between items-center mb-16">
                     <div className="space-y-2">
                         <h2 className="text-5xl font-black font-raj italic uppercase tracking-tighter">Match Setup Wizard</h2>
-                        <p className="text-cric-muted font-medium tracking-wide uppercase text-xs">Step {wizardStep} of 3: {wizardStep === 1 ? 'Team Rosters' : wizardStep === 2 ? 'Toss Result' : 'Openers'}</p>
+                        <p className="text-cric-muted font-medium tracking-wide uppercase text-xs">
+                            Step {wizardStep} of 4: {
+                                wizardStep === 1 ? 'Match Format' :
+                                wizardStep === 2 ? 'Team Rosters' :
+                                wizardStep === 3 ? 'Toss Result' : 'Openers'
+                            }
+                        </p>
                     </div>
                     <button onClick={() => setSelectedMatch(null)} className="text-[10px] font-black text-cric-muted hover:text-cric-text uppercase tracking-widest border border-cric-border px-6 py-3 rounded-full">Exit Setup</button>
                 </div>
 
                 {wizardStep === 1 && (
+                    <div className="space-y-12">
+                        <div className="space-y-6">
+                            <h4 className="text-sm font-black uppercase text-cric-accent tracking-widest pl-2">Match Format</h4>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {FORMATS.map(f => (
+                                    <button
+                                        key={f.value}
+                                        onClick={() => {
+                                            setSetupState(s => ({
+                                                ...s,
+                                                matchFormat: f.value,
+                                                totalOvers: f.overs,
+                                                powerplayEnabled: f.powerplayDefault,
+                                                powerplayOvers: f.powerplayOvers,
+                                            }));
+                                        }}
+                                        className={`p-6 rounded-3xl border-2 text-left transition-all ${
+                                            setupState.matchFormat === f.value
+                                                ? 'bg-cric-accent/10 border-cric-accent'
+                                                : 'bg-cric-bg border-cric-border text-cric-muted hover:border-cric-border/80'
+                                        }`}
+                                    >
+                                        <div className="font-black text-lg">{f.label}</div>
+                                        <div className="text-[10px] font-bold text-cric-muted mt-1 uppercase tracking-wider">
+                                            {f.overs} overs/innings
+                                            {f.maxBowlerOvers ? ` · Max ${f.maxBowlerOvers} overs/bowler` : ' · No bowler limit'}
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {!['Test', 'Super Over'].includes(selectedFormat.value) && (
+                            <div className="space-y-6 p-8 rounded-3xl bg-black/5 dark:bg-white/5">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h4 className="text-sm font-black uppercase tracking-widest">Powerplay Overs</h4>
+                                        <p className="text-[10px] font-bold text-cric-muted mt-1">
+                                            Fielding restrictions during first block of overs
+                                        </p>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={ppEnabled}
+                                            onChange={(e) => setSetupState(s => ({ ...s, powerplayEnabled: e.target.checked }))}
+                                            className="sr-only peer"
+                                        />
+                                        <div className="w-11 h-6 bg-black/10 rounded-full peer peer-checked:bg-cric-accent after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
+                                    </label>
+                                </div>
+                                {ppEnabled && (
+                                    <div className="flex items-center gap-4">
+                                        <span className="text-xs font-bold uppercase tracking-wider text-cric-muted">Powerplay overs:</span>
+                                        <input
+                                            type="number"
+                                            min={1}
+                                            max={Math.min(selectedFormat.overs, 10)}
+                                            value={ppOvers}
+                                            onChange={(e) => setSetupState(s => ({ ...s, powerplayOvers: Math.max(1, Math.min(selectedFormat.overs, Number(e.target.value)))}))}
+                                            className="w-24 p-3 bg-cric-bg border border-cric-border rounded-2xl text-center font-black text-lg outline-none focus:border-cric-accent"
+                                        />
+                                        <span className="text-xs font-bold text-cric-muted">
+                                            of {selectedFormat.overs} overs
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        <button
+                            onClick={() => handleSaveFormat({
+                                matchFormat: setupState.matchFormat,
+                                totalOvers: setupState.totalOvers,
+                                powerplayEnabled: ppEnabled,
+                                powerplayOvers: ppEnabled ? ppOvers : 0,
+                            })}
+                            disabled={!setupState.matchFormat}
+                            className={`w-full py-8 rounded-[2.5rem] font-black font-raj text-2xl italic tracking-tighter uppercase shadow-lg transition-all ${
+                                setupState.matchFormat
+                                    ? 'bg-cric-accent text-white shadow-[0_20px_50px_rgba(255,107,53,0.3)] hover:scale-[1.02]'
+                                    : 'bg-black/10 text-cric-muted cursor-not-allowed'
+                            }`}
+                        >
+                            Confirm Format & Continue
+                        </button>
+                    </div>
+                )}
+
+                {wizardStep === 2 && (
                     <div className="space-y-12">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                             {[0, 1].map(idx => (
@@ -63,7 +173,7 @@ const MatchSetupWizard = ({
                     </div>
                 )}
 
-                {wizardStep === 2 && (
+                {wizardStep === 3 && (
                     <div className="space-y-12">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             <div className="space-y-4">
@@ -91,7 +201,7 @@ const MatchSetupWizard = ({
                     </div>
                 )}
 
-                {wizardStep === 3 && (
+                {wizardStep === 4 && (
                     <div className="space-y-12">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                             <div className="space-y-6">

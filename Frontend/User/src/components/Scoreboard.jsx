@@ -13,7 +13,7 @@ export default function Scoreboard({ matchId }) {
         const res = await api.get(`/matches/${matchId}`);
         setMatch(res.data);
       } catch (err) {
-        console.error("Failed to load match:", err);
+        console.error("Failed to load match:", err.response?.status || err.code, err.message);
       } finally {
         setLoading(false);
       }

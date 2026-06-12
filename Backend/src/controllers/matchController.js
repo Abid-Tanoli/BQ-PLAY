@@ -31,7 +31,7 @@ const playerPayload = (player) => ({
 });
 
 const populateMatch = (query) => {
-  return query
+  return query.lean()
     .populate({
       path: "teams",
       select: "name shortName logo players",

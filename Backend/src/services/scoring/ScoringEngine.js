@@ -1,7 +1,12 @@
 const FORMATS = {
-  T20: { maxOvers: 20, maxWickets: 10, superOver: true },
-  ODI: { maxOvers: 50, maxWickets: 10, superOver: true },
-  TEST: { maxOvers: null, maxWickets: 10, superOver: false }
+  T20: { maxOvers: 20, maxWickets: 10, superOver: true, maxBowlerOvers: 4, powerplayEnabled: true, powerplayOvers: 6 },
+  ODI: { maxOvers: 50, maxWickets: 10, superOver: true, maxBowlerOvers: 10, powerplayEnabled: true, powerplayOvers: 10 },
+  'Tape Ball': { maxOvers: null, maxWickets: 10, superOver: false, maxBowlerOvers: null, powerplayEnabled: false, powerplayOvers: 0 },
+  T10: { maxOvers: 10, maxWickets: 10, superOver: true, maxBowlerOvers: 2, powerplayEnabled: true, powerplayOvers: 3 },
+  TEST: { maxOvers: null, maxWickets: 10, superOver: false, maxBowlerOvers: null, powerplayEnabled: false, powerplayOvers: 0 },
+  '6 Overs': { maxOvers: 6, maxWickets: 10, superOver: false, maxBowlerOvers: 2, powerplayEnabled: false, powerplayOvers: 0 },
+  '8 Overs': { maxOvers: 8, maxWickets: 10, superOver: false, maxBowlerOvers: 2, powerplayEnabled: false, powerplayOvers: 0 },
+  'Super Over': { maxOvers: 1, maxWickets: 2, superOver: true, maxBowlerOvers: 1, powerplayEnabled: false, powerplayOvers: 0 },
 };
 
 const MATCH_STATES = [
@@ -22,7 +27,8 @@ class ScoringEngine {
   constructor(match) {
     if (!match) throw new Error("Match data is required");
     this.match = match;
-    this.format = FORMATS[match.matchType] || FORMATS.T20;
+    const matchType = match.matchType === 'Super Over' ? 'Super Over' : (match.matchType || 'T20');
+    this.format = FORMATS[matchType] || FORMATS.T20;
     this.events = [];
     this._initMatchState();
   }
@@ -95,6 +101,11 @@ class ScoringEngine {
     if (ballType === 'noBall') innings.freeHitActive = true;
 
     this._updateStrikeRotation(innings, ballRecord);
+
+    if (overComplete) {
+      this._applyEndOfOverStrikeRotation(innings);
+    }
+
     this._updatePartnership(innings, ballRecord);
     this._updatePowerplay(innings);
     this._updateRunRate(innings);
@@ -194,7 +205,7 @@ class ScoringEngine {
   _buildBallRecord(d, ballType, isValidDismissal, isFreeHit, ballNum, displayBallNum) {
     return {
       ballNumber: ballNum,
-      displayBallNumber: displayBallNum,
+      displayBallNumber: (ballType === 'legal' || ballType === 'bye' || ballType === 'legBye') ? displayBallNum : undefined,
       batsmanOnStrike: d.batsmanOnStrike,
       batsmanNonStrike: d.batsmanNonStrike,
       bowler: d.bowler,
@@ -206,6 +217,7 @@ class ScoringEngine {
       wicketType: isValidDismissal ? d.wicketType : null,
       dismissedPlayer: isValidDismissal ? d.dismissedPlayer : null,
       fielder: d.fielder || null,
+      didCross: d.didCross,
       isAssistedRunOut: d.isAssistedRunOut || false,
       isDirectHitRunOut: d.isDirectHitRunOut || false,
       commentary: d.commentary || '', vividCommentary: d.vividCommentary || '',
@@ -292,6 +304,12 @@ class ScoringEngine {
     if (!innings.partnerships) innings.partnerships = [];
     const cp = innings.partnerships[innings.partnerships.length - 1];
     if (cp) { cp.endedAt = innings.wickets; cp.endedBy = br.dismissedPlayer; }
+
+    if (br.wicketType === 'runOut') {
+      if (br.didCross === true) {
+        [br.batsmanOnStrike, br.batsmanNonStrike] = [br.batsmanNonStrike, br.batsmanOnStrike];
+      }
+    }
   }
 
   // ══════════════════════════════════════════════════════════════════════════════
@@ -399,12 +417,28 @@ class ScoringEngine {
   // ══════════════════════════════════════════════════════════════════════════════
 
   _updateStrikeRotation(innings, br) {
-    if (!br.isWide && !br.isNoBall) {
-      const runs = br.batsmanRuns || 0;
-      if (runs % 2 === 1) {
-        [br.batsmanOnStrike, br.batsmanNonStrike] = [br.batsmanNonStrike, br.batsmanOnStrike];
-      }
+    // Only runs that involve the batsmen physically crossing count for strike.
+    // Wides/No-Balls have a 1-run penalty that does NOT involve crossing.
+    let crossingRuns = br.batsmanRuns || 0;
+    if (br.isWide) {
+      crossingRuns = (br.extraRuns || 0) - 1;
+    } else if (!br.isNoBall) {
+      crossingRuns += (br.extraRuns || 0);
     }
+
+    if (crossingRuns > 0 && crossingRuns % 2 === 1) {
+      [br.batsmanOnStrike, br.batsmanNonStrike] = [br.batsmanNonStrike, br.batsmanOnStrike];
+    }
+  }
+
+  _applyEndOfOverStrikeRotation(innings) {
+    const lastOver = innings.oversHistory?.[innings.oversHistory.length - 1];
+    if (!lastOver || !lastOver.isComplete) return;
+
+    const lastBall = lastOver.balls?.[lastOver.balls.length - 1];
+    if (!lastBall) return;
+
+    [lastBall.batsmanOnStrike, lastBall.batsmanNonStrike] = [lastBall.batsmanNonStrike, lastBall.batsmanOnStrike];
   }
 
   // ══════════════════════════════════════════════════════════════════════════════
@@ -427,15 +461,24 @@ class ScoringEngine {
   // ══════════════════════════════════════════════════════════════════════════════
 
   _updatePowerplay(innings) {
-    const rules = POWERPLAY_RULES[this.match.matchType];
-    if (!rules) return;
-    const completedOvers = Math.floor(innings.balls / 6);
-    let phase = 0;
-    for (let i = 0; i < rules.length; i++) {
-      if (completedOvers >= rules[i].start && completedOvers < rules[i].end) { phase = i; break; }
-      if (i === rules.length - 1 && completedOvers >= rules[i].start) phase = i;
+    const ppConfig = innings.powerplayConfig || this.match.powerplayConfig;
+    const ppEnabled = ppConfig?.enabled ?? this.format.powerplayEnabled;
+    const ppOvers = ppConfig?.overs ?? this.format.powerplayOvers;
+
+    if (!ppEnabled || ppOvers <= 0) {
+      this.match.powerplay = { active: false, phase: -1, fieldersOutside: 5 };
+      return;
     }
-    this.match.powerplay = { active: completedOvers < (this.format.maxOvers || 50), phase, fieldersOutside: rules[phase]?.fieldersOutside || 5 };
+
+    const completedOvers = Math.floor(innings.balls / 6);
+    const active = completedOvers < ppOvers;
+    this.match.powerplay = {
+      active,
+      phase: active ? 0 : -1,
+      fieldersOutside: active ? 2 : 5,
+      totalPowerplayOvers: ppOvers,
+      oversCompleted: Math.min(completedOvers, ppOvers),
+    };
   }
 
   // ══════════════════════════════════════════════════════════════════════════════

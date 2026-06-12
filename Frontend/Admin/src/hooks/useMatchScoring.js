@@ -6,6 +6,7 @@ import { useToast } from '../components/Toast';
 import { getTabIdFromRoute, getScoreTabPath, FIELD_POSITIONS, WICKET_TYPES, formatOvers } from '../components/ScoreManagement/constants';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const isIllegalDelivery = (ball) => !!(ball?.isWide || ball?.isNoBall);
 
 export default function useMatchScoring() {
     const { token } = useSelector((state) => state.auth);
@@ -22,6 +23,7 @@ export default function useMatchScoring() {
         if (targetMatchId) navigate(getScoreTabPath(targetMatchId, tab));
     }, [navigate, selectedMatch, matchId]);
 
+    const [reverting, setReverting] = useState(false);
     const [selectedRuns, setSelectedRuns] = useState(0);
     const [selectedExtra, setSelectedExtra] = useState(null);
     const [selectedWicket, setSelectedWicket] = useState('');
@@ -63,6 +65,10 @@ export default function useMatchScoring() {
     const [setupState, setSetupState] = useState({
         team1XI: [],
         team2XI: [],
+        matchFormat: 'T20',
+        totalOvers: 20,
+        powerplayEnabled: true,
+        powerplayOvers: 6,
         tossWinner: '',
         tossDecision: 'bat',
         strikerId: '',
@@ -167,14 +173,21 @@ export default function useMatchScoring() {
         if (!selectedMatch || !curInn || !curInn.oversHistory) return [];
         const balls = [];
         curInn.oversHistory.forEach(over => {
+            let legalBalls = 0;
             over.balls.forEach(ball => {
+                const displayBallNumber = ball.displayBallNumber || ball.legalBallNumber || legalBalls + 1;
                 balls.push({
                     ...ball,
                     overNumber: over.overNumber,
+                    displayBallNumber,
+                    rawBallNumber: ball.ballNumber,
                     batsmanName: ball.batsmanOnStrike?.name || (battingXI.find(p => String(p._id) === String(ball.batsmanOnStrike?._id || ball.batsmanOnStrike))?.name) || "Batsman",
                     bowlerName: ball.bowler?.name || (bowlingXI.find(p => String(p._id) === String(ball.bowler?._id || ball.bowler))?.name) || "Bowler",
                     ballNumber: ball.ballNumber
                 });
+                if (!isIllegalDelivery(ball)) {
+                    legalBalls += 1;
+                }
             });
         });
         return balls;
@@ -226,6 +239,10 @@ export default function useMatchScoring() {
                 ...prev,
                 team1XI: t1XI,
                 team2XI: t2XI,
+                matchFormat: res.data.matchType || prev.matchFormat,
+                totalOvers: res.data.totalOvers || prev.totalOvers,
+                powerplayEnabled: res.data.powerplayConfig?.enabled ?? prev.powerplayEnabled,
+                powerplayOvers: res.data.powerplayConfig?.overs ?? prev.powerplayOvers,
                 tossWinner: res.data.tossWinner?._id || res.data.tossWinner || '',
                 tossDecision: res.data.tossDecision || 'bat',
                 strikerId: strikeId,
@@ -246,6 +263,8 @@ export default function useMatchScoring() {
         const curInn = matchData.innings[matchData.currentInnings];
         if (!curInn) return;
 
+        const hasFormat = matchData.matchType && matchData.totalOvers > 0;
+
         const team1XI = matchData.playingXI?.find(p => (p.team?._id || p.team) === matchData.teams[0]?._id);
         const team2XI = matchData.playingXI?.find(p => (p.team?._id || p.team) === matchData.teams[1]?._id);
         const hasPlayingXI = team1XI && team2XI && team1XI.players.length === 11 && team2XI.players.length === 11;
@@ -254,14 +273,15 @@ export default function useMatchScoring() {
 
         const hasOpeners = curInn.onStrikeBatsman && curInn.currentBatsman1 && curInn.currentBatsman2 && curInn.currentBowler;
 
-        if (!hasPlayingXI || !hasToss || !hasOpeners) {
+        if (!hasFormat || !hasPlayingXI || !hasToss || !hasOpeners) {
             setIsPreMatchComplete(false);
-            if (!hasPlayingXI) setWizardStep(1);
-            else if (!hasToss) setWizardStep(2);
-            else setWizardStep(3);
+            if (!hasFormat) setWizardStep(1);
+            else if (!hasPlayingXI) setWizardStep(2);
+            else if (!hasToss) setWizardStep(3);
+            else setWizardStep(4);
         } else {
             setIsPreMatchComplete(true);
-            setWizardStep(4);
+            setWizardStep(5);
             const ballsTossed = curInn.balls % 6;
             const overNum = curInn.overs;
             const overHist = curInn.oversHistory.find(o => o.overNumber === overNum);
@@ -326,6 +346,7 @@ export default function useMatchScoring() {
             commentaryText: useAICommentary ? manualCommentary : (manualCommentary || "Ball recorded."),
             customCommentary: !useAICommentary,
             nextBatsmanId: setupState.wicketNewBatter || undefined,
+            didCross: setupState.wicketDidCross,
             groundZone: activeGroundZone?.shotName || activeGroundZone?.nearestPosition || '',
             fieldedByPosition: fieldedByPosition,
             fieldedById: fieldedById,
@@ -406,6 +427,8 @@ export default function useMatchScoring() {
     };
 
     const doRevert = async () => {
+        if (reverting) return;
+        setReverting(true);
         try {
             const res = await axios.post(`${API_URL}/matches/${selectedMatch._id}/revert-ball`,
                 { inningsIndex: selectedMatch.currentInnings },
@@ -414,6 +437,8 @@ export default function useMatchScoring() {
             setToast("Reverted successfully");
         } catch (e) {
             showToast(e.response?.data?.message || e.message, 'error');
+        } finally {
+            setReverting(false);
         }
     };
 
@@ -536,6 +561,25 @@ export default function useMatchScoring() {
             checkRoles(res.data);
         } catch (err) {
             showToast("Failed to set role: " + (err.response?.data?.message || err.message), 'error');
+        }
+    };
+
+    const handleSaveFormat = async (formatData) => {
+        if (!formatData.matchFormat) {
+            showToast("Please select a match format.", 'warning');
+            return;
+        }
+        try {
+            await axios.put(`${API_URL}/matches/${selectedMatch._id}/format`, formatData, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const res = await axios.get(`${API_URL}/matches/${selectedMatch._id}`);
+            setSelectedMatch(res.data);
+            checkRoles(res.data);
+            setWizardStep(2);
+            setToast(`Format set to ${formatData.matchFormat}`);
+        } catch (err) {
+            showToast(err.response?.data?.message || err.message, 'error');
         }
     };
 
@@ -790,6 +834,7 @@ export default function useMatchScoring() {
         handleResetInnings,
         handleResetMatch,
         setRole,
+        handleSaveFormat,
         handleSavePlayingXI,
         handleSaveToss,
         handleSaveOpeners,
@@ -802,6 +847,7 @@ export default function useMatchScoring() {
         getSquad,
         getSquadMeta,
         showToast,
-        reloadMatch
+        reloadMatch,
+        reverting
     };
 }

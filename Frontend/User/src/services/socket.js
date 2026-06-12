@@ -9,30 +9,43 @@ const setSocket = (nextSocket) => {
 };
 
 export function initSocket() {
-  if (socket) return socket;
+  if (socket?.connected) return socket;
+
+  if (socket) {
+    socket.removeAllListeners();
+    socket.connect();
+    return socket;
+  }
 
   const SERVER = import.meta.env.VITE_SOCKET_URL || (import.meta.env.DEV ? "http://localhost:5000" : window.location.origin);
 
   socket = clientIo(SERVER, {
-    transports: ["polling", "websocket"],
-    upgrade: true,
+    transports: ["websocket"],
     reconnection: true,
+    reconnectionDelay: 2000,
+    reconnectionDelayMax: 10000,
     reconnectionAttempts: Infinity,
-    reconnectionDelay: 1000,
-    reconnectionDelayMax: 5000,
-    timeout: 10000,
+    timeout: 30000,
     withCredentials: true,
   });
   setSocket(socket);
 
   socket.on("connect", () => {
-    console.log("Socket connected:", socket.id);
+    console.log(`[SOCKET] connect    id=${socket.id}`);
+  });
+
+  socket.on("disconnect", (reason) => {
+    console.log(`[SOCKET] disconnect id=${socket?.id} reason=${reason}`);
   });
 
   socket.on("connect_error", (err) => {
     if (!socket?.connected) {
-      console.warn("Socket connect_error:", err.message);
+      console.warn(`[SOCKET] error      ${err.message}`);
     }
+  });
+
+  socket.on("reconnect", (attemptNumber) => {
+    console.log(`[SOCKET] reconnect  id=${socket.id} after ${attemptNumber} attempts`);
   });
 
   return socket;
@@ -54,16 +67,17 @@ export function leaveMatchRoom(matchId) {
 
 export function disconnectSocket() {
   if (socket) {
+    socket.removeAllListeners();
     socket.disconnect();
     setSocket(null);
   }
 }
 
+// HMR: do NOT disconnect — just clear listeners
 if (import.meta.hot) {
   import.meta.hot.dispose(() => {
     if (socket) {
-      socket.disconnect();
-      setSocket(null);
+      socket.removeAllListeners();
     }
   });
 }

@@ -91,13 +91,20 @@ const CommentaryFeed = ({ match, live = true }) => {
       .replace(/-/g, " ")
       .replace(/\b\w/g, (letter) => letter.toUpperCase());
 
-  const getBallMeta = (ball) => [
-    ball.pitchZone || ball.pitchLength ? `Length: ${labelize(ball.pitchZone || ball.pitchLength)}` : "",
-    ball.pitchLine ? `Line: ${labelize(ball.pitchLine)}` : "",
-    ball.ballMovement && ball.ballMovement !== "none" ? `Movement: ${labelize(ball.ballMovement)}` : "",
-    ball.ballOutcome && ball.ballOutcome !== "played" ? `Outcome: ${labelize(ball.ballOutcome)}` : "",
-    ball.fieldingZone || ball.nearestPosition || ball.regionName || ball.zone ? `Area: ${labelize(ball.fieldingZone || ball.nearestPosition || ball.regionName || ball.zone)}` : "",
-  ].filter(Boolean);
+  const getBallDataPoints = (ball) => {
+    const points = [];
+    const lineLen = (ball.pitchLength || ball.pitchZone) || ball.pitchLine
+      ? `${ball.pitchLength || ball.pitchZone || ""}${(ball.pitchLength || ball.pitchZone) && ball.pitchLine ? " • " : ""}${ball.pitchLine || ""}`
+      : "";
+    if (lineLen) points.push({ label: labelize(lineLen), type: "line-length" });
+    if (ball.ballMovement && ball.ballMovement !== "none")
+      points.push({ label: labelize(ball.ballMovement), type: "movement" });
+    const shot = ball.shotTypeName || ball.shotType || ball.pitchShotType || "";
+    if (shot) points.push({ label: labelize(shot), type: "shot" });
+    const dir = ball.shotDirection || ball.fieldingZone || ball.nearestPosition || ball.regionName || ball.zone || "";
+    if (dir) points.push({ label: labelize(dir), type: "direction" });
+    return points;
+  };
 
   // Group balls by over for over summaries
   const groupedByOver = [];
@@ -167,7 +174,13 @@ const CommentaryFeed = ({ match, live = true }) => {
                 const bowlerName = ball.bowlerName || ball.bowler?.name || over.balls[0]?.bowler?.name || 'Bowler';
                 const batsmanName = ball.batsmanName || ball.batsmanOnStrike?.name || 'Batsman';
                 const summaryLine = `${over.overNumber}.${ball.displayBall || ball.ballNumber || ball.ballIndex + 1} ${bowlerName} to ${batsmanName}, ${getRunText(ball)}`;
-                const meta = getBallMeta(ball);
+                const dataPoints = getBallDataPoints(ball);
+                const tagColors = {
+                  "line-length": "bg-blue-900/40 text-blue-300 border-blue-500/30",
+                  movement: "bg-emerald-900/40 text-emerald-300 border-emerald-500/30",
+                  shot: "bg-amber-900/40 text-amber-300 border-amber-500/30",
+                  direction: "bg-violet-900/40 text-violet-300 border-violet-500/30",
+                };
                 return (
                   <div
                     key={ballIdx}
@@ -193,11 +206,11 @@ const CommentaryFeed = ({ match, live = true }) => {
                             {ball.vividCommentary || ball.commentary}
                           </p>
                         )}
-                        {meta.length > 0 && (
+                        {dataPoints.length > 0 && (
                           <div className="mt-2 flex flex-wrap gap-1.5">
-                            {meta.map(item => (
-                              <span key={item} className="rounded-full bg-slate-100 dark:bg-slate-700 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-300">
-                                {item}
+                            {dataPoints.map(dp => (
+                              <span key={dp.label} className={`px-2 py-0.5 rounded text-[9px] font-bold border ${tagColors[dp.type] || "bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300"} uppercase tracking-wide`}>
+                                {dp.label}
                               </span>
                             ))}
                           </div>

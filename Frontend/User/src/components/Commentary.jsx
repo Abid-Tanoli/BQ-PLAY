@@ -47,16 +47,20 @@ const labelize = (value) =>
     .replace(/-/g, " ")
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 
-const ballMetaItems = (ball) => [
-  ball?.pitchZone || ball?.pitchLength ? `Length: ${labelize(ball.pitchZone || ball.pitchLength)}` : "",
-  ball?.pitchLine ? `Line: ${labelize(ball.pitchLine)}` : "",
-  ball?.ballMovement && ball.ballMovement !== "none" ? `Movement: ${labelize(ball.ballMovement)}` : "",
-  ball?.ballOutcome && ball.ballOutcome !== "played" ? `Outcome: ${labelize(ball.ballOutcome)}` : "",
-  ball?.fieldingZone || ball?.nearestPosition || ball?.regionName || ball?.zone
-    ? `Area: ${labelize(ball.fieldingZone || ball.nearestPosition || ball.regionName || ball.zone)}`
-    : "",
-  ball?.shotType || ball?.pitchShotType ? `Shot: ${labelize(ball.shotType || ball.pitchShotType)}` : "",
-].filter(Boolean);
+const ballDataPoints = (ball) => {
+  const points = [];
+  const lineLen = (ball?.pitchLength || ball?.pitchZone) || ball?.pitchLine
+    ? `${ball.pitchLength || ball.pitchZone || ""}${(ball.pitchLength || ball.pitchZone) && ball.pitchLine ? " • " : ""}${ball.pitchLine || ""}`
+    : "";
+  if (lineLen) points.push({ label: labelize(lineLen), type: "line-length" });
+  if (ball?.ballMovement && ball.ballMovement !== "none")
+    points.push({ label: labelize(ball.ballMovement), type: "movement" });
+  const shot = ball?.shotTypeName || ball?.shotType || ball?.pitchShotType || "";
+  if (shot) points.push({ label: labelize(shot), type: "shot" });
+  const dir = ball?.shotDirection || ball?.fieldingZone || ball?.nearestPosition || ball?.regionName || ball?.zone || "";
+  if (dir) points.push({ label: labelize(dir), type: "direction" });
+  return points;
+};
 
 export default function Commentary({ matchId, className = "" }) {
   const navigate = useNavigate();
@@ -181,6 +185,7 @@ export default function Commentary({ matchId, className = "" }) {
       }
     };
 
+    socket.on("ball:recorded", handleBallUpdate);
     socket.on("match:ballUpdate", handleBallUpdate);
     socket.on("match:ball-update", handleBallUpdate);
     socket.on("BALL_UPDATE", (data) => handleBallUpdate({ matchId: data.matchId || matchId, ball: data.delivery || data, currentOver: data.currentOver, ballNumber: data.ballNumber }));
@@ -194,6 +199,7 @@ export default function Commentary({ matchId, className = "" }) {
 
     return () => {
       mounted = false;
+      socket.off("ball:recorded", handleBallUpdate);
       socket.off("match:ballUpdate", handleBallUpdate);
       socket.off("match:ball-update", handleBallUpdate);
       socket.off("BALL_UPDATE");
@@ -339,7 +345,13 @@ export default function Commentary({ matchId, className = "" }) {
                 <div className="space-y-1 px-4">
                   {group.balls.map((c, i) => {
                     const lines = c.text.split('\n').filter(Boolean);
-                    const metaItems = ballMetaItems(c);
+                    const dataPoints = ballDataPoints(c);
+                    const tagColors = {
+                      "line-length": "bg-blue-900/40 text-blue-300 border-blue-500/30",
+                      movement: "bg-emerald-900/40 text-emerald-300 border-emerald-500/30",
+                      shot: "bg-amber-900/40 text-amber-300 border-amber-500/30",
+                      direction: "bg-violet-900/40 text-violet-300 border-violet-500/30",
+                    };
                     return (
                       <div key={`${c.over}-${i}`} className="flex items-start gap-3 p-2.5 rounded-lg hover:bg-slate-50 transition-colors group">
                         <div className="flex flex-col items-center gap-1.5 flex-shrink-0 w-12">
@@ -367,11 +379,11 @@ export default function Commentary({ matchId, className = "" }) {
                               {new Date(c.timestamp).toLocaleTimeString()}
                             </p>
                           )}
-                          {metaItems.length > 0 && (
+                          {dataPoints.length > 0 && (
                             <div className="mt-2 flex flex-wrap gap-1.5">
-                              {metaItems.map((item) => (
-                                <span key={item} className="rounded-full bg-slate-100 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-slate-500">
-                                  {item}
+                              {dataPoints.map((dp) => (
+                                <span key={dp.label} className={`px-2 py-0.5 rounded text-[9px] font-bold border ${tagColors[dp.type] || "bg-slate-100 text-slate-500"} uppercase tracking-wide`}>
+                                  {dp.label}
                                 </span>
                               ))}
                             </div>

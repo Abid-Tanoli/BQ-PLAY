@@ -12,14 +12,19 @@ const Match = () => {
   const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState([]);
 
-  const loadMatch = useCallback(async () => {
+  const loadMatch = useCallback(async (retries = 2) => {
+    let shouldRetry = false;
     try {
       const res = await api.get(`/matches/${matchId}`);
       setMatch(res.data);
     } catch (err) {
-      console.error("Failed to load match:", err);
+      console.error("Failed to load match:", err.response?.status || err.code, err.message);
+      shouldRetry = retries > 0 && (err.code === 'ECONNABORTED' || err.code === 'ERR_NETWORK');
+      if (shouldRetry) {
+        setTimeout(() => loadMatch(retries - 1), 1000);
+      }
     } finally {
-      setLoading(false);
+      if (!shouldRetry) setLoading(false);
     }
   }, [matchId]);
 
@@ -118,6 +123,27 @@ const Match = () => {
 
     const joinRoom = () => joinMatchRoom(matchId);
 
+    // ─── NEW SPECIFIC EVENTS ──────────────────────────────────
+    socket.on("ball:recorded", handleBallUpdate);
+    socket.on("score:update", applyScoreUpdate);
+    socket.on("strike:changed", (payload) => {
+      console.log("[SOCKET] strike:changed", payload);
+      loadMatch();
+    });
+    socket.on("over:completed", (payload) => {
+      handleBallUpdate(payload);
+      loadMatch();
+    });
+    socket.on("innings:end", (payload) => {
+      handleInningsComplete(payload);
+      loadMatch();
+    });
+    socket.on("match:end", (payload) => {
+      handleMatchResult(payload || {});
+      loadMatch();
+    });
+
+    // ─── LEGACY EVENTS (backward compat) ──────────────────────
     socket.on("connect", joinRoom);
     socket.on("match:updated", applyIncomingMatch);
     socket.on("match:update", applyIncomingMatch);
@@ -132,7 +158,6 @@ const Match = () => {
     socket.on("ballRecorded", refreshMatch);
     socket.on("inningsComplete", refreshMatch);
     socket.on("matchComplete", refreshMatch);
-    
     socket.on("BALL_UPDATE", handleBallUpdate);
     socket.on("WICKET_ALERT", handleWicketAlert);
     socket.on("MILESTONE_ALERT", handleMilestone);
@@ -144,6 +169,12 @@ const Match = () => {
     return () => {
       mounted = false;
       leaveMatchRoom(matchId);
+      socket.off("ball:recorded", handleBallUpdate);
+      socket.off("score:update", applyScoreUpdate);
+      socket.off("strike:changed");
+      socket.off("over:completed");
+      socket.off("innings:end");
+      socket.off("match:end");
       socket.off("connect", joinRoom);
       socket.off("match:updated", applyIncomingMatch);
       socket.off("match:update", applyIncomingMatch);

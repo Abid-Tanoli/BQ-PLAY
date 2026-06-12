@@ -8,21 +8,29 @@ export default function useLiveMatch(matchId) {
     if (!matchId) return;
 
     const socket = initSocket();
-    const handleBallUpdate = (payload = {}) => {
+    const handleBallRecorded = (payload = {}) => {
+      const payloadMatchId = payload.matchId || payload.ball?.matchId;
+      if (payloadMatchId && payloadMatchId !== matchId) return;
+      setData(payload);
+    };
+
+    const handleLegacy = (payload = {}) => {
       const payloadMatchId = payload.matchId || payload.match?._id;
       if (payloadMatchId && payloadMatchId !== matchId) return;
       setData(payload);
     };
 
     socket.emit("join-match", matchId);
-    socket.on("ball-update", handleBallUpdate);
-    socket.on("match:ballUpdate", handleBallUpdate);
-    socket.on("BALL_UPDATE", handleBallUpdate);
+    socket.on("ball:recorded", handleBallRecorded);
+    socket.on("ball-update", handleLegacy);
+    socket.on("match:ballUpdate", handleLegacy);
+    socket.on("BALL_UPDATE", handleLegacy);
 
     return () => {
-      socket.off("ball-update", handleBallUpdate);
-      socket.off("match:ballUpdate", handleBallUpdate);
-      socket.off("BALL_UPDATE", handleBallUpdate);
+      socket.off("ball:recorded", handleBallRecorded);
+      socket.off("ball-update", handleLegacy);
+      socket.off("match:ballUpdate", handleLegacy);
+      socket.off("BALL_UPDATE", handleLegacy);
       socket.emit("leave-match", matchId);
     };
   }, [matchId]);

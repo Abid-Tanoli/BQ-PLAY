@@ -336,6 +336,13 @@ const matchSchema = new mongoose.Schema(
       type: { type: String, default: "strategic" },
       timestamp: { type: Date, default: Date.now }
     }],
+    powerplayConfig: {
+      enabled: { type: Boolean, default: false },
+      overs: { type: Number, default: 0, min: 0 },
+      type: { type: String, enum: ['standard', 'batting', 'both'], default: 'standard' },
+      battingPowerplayOvers: { type: Number, default: 0 },
+      fieldersOutsideCircle: { type: Number, default: 2 },
+    },
     superOvers: [{
       superOverNumber: { type: Number, required: true },
       battingFirst: { type: mongoose.Schema.Types.ObjectId, ref: "Team" },
@@ -380,6 +387,16 @@ matchSchema.pre('save', function () {
       case 'Test': this.totalOvers = 90; break;
       case 'Tape Ball': this.totalOvers = 8; break;
       default: this.totalOvers = 20;
+    }
+    if (this.matchType === 'T20' || this.matchType === 'ODI') {
+      this.powerplayConfig.enabled = true;
+      this.powerplayConfig.overs = this.matchType === 'T20' ? 6 : 10;
+    } else if (this.matchType === 'T10') {
+      this.powerplayConfig.enabled = true;
+      this.powerplayConfig.overs = 3;
+    } else {
+      this.powerplayConfig.enabled = false;
+      this.powerplayConfig.overs = 0;
     }
   }
 });

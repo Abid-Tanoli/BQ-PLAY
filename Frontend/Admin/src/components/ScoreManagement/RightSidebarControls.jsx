@@ -1,21 +1,30 @@
 import React, { useState } from 'react';
 import CricketGround from '../CricketGround';
 import PitchMap, { LINE_ZONES, LENGTH_ZONES } from '../PitchMap';
-import ShotReferenceModal from '../ShotReferenceModal';
 import ShotTypePicker from '../ShotTypePicker';
 import ShotDiagram from '../ShotDiagram';
 import FielderSelector from './FielderSelector';
 import CommentaryBox from './CommentaryBox';
-import { SHOTS, SHOT_CATEGORIES } from '../../data/shotsData';
-import { SHOT_TYPES } from '../ScoreManagement/constants/index.js';
+import { SHOTS } from '../../data/shotsData';
 
 const shotToId = (shot) => shot.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
 const SHOT_ID_MAP = {
   driven: 'straight_drive',
+  pull_shot: 'pull',
+  hook_shot: 'hook',
+  scoop_shot: 'scoop',
+  ramp_shot: 'ramp',
   left_padded_away: 'left_padded',
   no_shot_offered: 'no_shot',
 };
 const findShot = (id) => SHOTS.find(s => s.id === (SHOT_ID_MAP[id] || id)) || null;
+const shotValueToId = (shot) => {
+  if (!shot) return "";
+  if (typeof shot === "object") return shot.id || "";
+  if (SHOTS.some(item => item.id === shot)) return shot;
+  const normalized = shotToId(shot);
+  return SHOT_ID_MAP[normalized] || normalized;
+};
 
 const RightSidebarControls = ({
     curInn,
@@ -32,6 +41,7 @@ const RightSidebarControls = ({
     selectedRuns,
     setSelectedRuns,
     handleRevert,
+    reverting,
     selectedExtra,
     setSelectedExtra,
     selectedWicket,
@@ -53,8 +63,6 @@ const RightSidebarControls = ({
     setPitchMapViewMode,
     ballMovement = 'none',
     setBallMovement,
-    ballOutcome = 'played',
-    setBallOutcome,
     useAICommentary = true,
     setUseAICommentary,
     // Fielder props
@@ -66,7 +74,6 @@ const RightSidebarControls = ({
     formattedHistory,
     matchId,
 }) => {
-    const [showShotRef, setShowShotRef] = useState(false);
     const [showShotPicker, setShowShotPicker] = useState(false);
     const currentShot = findShot(shotToId(pitchMapShot || ''));
     const showFielderSelector = [1, 2, 3].includes(selectedRuns) && !selectedExtra && !selectedWicket;
@@ -100,14 +107,6 @@ const RightSidebarControls = ({
         ['doosra', 'Doosra'],
         ['flipper', 'Flipper'],
     ];
-    const outcomeOptions = [
-        ['played', 'Played'],
-        ['beat', 'Beat'],
-        ['left', 'Left'],
-        ['missed', 'Missed'],
-        ['edged', 'Edged'],
-    ];
-
     return (
         <>
         <div className="lg:w-[480px] shrink-0 sticky top-0 mt-0 pt-2 pb-12 px-8 h-screen flex flex-col bg-cric-card rounded-[3.5rem] border border-cric-border shadow-2xl overflow-y-auto no-scrollbar">
@@ -233,23 +232,7 @@ const RightSidebarControls = ({
                             >
                                 {pitchMapShot ? 'Change Shot' : 'Pick Shot'}
                             </button>
-                            <button
-                                onClick={() => setShowShotRef(true)}
-                                className="text-[8px] font-black px-3 py-1.5 rounded-full bg-cric-accent/10 text-cric-accent hover:bg-cric-accent hover:text-white transition-all uppercase tracking-widest border border-cric-accent/20"
-                            >
-                                Reference
-                            </button>
                         </div>
-                        <button
-                            onClick={() => setShowShotPicker(true)}
-                            className="w-full bg-black/5 dark:bg-white/5 border border-cric-border rounded-2xl p-4 text-cric-text font-bold outline-none text-left hover:bg-black/10 dark:hover:bg-white/10 transition-all"
-                        >
-                            {pitchMapShot ? (
-                                <span>{SHOT_TYPES.find(s => shotToId(s) === pitchMapShot) || pitchMapShot}</span>
-                            ) : (
-                                <span className="text-cric-muted">Select Shot ▼</span>
-                            )}
-                        </button>
                         {currentShot && (
                             <div className="mt-3 flex items-start gap-3 bg-black/[0.04] dark:bg-white/[0.04] rounded-2xl p-3 border border-cric-border/40">
                                 <ShotDiagram shot={currentShot} size={64} />
@@ -282,8 +265,13 @@ const RightSidebarControls = ({
                                 {num === 0 ? 'DOT' : num}
                             </button>
                         ))}
-                        <button onClick={handleRevert} className="h-16 rounded-2xl bg-black/5 dark:bg-white/2 text-slate-500 hover:text-cric-text transition-all">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="mx-auto"><path d="M9 14L4 9l5-5M4 9h12a5 5 0 015 5v3" /></svg>
+                        <button onClick={handleRevert} disabled={reverting} className={`h-16 rounded-2xl transition-all border group ${reverting ? 'bg-slate-400/20 text-slate-400 cursor-not-allowed border-slate-400/20' : 'bg-orange-500/10 text-orange-600 hover:bg-orange-500 hover:text-white border-orange-500/20 hover:border-orange-500'}`} title="Undo last ball">
+                            {reverting ? (
+                                <svg className="animate-spin mx-auto" width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="50" strokeLinecap="round" /></svg>
+                            ) : (
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="mx-auto"><path d="M9 14L4 9l5-5M4 9h12a5 5 0 015 5v3" /></svg>
+                            )}
+                            <span className="block text-[7px] font-black uppercase tracking-wider mt-0.5">{reverting ? '...' : 'Undo'}</span>
                         </button>
                     </div>
 
@@ -328,24 +316,7 @@ const RightSidebarControls = ({
                     </div>
                 </div>
 
-                {/* 6. Ball Outcome */}
-                <div className="space-y-4">
-                    <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-[0.3em] pl-2">Ball Outcome</h4>
-                    <div className="flex flex-wrap gap-2">
-                        {outcomeOptions.map(([value, label]) => (
-                            <button
-                                key={value}
-                                type="button"
-                                onClick={() => setBallOutcome?.(value)}
-                                className={`px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${ballOutcome === value ? 'bg-slate-800 text-white shadow-lg dark:bg-slate-200 dark:text-slate-900' : 'bg-black/5 dark:bg-white/5 text-slate-500 hover:text-cric-text hover:bg-black/10'}`}
-                            >
-                                {label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* 7. Wicket and Submit */}
+                {/* 6. Wicket and Submit */}
                 <div className="grid grid-cols-2 gap-4 pt-6">
                     <button
                         onClick={() => setShowSelectionModal('wicket')}
@@ -378,15 +349,10 @@ const RightSidebarControls = ({
         <ShotTypePicker
             isOpen={showShotPicker}
             onClose={() => setShowShotPicker(false)}
-            onSelect={(shotName) => setPitchMapShot(shotToId(shotName))}
+            onSelect={(shot) => setPitchMapShot(shotValueToId(shot))}
             currentShot={pitchMapShot}
         />
 
-        <ShotReferenceModal
-            isOpen={showShotRef}
-            onClose={() => setShowShotRef(false)}
-            onSelectShot={(shot) => setPitchMapShot(shot.id)}
-        />
         </>
     );
 };

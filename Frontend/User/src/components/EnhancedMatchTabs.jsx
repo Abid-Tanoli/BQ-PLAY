@@ -274,17 +274,28 @@ const labelize = (value) =>
     .replace(/-/g, " ")
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 
-const ballMetaItems = (ball) =>
-  [
-    ball?.pitchZone || ball?.pitchLength ? `Length: ${labelize(ball.pitchZone || ball.pitchLength)}` : "",
-    ball?.pitchLine ? `Line: ${labelize(ball.pitchLine)}` : "",
-    ball?.ballMovement && ball.ballMovement !== "none" ? `Movement: ${labelize(ball.ballMovement)}` : "",
-    ball?.ballOutcome && ball.ballOutcome !== "played" ? `Outcome: ${labelize(ball.ballOutcome)}` : "",
-    ball?.fieldingZone || ball?.nearestPosition || ball?.regionName || ball?.zone
-      ? `Area: ${labelize(ball.fieldingZone || ball.nearestPosition || ball.regionName || ball.zone)}`
-      : "",
-    ball?.shotType || ball?.pitchShotType ? `Shot: ${labelize(ball.shotType || ball.pitchShotType)}` : "",
-  ].filter(Boolean);
+const TAG_COLORS = {
+  "line-length": "bg-blue-900/40 text-blue-300 border-blue-500/30",
+  movement: "bg-emerald-900/40 text-emerald-300 border-emerald-500/30",
+  shot: "bg-amber-900/40 text-amber-300 border-amber-500/30",
+  direction: "bg-violet-900/40 text-violet-300 border-violet-500/30",
+};
+
+const ballDataPoints = (ball) => {
+  const points = [];
+  const lineLen =
+    ball?.pitchLength || ball?.pitchZone || ball?.pitchLine
+      ? `${labelize(ball.pitchLength || ball.pitchZone || "")}${(ball.pitchLength || ball.pitchZone) && ball.pitchLine ? " • " : ""}${labelize(ball.pitchLine || "")}`
+      : "";
+  if (lineLen) points.push({ label: lineLen, type: "line-length" });
+  if (ball?.ballMovement && ball.ballMovement !== "none")
+    points.push({ label: labelize(ball.ballMovement), type: "movement" });
+  const shot = ball?.shotTypeName || ball?.shotType || ball?.pitchShotType || "";
+  if (shot) points.push({ label: labelize(shot), type: "shot" });
+  const dir = ball?.shotDirection || ball?.fieldingZone || ball?.nearestPosition || ball?.regionName || ball?.zone || "";
+  if (dir) points.push({ label: labelize(dir), type: "direction" });
+  return points;
+};
 
 const overRunsAndWickets = (over) => {
   const balls = over?.balls || [];
@@ -1040,43 +1051,33 @@ function MetricSmall({ label, value }) {
 }
 
 function RecentBalls({ overs }) {
-  const [overOffset, setOverOffset] = useState(0);
   const safeOvers = overs || [];
-  const maxOffset = Math.max(safeOvers.length - 3, 0);
-  const windowEnd = Math.max(safeOvers.length - overOffset, 0);
-  const windowStart = Math.max(windowEnd - 3, 0);
-  const visibleOvers = safeOvers.slice(windowStart, windowEnd);
+  const visibleOvers = [...safeOvers].reverse();
 
   return (
     <div className="border-b border-cric-border bg-cric-card py-2 sm:py-3">
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-[10px] sm:text-xs font-black uppercase tracking-[0.18em] text-cric-muted">Recent Balls</h3>
-        <div className="flex gap-1.5">
-          <button type="button" onClick={() => setOverOffset((value) => Math.min(value + 1, maxOffset))} className="rounded bg-cric-bg px-2 sm:px-2.5 py-1 text-[11px] sm:text-xs font-black text-cric-muted transition-all hover:bg-cric-border">&lsaquo;</button>
-          <button type="button" onClick={() => setOverOffset((value) => Math.max(value - 1, 0))} className="rounded bg-cric-bg px-2 sm:px-2.5 py-1 text-[11px] sm:text-xs font-black text-cric-muted transition-all hover:bg-cric-border">&rsaquo;</button>
-        </div>
       </div>
-      <div className="mt-3 sm:mt-4 space-y-2">
+      <div className="mt-3 sm:mt-4 -mx-2 overflow-x-auto px-2 pb-2 no-scrollbar">
         {visibleOvers.length ? (
-          visibleOvers.map((over) => {
-            const summary = overRunsAndWickets(over);
-            return (
-              <div key={over._id || over.overNumber} className="flex flex-col sm:grid sm:grid-cols-[80px_1fr_auto] sm:items-center gap-1.5 sm:gap-2 rounded-lg bg-cric-bg p-2 sm:p-2.5">
-                <div className="text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-cric-muted">Over {number(over.overNumber) + 1}</div>
-                <div className="flex flex-wrap gap-1">
-                  {(over.balls || []).map((ball, index) => (
-                    <span key={ball._id || index} className={`flex h-7 sm:h-8 min-w-7 sm:min-w-8 items-center justify-center rounded px-1.5 sm:px-2 text-[10px] sm:text-xs font-black ${ballClass(ball)}`}>
-                      {ballLabel(ball)}
-                    </span>
-                  ))}
+          <div className="flex gap-2 sm:gap-3 min-w-fit">
+            {visibleOvers.map((over) => {
+              const summary = overRunsAndWickets(over);
+              return (
+                <div key={over._id || over.overNumber} className="flex items-center gap-2 rounded-lg bg-cric-bg p-2 sm:p-2.5 shrink-0">
+                  <div className="shrink-0 text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-cric-muted whitespace-nowrap">Over {number(over.overNumber) + 1}: {summary.runs} run{summary.runs === 1 ? "" : "s"}{summary.wickets > 0 ? `, ${summary.wickets} wkt` : ""}</div>
+                  <div className="flex gap-1 flex-nowrap">
+                    {(over.balls || []).map((ball, index) => (
+                      <span key={ball._id || index} className={`flex h-7 sm:h-8 min-w-7 sm:min-w-8 items-center justify-center rounded px-1.5 sm:px-2 text-[10px] sm:text-xs font-black shrink-0 ${ballClass(ball)}`}>
+                        {ballLabel(ball)}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-                <div className="text-right text-[10px] sm:text-[11px] font-bold text-cric-muted sm:mt-0">
-                  {summary.runs} run{summary.runs === 1 ? "" : "s"}
-                  {summary.wickets > 0 ? `, ${summary.wickets} wkt` : ""}
-                </div>
-              </div>
-            );
-          })
+              );
+            })}
+          </div>
         ) : (
           <p className="text-xs sm:text-sm text-cric-muted">No balls recorded yet.</p>
         )}
@@ -1547,7 +1548,7 @@ function CommentaryBall({ over, ball, players, compact = false }) {
   const isWicket = ball?.isWicket;
   const isWide = ball?.isWide;
   const isNoBall = ball?.isNoBall;
-  const metaItems = ballMetaItems(ball);
+  const dataPoints = ballDataPoints(ball);
 
   if (compact) {
     return (
@@ -1583,11 +1584,11 @@ function CommentaryBall({ over, ball, players, compact = false }) {
       {text && (
         <p className="ml-8 sm:ml-12 mt-1 sm:mt-1.5 text-[11px] sm:text-xs text-cric-muted italic leading-relaxed">{text}</p>
       )}
-      {metaItems.length > 0 && (
+      {dataPoints.length > 0 && (
         <div className="ml-8 sm:ml-12 mt-1 sm:mt-2 flex flex-wrap gap-1 sm:gap-1.5">
-          {metaItems.map((item) => (
-            <span key={item} className="rounded-full bg-cric-bg px-1.5 sm:px-2 py-0.5 sm:py-1 text-[8px] sm:text-[9px] font-black uppercase tracking-wider text-cric-muted">
-              {item}
+          {dataPoints.map((dp) => (
+            <span key={dp.label} className={`px-1.5 sm:px-2 py-0.5 rounded text-[8px] sm:text-[9px] font-bold border ${TAG_COLORS[dp.type] || "bg-cric-bg text-cric-muted"} uppercase tracking-wide`}>
+              {dp.label}
             </span>
           ))}
         </div>

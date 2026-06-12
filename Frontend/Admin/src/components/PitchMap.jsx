@@ -1,4 +1,5 @@
 import React, { useCallback, useRef, useState } from "react";
+import { SHOTS } from "../data/shotsData";
 
 const SVG_W = 420;
 const SVG_H = 720;
@@ -36,6 +37,7 @@ const SHOT_TYPES = [
 ];
 
 const shotToId = (shot) => shot.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+const shotLabel = (shotId) => SHOTS.find(shot => shot.id === shotId)?.name || SHOT_TYPES.find(shot => shotToId(shot) === shotId) || shotId;
 
 function getDotColor(outcome) {
     if (outcome.wicket) return "#f71963";
@@ -321,7 +323,7 @@ export default function PitchMap({
                     <div className="flex flex-wrap gap-1.5 items-center">
                         {selectedLine && <span className="text-[9px] font-black uppercase tracking-[0.1em] px-2.5 py-[3px] rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/20">{LINE_ZONES.find(z => z.id === selectedLine)?.label}</span>}
                         {selectedLength && <span className="text-[9px] font-black uppercase tracking-[0.1em] px-2.5 py-[3px] rounded-full bg-green-500/15 text-green-400 border border-green-500/20">{LENGTH_ZONES.find(z => z.id === selectedLength)?.label}</span>}
-                        {selectedShot && <span className="text-[9px] font-black uppercase tracking-[0.1em] px-2.5 py-[3px] rounded-full bg-[#ff6b35]/15 text-[#ff6b35] border border-[#ff6b35]/20">{SHOT_TYPES.find(shot => shotToId(shot) === selectedShot) || selectedShot}</span>}
+                        {selectedShot && <span className="text-[9px] font-black uppercase tracking-[0.1em] px-2.5 py-[3px] rounded-full bg-[#ff6b35]/15 text-[#ff6b35] border border-[#ff6b35]/20">{shotLabel(selectedShot)}</span>}
                     </div>
                 </div>
             )}

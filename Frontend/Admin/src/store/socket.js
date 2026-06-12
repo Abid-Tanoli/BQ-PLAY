@@ -9,55 +9,61 @@ const setSocket = (nextSocket) => {
 };
 
 export const initSocket = () => {
-  if (!socket) {
-    const url = import.meta.env.VITE_SOCKET_URL || "http://localhost:5000";
-    socket = io(url, {
-      transports: ["polling", "websocket"],
-      upgrade: true,
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      reconnectionAttempts: Infinity,
-      timeout: 10000,
-      autoConnect: true,
-      withCredentials: true,
-    });
-    setSocket(socket);
+  if (socket?.connected) return socket;
 
-    socket.on("connect", () => {
-      console.log("✅ Socket connected:", socket.id);
-    });
-    socket.on("disconnect", (reason) => {
-      console.log("❌ Socket disconnected:", reason);
-    });
-    socket.on("connect_error", (error) => {
-      if (!socket?.connected) {
-        console.error("❌ Socket connection error:", error.message);
-      }
-    });
-    socket.on("reconnect", (attemptNumber) => {
-      console.log("🔄 Socket reconnected after", attemptNumber, "attempts");
-    });
-    socket.on("reconnect_error", (error) => {
-      console.error("❌ Socket reconnection error:", error.message);
-    });
-    socket.on("reconnect_failed", () => {
-      console.error("❌ Socket reconnection failed");
-    });
+  if (socket) {
+    // Previous socket exists but disconnected — remove stale listeners before reconnecting
+    socket.removeAllListeners();
+    socket.connect();
+    return socket;
   }
+
+  const url = import.meta.env.VITE_SOCKET_URL || "http://localhost:5000";
+  socket = io(url, {
+    transports: ["websocket"],
+    reconnection: true,
+    reconnectionDelay: 2000,
+    reconnectionDelayMax: 10000,
+    reconnectionAttempts: Infinity,
+    timeout: 30000,
+    autoConnect: true,
+    withCredentials: true,
+  });
+  setSocket(socket);
+
+  socket.on("connect", () => {
+    console.log(`[SOCKET] connect    id=${socket.id}`);
+  });
+  socket.on("disconnect", (reason) => {
+    console.log(`[SOCKET] disconnect id=${socket?.id} reason=${reason}`);
+    if (reason === "io server disconnect" || reason === "transport close") {
+      // Server restarted — reconnect is automatic via socket.io-client
+    }
+  });
+  socket.on("connect_error", (error) => {
+    if (!socket?.connected) {
+      console.warn(`[SOCKET] error      ${error.message}`);
+    }
+  });
+  socket.on("reconnect", (attemptNumber) => {
+    console.log(`[SOCKET] reconnect  id=${socket.id} after ${attemptNumber} attempts`);
+  });
+  socket.io.on("reconnect_attempt", (attempt) => {
+    console.log(`[SOCKET] reconnect_attempt #${attempt}`);
+  });
+
   return socket;
 };
 
 export const getSocket = () => {
-  if (!socket) {
-    return initSocket();
-  }
+  if (!socket) return initSocket();
   return socket;
 };
 
 export const disconnectSocket = () => {
   if (socket) {
-    console.log("🔌 Disconnecting socket...");
+    console.log("[SOCKET] manual disconnect");
+    socket.removeAllListeners();
     socket.disconnect();
     setSocket(null);
   }
@@ -71,17 +77,17 @@ export const emitSocket = (event, data) => {
   if (isSocketConnected()) {
     socket.emit(event, data);
     return true;
-  } else {
-    console.warn("Socket not connected, cannot emit:", event);
-    return false;
   }
+  console.warn(`[SOCKET] cannot emit ${event} — not connected`);
+  return false;
 };
 
+// HMR: do NOT disconnect — just remove listeners so they're re-attached on re-render.
+// Socket.IO keeps the underlying WebSocket alive across HMR.
 if (import.meta.hot) {
   import.meta.hot.dispose(() => {
     if (socket) {
-      socket.disconnect();
-      setSocket(null);
+      socket.removeAllListeners();
     }
   });
 }

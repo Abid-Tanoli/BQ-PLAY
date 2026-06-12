@@ -6,9 +6,11 @@ function BallBadge({ ball, small = false }) {
     const isLegBye = ball.isLegBye;
     const isBye = ball.isBye;
     const notation = isWicket ? "W"
-        : isLegBye ? "LB"
-            : isBye ? "B"
-                : (ball.runs === 0 && !ball.isWide && !ball.isNoBall) ? "•" : String(ball.runs || 0);
+        : ball.isWide ? "Wd"
+            : ball.isNoBall ? "Nb"
+                : isLegBye ? "LB"
+                    : isBye ? "B"
+                        : (ball.runs === 0 && !ball.isWide && !ball.isNoBall) ? "•" : String(ball.runs || 0);
 
     const isFour = ball.runs === 4 && !ball.isWide && !ball.isNoBall && !ball.isWicket && !isLegBye && !isBye;
     const isSix = ball.runs === 6 && !ball.isWide && !ball.isNoBall && !ball.isWicket && !isLegBye && !isBye;
@@ -152,7 +154,7 @@ function OverBlock({ over, balls, onEdit, showReadMore, onReadMore, allPlayers }
                         <BallHeader
                             ball={ball}
                             overNum={over.overNumber}
-                            ballNum={ball.ballNumber}
+                            ballNum={ball.displayBallNumber || ball.ballNumber}
                             onEdit={onEdit}
                         />
                         {(ball.vividCommentary || ball.commentary) && (
@@ -179,7 +181,15 @@ function OverBlock({ over, balls, onEdit, showReadMore, onReadMore, allPlayers }
 }
 
 // Edit Ball Modal
-function EditBallModal({ ball, overNum, ballNum, onSave, onClose }) {
+function EditBallModal({ ball, overNum, ballNum, displayBallNum, onSave, onClose }) {
+    const initialRuns = ball.isWide
+        ? Math.max(0, (ball.extraRuns || 1) - 1)
+        : ball.isBye || ball.isLegBye
+            ? (ball.extraRuns || ball.runs || 0)
+            : (ball.runs || 0);
+    const [runs, setRuns] = useState(initialRuns);
+    const [extra, setExtra] = useState(ball.isWide ? "WIDE" : ball.isNoBall ? "NO BALL" : ball.isBye ? "BYE" : ball.isLegBye ? "LEG BYE" : "");
+    const [wicket, setWicket] = useState(ball.isWicket ? (ball.wicketType || "") : "");
     const [commentary, setCommentary] = useState(ball.commentary ?? "");
     const [vividCommentary, setVividCommentary] = useState(ball.vividCommentary ?? "");
     const [saving, setSaving] = useState(false);
@@ -208,7 +218,7 @@ function EditBallModal({ ball, overNum, ballNum, onSave, onClose }) {
             <div className="bg-[#141b24] rounded-[2.5rem] border border-white/10 p-8 w-full max-w-lg shadow-2xl my-auto">
                 <div className="flex justify-between items-center mb-6">
                     <h3 className="text-2xl font-black font-raj italic uppercase text-white">
-                        Edit Ball {overNum}.{ballNum}
+                        Edit Ball {overNum}.{displayBallNum || ballNum}
                     </h3>
                     <button onClick={onClose} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-red-500 transition-all">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M18 6L6 18M6 6l12 12" /></svg>
@@ -343,7 +353,8 @@ export default function BallByBallFeed({ history = [], overs = [], onEdit, onSwi
                 <EditBallModal
                     ball={editingBall}
                     overNum={editingBall.overNumber ?? Math.floor((editingBall.ballNumber - 1) / 6)}
-                    ballNum={editingBall.ballNumber}
+                    ballNum={editingBall.rawBallNumber || editingBall.ballNumber}
+                    displayBallNum={editingBall.displayBallNumber || editingBall.ballNumber}
                     onSave={async (data) => {
                         await onEdit({ ...editingBall, ...data });
                     }}

@@ -1,56 +1,38 @@
-import React, { useState, useEffect } from "react";
-import api from "../services/api";
+import React, { useEffect, useState } from "react";
+import ShotSilhouette from "./ShotSilhouette";
+import { SHOTS, SHOT_CATEGORIES } from "../data/shotsData";
 
-const CATEGORY_COLORS = {
-  attacking: { bg: "bg-orange-500", text: "text-orange-500", border: "border-orange-500", label: "ATTACKING" },
-  defensive: { bg: "bg-blue-500", text: "text-blue-500", border: "border-blue-500", label: "DEFENSIVE" },
-  glancing: { bg: "bg-green-500", text: "text-green-500", border: "border-green-500", label: "GLANCING" },
-  unorthodox: { bg: "bg-purple-500", text: "text-purple-500", border: "border-purple-500", label: "UNORTHODOX" },
-};
-
-const shotToId = (shot) => shot.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+const CATEGORY_ORDER = ["front_foot", "back_foot", "leg_side", "unorthodox", "power", "defensive"];
 
 export default function ShotTypePicker({ isOpen, onClose, onSelect, currentShot }) {
-  const [shots, setShots] = useState([]);
-  const [grouped, setGrouped] = useState({});
-  const [activeTab, setActiveTab] = useState("attacking");
-  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("front_foot");
 
   useEffect(() => {
-    if (!isOpen) return;
-    setLoading(true);
-    api.get("/shots")
-      .then(res => {
-        const data = res.data;
-        if (data.grouped) {
-          setGrouped(data.grouped);
-        } else if (data.shots) {
-          const g = { attacking: [], defensive: [], glancing: [], unorthodox: [] };
-          data.shots.forEach(s => {
-            if (g[s.category]) g[s.category].push(s);
-            else g.glancing.push(s);
-          });
-          setGrouped(g);
-        }
-        setShots(data.shots || []);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [isOpen]);
+    if (!isOpen || !currentShot) return;
+    const selectedShot = SHOTS.find(shot => shot.id === currentShot);
+    if (selectedShot) setActiveTab(selectedShot.category);
+  }, [isOpen, currentShot]);
 
   if (!isOpen) return null;
 
-  const categoryOrder = ["attacking", "defensive", "glancing", "unorthodox"];
-  const tabs = categoryOrder.filter(cat => grouped[cat]?.length > 0);
+  const categories = CATEGORY_ORDER
+    .map(id => [id, SHOT_CATEGORIES[id]])
+    .filter(([id, category]) => category && SHOTS.some(shot => shot.category === id));
+  const activeShots = SHOTS.filter(shot => shot.category === activeTab);
+
+  const handleSelect = (shot) => {
+    onSelect?.(shot);
+    onClose?.();
+  };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-cric-card w-full max-w-4xl max-h-[85vh] rounded-[2rem] border border-cric-border shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-        <div className="sticky top-0 bg-cric-card z-10 border-b border-cric-border/30 px-8 pt-6 pb-5 flex items-center justify-between">
+      <div className="bg-cric-card w-full max-w-6xl max-h-[90vh] rounded-[2rem] border border-cric-border shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="sticky top-0 bg-cric-card z-10 border-b border-cric-border/30 px-8 pt-6 pb-5 flex items-center justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-black text-cric-text uppercase tracking-tight">SELECT SHOT TYPE</h2>
+            <h2 className="text-2xl font-black text-cric-text uppercase tracking-tight">Pick Shot</h2>
             <p className="text-[9px] font-black text-cric-muted uppercase tracking-[0.3em] mt-1">
-              Choose the batting shot played
+              Select the shot played
             </p>
           </div>
           <button onClick={onClose} className="w-10 h-10 rounded-full bg-cric-bg hover:bg-red-500 transition-all flex items-center justify-center text-cric-muted hover:text-white">
@@ -60,91 +42,56 @@ export default function ShotTypePicker({ isOpen, onClose, onSelect, currentShot 
           </button>
         </div>
 
-        {loading ? (
-          <div className="p-20 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-10 w-10 border-4 border-cric-accent border-t-transparent" />
-          </div>
-        ) : (
-          <>
-            <div className="px-8 pt-6 flex gap-2 border-b border-cric-border/20">
-              {tabs.map(cat => {
-                const colors = CATEGORY_COLORS[cat] || CATEGORY_COLORS.attacking;
-                return (
-                  <button
-                    key={cat}
-                    onClick={() => setActiveTab(cat)}
-                    className={`px-5 py-3 text-[10px] font-black uppercase tracking-widest rounded-t-xl transition-all ${
-                      activeTab === cat
-                        ? `${colors.bg} text-white shadow-lg`
-                        : "text-cric-muted hover:text-cric-text bg-black/5 dark:bg-white/5"
-                    }`}
-                  >
-                    {colors.label} ({grouped[cat]?.length || 0})
-                  </button>
-                );
-              })}
-            </div>
+        <div className="px-6 sm:px-8 pt-5 flex gap-2 overflow-x-auto border-b border-cric-border/20 no-scrollbar">
+          {categories.map(([catId, category]) => (
+            <button
+              key={catId}
+              onClick={() => setActiveTab(catId)}
+              className={`px-4 py-3 text-[10px] font-black uppercase tracking-widest rounded-t-xl transition-all whitespace-nowrap ${
+                activeTab === catId
+                  ? "text-white shadow-lg"
+                  : "text-cric-muted hover:text-cric-text bg-black/5 dark:bg-white/5"
+              }`}
+              style={activeTab === catId ? { background: category.color } : undefined}
+            >
+              {category.label} ({SHOTS.filter(shot => shot.category === catId).length})
+            </button>
+          ))}
+        </div>
 
-            <div className="p-8 overflow-y-auto max-h-[calc(85vh-220px)] no-scrollbar">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {(grouped[activeTab] || []).map(shot => {
-                  const shotId = shotToId(shot.name);
-                  const isSelected = currentShot && shotToId(currentShot) === shotId;
-                  const colors = CATEGORY_COLORS[shot.category] || CATEGORY_COLORS.attacking;
+        <div className="p-6 sm:p-8 overflow-y-auto max-h-[calc(90vh-170px)] no-scrollbar">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {activeShots.map(shot => {
+              const category = SHOT_CATEGORIES[shot.category];
+              const isSelected = currentShot === shot.id;
 
-                  return (
-                    <button
-                      key={shot._id || shotId}
-                      onClick={() => { onSelect(shot.name); onClose(); }}
-                      className={`relative p-4 rounded-2xl text-left transition-all border-2 flex flex-col gap-2 ${
-                        isSelected
-                          ? `bg-orange-500 text-white border-orange-500 shadow-lg shadow-orange-500/30`
-                          : `bg-cric-card text-cric-text border-cric-border/40 hover:border-orange-400 hover:shadow-lg hover:shadow-orange-500/10`
-                      }`}
+              return (
+                <button
+                  key={shot.id}
+                  onClick={() => handleSelect(shot)}
+                  className={`group flex items-center gap-4 rounded-2xl border-2 p-4 text-left transition-all ${
+                    isSelected
+                      ? "border-cric-accent bg-cric-accent/10 shadow-lg shadow-cric-accent/10"
+                      : "border-cric-border/50 bg-black/[0.03] hover:border-cric-accent/40 hover:bg-cric-accent/[0.03] dark:bg-white/[0.03]"
+                  }`}
+                >
+                  <div className="shrink-0 rounded-xl bg-black/5 p-2 dark:bg-white/5 flex items-center justify-center" style={{ minWidth: 82, minHeight: 82 }}>
+                    <ShotSilhouette shot={shot} size={68} color={category?.color || '#6b7280'} />
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="font-black text-sm text-cric-text leading-tight uppercase">{shot.name}</h4>
+                    <p className="text-[10px] text-slate-500 mt-1.5 leading-relaxed">{shot.desc}</p>
+                    <span
+                      className="inline-block mt-2 text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest"
+                      style={{ background: `${category?.color || "#6b7280"}20`, color: category?.color || "#6b7280" }}
                     >
-                      {isSelected && (
-                        <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-white flex items-center justify-center">
-                          <svg className="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                          </svg>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-2">
-                        <span className={`inline-block w-2.5 h-2.5 rounded-full ${colors.bg}`} />
-                        <h4 className={`text-sm font-black uppercase leading-tight ${isSelected ? "text-white" : "text-cric-text"}`}>
-                          {shot.name}
-                        </h4>
-                      </div>
-                      {shot.description && (
-                        <p className={`text-[10px] leading-relaxed ${isSelected ? "text-white/80" : "text-cric-muted"}`}>
-                          {shot.description}
-                        </p>
-                      )}
-                      {shot.groundZone && (
-                        <span className={`inline-block self-start mt-1 text-[8px] font-black px-2 py-1 rounded-full uppercase tracking-wider ${
-                          isSelected ? "bg-white/20 text-white" : "bg-black/10 text-cric-muted"
-                        }`}>
-                          {shot.groundZone.replace(/-/g, " ")}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </>
-        )}
-
-        <div className="sticky bottom-0 bg-cric-card border-t border-cric-border/30 px-8 py-4 flex justify-between items-center">
-          <p className="text-[9px] font-black text-cric-muted uppercase tracking-[0.3em]">
-            Click a shot to select
-          </p>
-          <button
-            onClick={onClose}
-            className="px-6 py-3 bg-orange-500 text-white font-black text-xs uppercase tracking-widest rounded-xl hover:bg-orange-600 transition-all"
-          >
-            USE THIS SHOT
-          </button>
+                      {category?.label || "Shot"}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>

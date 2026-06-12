@@ -4,7 +4,7 @@ const API_BASE_URL = (import.meta.env.VITE_API_URL || "/api").replace(/\/+$/, ""
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 12000,
+  timeout: 30000,
 });
 
 export const setAuthToken = (token) => {

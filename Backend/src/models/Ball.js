@@ -26,6 +26,8 @@ const ballSchema = new mongoose.Schema({
   fieldedBy: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
   fieldedByPosition: { type: String, default: "" },
   commentary: { type: String, default: "" },
+  vividCommentary: { type: String, default: "" },
+  displayBallNumber: { type: Number },
   commentaryGeneratedAt: Date,
 }, { timestamps: true });
 

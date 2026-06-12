@@ -55,6 +55,8 @@ import {
   updateMatchStatusOfficial
 } from "../controllers/analyticsController.js";
 
+import Match from "../models/match.js";
+
 const router = express.Router();
 
 router.get("/", getMatches);
@@ -103,6 +105,23 @@ router.put("/:id/status", updateMatchStatus);
 router.put("/:id/mom", setMOM);
 router.put("/:matchId/playing-xi", setPlayingXI);
 router.put("/:matchId/openers", setOpeners);
+router.put("/:matchId/format", async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    const { matchFormat, totalOvers, powerplayEnabled, powerplayOvers } = req.body;
+    const match = await Match.findById(matchId);
+    if (!match) return res.status(404).json({ message: "Match not found" });
+    match.matchType = matchFormat;
+    match.totalOvers = totalOvers;
+    if (!match.powerplayConfig) match.powerplayConfig = {};
+    match.powerplayConfig.enabled = powerplayEnabled;
+    match.powerplayConfig.overs = powerplayOvers || 0;
+    await match.save();
+    res.json({ match, message: "Match format updated" });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
 router.put("/:matchId/toss", updateToss);
 router.put("/:matchId/squad15", setSquad15);
 router.put("/:matchId/twelfth-man", setTwelfthMan);

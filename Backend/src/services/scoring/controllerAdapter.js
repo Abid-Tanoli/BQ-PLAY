@@ -46,10 +46,11 @@ function enrichBallRecord(engineBall, deliveryData, batsmanName, bowlerName) {
 }
 
 function displayBallNumberFor(over, targetBall) {
+  if (!targetBall) return null;
   let legalBallsBefore = 0;
   for (const ball of over?.balls || []) {
     const displayBallNumber = ball.displayBallNumber || ball.legalBallNumber || legalBallsBefore + 1;
-    if ((targetBall?._id && String(ball._id || '') === String(targetBall._id)) ||
+    if ((targetBall._id && String(ball._id || '') === String(targetBall._id)) ||
         Number(ball.ballNumber) === Number(targetBall?.ballNumber)) {
       return displayBallNumber;
     }
@@ -57,7 +58,7 @@ function displayBallNumberFor(over, targetBall) {
       legalBallsBefore += 1;
     }
   }
-  return targetBall?.displayBallNumber || targetBall?.legalBallNumber || legalBallsBefore + 1;
+  return targetBall.displayBallNumber || targetBall.legalBallNumber || legalBallsBefore + 1;
 }
 
 function mapBattingStats(engineBatting) {
@@ -106,15 +107,27 @@ function mapBowlingStats(engineBowling) {
 }
 
 function mapOversHistory(engineOvers, deliveryData) {
-  return (engineOvers || []).map(ov => ({
-    overNumber: ov.overNumber,
-    bowler: ov.bowler,
-    balls: (ov.balls || []).map(b => enrichBallRecord(b, deliveryData, null, null)),
-    runsScored: ov.runsScored || 0,
-    wickets: ov.wickets || 0,
-    maidenOver: ov.isMaiden || false,
-    summary: ov.summary || '',
-  }));
+  return (engineOvers || []).map(ov => {
+    let legalBalls = 0;
+    const balls = (ov.balls || []).map(b => {
+      const displayBallNumber = b.displayBallNumber || b.legalBallNumber || legalBalls + 1;
+      const enriched = enrichBallRecord({ ...b, displayBallNumber }, deliveryData, null, null);
+      if (!b.isWide && !b.isNoBall) {
+        legalBalls += 1;
+      }
+      return enriched;
+    });
+
+    return {
+      overNumber: ov.overNumber,
+      bowler: ov.bowler,
+      balls,
+      runsScored: ov.runsScored || 0,
+      wickets: ov.wickets || 0,
+      maidenOver: ov.isMaiden || false,
+      summary: ov.summary || '',
+    };
+  });
 }
 
 function applyEngineResultToMongoose(mongooseMatch, engineResult, deliveryData) {
@@ -161,6 +174,56 @@ function applyEngineResultToMongoose(mongooseMatch, engineResult, deliveryData) 
   if (engineMatch.result) {
     mongooseMatch.result = engineMatch.result;
   }
+  if (engineMatch.powerplay) {
+    mongooseMatch.powerplay = engineMatch.powerplay;
+  }
+
+  const ballRecord = ball;
+  if (ballRecord) {
+    const innIdx = engineResult.match?.currentInnings ?? 0;
+    const mInn = mongooseMatch.innings[innIdx];
+    if (mInn && ballRecord.batsmanOnStrike && ballRecord.batsmanNonStrike) {
+      mInn.currentBatsman1 = ballRecord.batsmanOnStrike;
+      mInn.currentBatsman2 = ballRecord.batsmanNonStrike;
+      mInn.onStrikeBatsman = ballRecord.batsmanOnStrike;
+    }
+  }
+
+  if (ballRecord && ballRecord.isWicket && ballRecord.dismissedPlayer) {
+    const innIdx = engineResult.match?.currentInnings ?? 0;
+    const mInn = mongooseMatch.innings[innIdx];
+    if (mInn) {
+      const dpId = String(ballRecord.dismissedPlayer?._id || ballRecord.dismissedPlayer);
+      const b1Id = mInn.currentBatsman1?._id || mInn.currentBatsman1;
+      const b2Id = mInn.currentBatsman2?._id || mInn.currentBatsman2;
+      if (String(dpId) === String(b1Id)) {
+        mInn.currentBatsman1 = null;
+      } else if (String(dpId) === String(b2Id)) {
+        mInn.currentBatsman2 = null;
+      }
+      if (mInn.onStrikeBatsman && String(mInn.onStrikeBatsman?._id || mInn.onStrikeBatsman) === dpId) {
+        mInn.onStrikeBatsman = null;
+      }
+    }
+  }
+
+  if (deliveryData?.nextBatsmanId) {
+    const innIdx = engineResult.match?.currentInnings ?? 0;
+    const mInn = mongooseMatch.innings[innIdx];
+    if (mInn) {
+      const fallbackStrike = engineResult.ball?.ballNumber || 1;
+      const runsParity = (ballRecord?.batsmanRuns || 0) + (ballRecord?.extraRuns || 0);
+      if (!mInn.currentBatsman1) {
+        mInn.currentBatsman1 = deliveryData.nextBatsmanId;
+        mInn.onStrikeBatsman = deliveryData.nextBatsmanId;
+      } else if (!mInn.currentBatsman2) {
+        mInn.currentBatsman2 = deliveryData.nextBatsmanId;
+        if (!mInn.onStrikeBatsman) {
+          mInn.onStrikeBatsman = runsParity % 2 === 1 ? mInn.currentBatsman1 : mInn.currentBatsman2;
+        }
+      }
+    }
+  }
 
   mongooseMatch.markModified('innings');
   mongooseMatch.markModified('result');
@@ -202,8 +265,9 @@ export function processDeliveryWithEngine(mongooseMatch, deliveryData) {
     isWicket: deliveryData.isWicket || false,
     wicketType: deliveryData.wicketType || null,
     dismissedPlayer: deliveryData.dismissedPlayerId || null,
-    fielder: deliveryData.fielderId || null,
-    batsmanOnStrike: deliveryData.batsmanOnStrikeId,
+      fielder: deliveryData.fielderId || null,
+      didCross: deliveryData.didCross,
+      batsmanOnStrike: deliveryData.batsmanOnStrikeId,
     batsmanNonStrike: deliveryData.batsmanNonStrikeId,
     bowler: deliveryData.bowlerId,
     commentary: deliveryData.commentaryText || '',

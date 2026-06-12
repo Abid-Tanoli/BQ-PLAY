@@ -105,9 +105,11 @@ export default function ManageScore() {
         handleResetInnings,
         handleResetMatch,
         setRole,
+        handleSaveFormat,
         handleSavePlayingXI,
         handleSaveToss,
         handleSaveOpeners,
+        reverting,
         handleTimeout,
         handleDRSReview,
         handleResolveTie,
@@ -342,6 +344,7 @@ export default function ManageScore() {
                 setSelectedMatch={setSelectedMatch}
                 setupState={setupState}
                 setSetupState={setSetupState}
+                handleSaveFormat={handleSaveFormat}
                 handleSavePlayingXI={handleSavePlayingXI}
                 handleSaveToss={handleSaveToss}
                 handleSaveOpeners={handleSaveOpeners}
@@ -382,7 +385,28 @@ export default function ManageScore() {
                             <h1 className="text-3xl md:text-5xl font-black font-raj italic tracking-tighter uppercase leading-none">
                                 {battingTeamTeam?.name} <span className="text-[#ff6b35]">VS</span> {bowlingTeamTeam?.name}
                             </h1>
-                            <div className="text-slate-400 font-medium">{selectedMatch.venue} • {selectedMatch.format}</div>
+                            <div className="text-slate-400 font-medium flex items-center gap-3">
+                                {selectedMatch.venue}
+                                <span className="px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-[10px] font-black uppercase tracking-wider">{selectedMatch.matchType || 'T20'}</span>
+                                {(() => {
+                                    const pp = selectedMatch.powerplayConfig || curInn?.powerplayConfig;
+                                    if (pp?.enabled && curInn) {
+                                        const completedOvers = Math.floor((curInn.balls || 0) / 6);
+                                        const ppActive = completedOvers < (pp.overs || 0);
+                                        return ppActive ? (
+                                            <span className="px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+                                                Powerplay {completedOvers + 1}/{pp.overs}
+                                            </span>
+                                        ) : (
+                                            <span className="px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-[10px] font-black uppercase tracking-wider">
+                                                PP done
+                                            </span>
+                                        );
+                                    }
+                                    return null;
+                                })()}
+                            </div>
                             {isInnings2 && firstInn && (
                                 <div className="mt-2 flex items-center gap-4">
                                     <div className="bg-slate-100 dark:bg-slate-800 rounded-lg px-3 py-1.5">
@@ -655,8 +679,6 @@ export default function ManageScore() {
                 setPitchMapViewMode={setPitchMapViewMode}
                 ballMovement={ballMovement}
                 setBallMovement={setBallMovement}
-                ballOutcome={ballOutcome}
-                setBallOutcome={setBallOutcome}
                 useAICommentary={useAICommentary}
                 setUseAICommentary={setUseAICommentary}
                 fieldedById={fieldedById}
