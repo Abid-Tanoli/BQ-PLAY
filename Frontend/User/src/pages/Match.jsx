@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { api } from "../services/api";
 import EnhancedMatchTabs from "../components/EnhancedMatchTabs";
-import LiveCommentary from "../components/LiveCommentary";
 import ToastNotifications from "../components/ToastNotifications";
 import { initSocket, joinMatchRoom, leaveMatchRoom } from "../services/socket";
 
@@ -68,10 +67,81 @@ const Match = () => {
                 balls: payload.balls ?? inn.balls,
                 runRate: payload.runRate ?? inn.runRate,
                 requiredRunRate: payload.requiredRunRate ?? inn.requiredRunRate,
+                onStrikeBatsman: payload.strikerId ?? inn.onStrikeBatsman,
+                currentBatsman1: payload.strikerId ?? inn.currentBatsman1,
+                currentBatsman2: payload.nonStrikerId ?? inn.currentBatsman2,
               }
             : inn
         ));
 
+        return { ...prev, innings };
+      });
+    };
+
+    const applyStrikeUpdate = (payload = {}) => {
+      if (!mounted || payload.matchId !== matchId) return;
+      setMatch(prev => {
+        const inningsIndex = payload.inningsIndex ?? prev?.currentInnings ?? 0;
+        if (!prev?.innings?.[inningsIndex]) return prev;
+        const innings = prev.innings.map((inn, index) => (
+          index === inningsIndex
+            ? {
+                ...inn,
+                onStrikeBatsman: payload.strikerId ?? inn.onStrikeBatsman,
+                currentBatsman1: payload.strikerId ?? inn.currentBatsman1,
+                currentBatsman2: payload.nonStrikerId ?? inn.currentBatsman2,
+              }
+            : inn
+        ));
+        return { ...prev, innings };
+      });
+    };
+
+    const applyRecordedBall = (payload = {}) => {
+      if (!mounted || payload.matchId !== matchId || !payload.ball) return;
+      setMatch(prev => {
+        const inningsIndex = payload.inningsIndex ?? prev?.currentInnings ?? 0;
+        const current = prev?.innings?.[inningsIndex];
+        if (!current) return prev;
+
+        const overNumber = payload.currentOver ?? payload.overNumber ?? payload.ball.overNumber;
+        if (overNumber == null) return prev;
+
+        const ball = {
+          ...payload.ball,
+          displayBallNumber: payload.displayBallNumber ?? payload.ball.displayBallNumber,
+        };
+
+        const oversHistory = [...(current.oversHistory || [])];
+        const existingOverIndex = oversHistory.findIndex((over) => Number(over.overNumber) === Number(overNumber));
+        const over =
+          existingOverIndex >= 0
+            ? { ...oversHistory[existingOverIndex], balls: [...(oversHistory[existingOverIndex].balls || [])] }
+            : { overNumber, bowler: ball.bowler, balls: [], runsScored: 0, wickets: 0 };
+
+        const existingBallIndex = over.balls.findIndex((item) => {
+          if (item._id && ball._id) return String(item._id) === String(ball._id);
+          return Number(item.ballNumber) === Number(ball.ballNumber);
+        });
+
+        if (existingBallIndex >= 0) {
+          over.balls[existingBallIndex] = { ...over.balls[existingBallIndex], ...ball };
+        } else {
+          over.balls.push(ball);
+        }
+
+        over.runsScored = over.balls.reduce(
+          (sum, item) => sum + Number(item.runs || 0) + Number(item.extraRuns || 0) + Number(item.penaltyRuns || 0),
+          0
+        );
+        over.wickets = over.balls.filter((item) => item.isWicket).length;
+
+        if (existingOverIndex >= 0) oversHistory[existingOverIndex] = over;
+        else oversHistory.push(over);
+
+        const innings = prev.innings.map((inn, index) => (
+          index === inningsIndex ? { ...inn, oversHistory } : inn
+        ));
         return { ...prev, innings };
       });
     };
@@ -90,6 +160,9 @@ const Match = () => {
         setMatch(payload.match);
       }
       const delivery = payload?.delivery || payload?.ball || payload;
+      if (payload?.ball && payload?.matchId === matchId) {
+        applyRecordedBall(payload);
+      }
       if (delivery?.isWicket) {
         addEvent({ type: 'wicket', message: 'WICKET!', player: delivery?.commentary });
       }
@@ -121,19 +194,17 @@ const Match = () => {
       addEvent({ type: 'result', message: 'Match Result', player: payload.description });
     };
 
+    const handleOverCompleted = (payload) => {
+      applyStrikeUpdate(payload);
+    };
+
     const joinRoom = () => joinMatchRoom(matchId);
 
     // ─── NEW SPECIFIC EVENTS ──────────────────────────────────
     socket.on("ball:recorded", handleBallUpdate);
     socket.on("score:update", applyScoreUpdate);
-    socket.on("strike:changed", (payload) => {
-      console.log("[SOCKET] strike:changed", payload);
-      loadMatch();
-    });
-    socket.on("over:completed", (payload) => {
-      handleBallUpdate(payload);
-      loadMatch();
-    });
+    socket.on("strike:changed", applyStrikeUpdate);
+    socket.on("over:completed", handleOverCompleted);
     socket.on("innings:end", (payload) => {
       handleInningsComplete(payload);
       loadMatch();
@@ -171,8 +242,8 @@ const Match = () => {
       leaveMatchRoom(matchId);
       socket.off("ball:recorded", handleBallUpdate);
       socket.off("score:update", applyScoreUpdate);
-      socket.off("strike:changed");
-      socket.off("over:completed");
+      socket.off("strike:changed", applyStrikeUpdate);
+      socket.off("over:completed", handleOverCompleted);
       socket.off("innings:end");
       socket.off("match:end");
       socket.off("connect", joinRoom);
@@ -199,15 +270,15 @@ const Match = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#031d44] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
+      <div className="min-h-screen bg-cric-bg flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-cric-accent border-t-transparent"></div>
       </div>
     );
   }
 
   if (!match) {
     return (
-      <div className="min-h-screen bg-[#031d44] flex items-center justify-center text-white font-black uppercase tracking-widest">
+      <div className="min-h-screen bg-cric-bg flex items-center justify-center text-cric-text font-black uppercase tracking-widest">
         Match Signal Lost
       </div>
     );
@@ -217,9 +288,6 @@ const Match = () => {
     <>
       <ToastNotifications events={events} />
       <EnhancedMatchTabs matchId={matchId} match={match} />
-      <div className="max-w-7xl mx-auto px-4 pb-8">
-        <LiveCommentary matchId={matchId} match={match} />
-      </div>
     </>
   );
 };

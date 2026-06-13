@@ -14,6 +14,7 @@ import Commentary from "./Commentary";
 import PlayingXI from "./PlayingXI";
 import Overs from "./Overs";
 import LiveStats from "./LiveStats";
+import RecentBallsStrip, { orderedBallsForDisplay } from "../../../Shared/components/RecentBallsStrip.jsx";
 
 const TABS = [
   { id: "live", label: "Live" },
@@ -243,7 +244,7 @@ const ballLabel = (ball) => {
 const ballClass = (ball) => {
   if (ball?.isWicket) return "bg-red-600 text-white";
   if (ball?.isWide || ball?.isNoBall || ball?.isLegBye || ball?.isBye) return "bg-orange-100 text-orange-700 ring-1 ring-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:ring-orange-800";
-  if (ballRuns(ball) === 4) return "bg-blue-600 text-white";
+  if (ballRuns(ball) === 4) return "bg-cric-accent text-white";
   if (ballRuns(ball) === 6) return "bg-purple-600 text-white";
   if (ballRuns(ball) === 0) return "bg-cric-border text-cric-text";
   return "bg-cric-text text-cric-card";
@@ -1051,36 +1052,13 @@ function MetricSmall({ label, value }) {
 }
 
 function RecentBalls({ overs }) {
-  const safeOvers = overs || [];
-  const visibleOvers = [...safeOvers].reverse();
-
   return (
     <div className="border-b border-cric-border bg-cric-card py-2 sm:py-3">
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-[10px] sm:text-xs font-black uppercase tracking-[0.18em] text-cric-muted">Recent Balls</h3>
       </div>
-      <div className="mt-3 sm:mt-4 -mx-2 overflow-x-auto px-2 pb-2 no-scrollbar">
-        {visibleOvers.length ? (
-          <div className="flex gap-2 sm:gap-3 min-w-fit">
-            {visibleOvers.map((over) => {
-              const summary = overRunsAndWickets(over);
-              return (
-                <div key={over._id || over.overNumber} className="flex items-center gap-2 rounded-lg bg-cric-bg p-2 sm:p-2.5 shrink-0">
-                  <div className="shrink-0 text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-cric-muted whitespace-nowrap">Over {number(over.overNumber) + 1}: {summary.runs} run{summary.runs === 1 ? "" : "s"}{summary.wickets > 0 ? `, ${summary.wickets} wkt` : ""}</div>
-                  <div className="flex gap-1 flex-nowrap">
-                    {(over.balls || []).map((ball, index) => (
-                      <span key={ball._id || index} className={`flex h-7 sm:h-8 min-w-7 sm:min-w-8 items-center justify-center rounded px-1.5 sm:px-2 text-[10px] sm:text-xs font-black shrink-0 ${ballClass(ball)}`}>
-                        {ballLabel(ball)}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <p className="text-xs sm:text-sm text-cric-muted">No balls recorded yet.</p>
-        )}
+      <div className="mt-3 sm:mt-4">
+        <RecentBallsStrip overs={overs || []} showLegend={false} overClassName="rounded-lg p-2 sm:p-2.5" />
       </div>
     </div>
   );
@@ -1106,7 +1084,7 @@ function CommentaryPreview({ overs, players, onSwitchTab }) {
       {latestBall ? (
         <div className="mt-2 sm:mt-3 space-y-2 sm:space-y-3">
           {recentOvers.map((over) => {
-            const balls = over.balls || [];
+            const balls = orderedBallsForDisplay(over.balls || []);
             return (
             <div key={over.overNumber} className="border-t border-cric-border pt-2 sm:pt-3">
               <div className="flex items-center justify-between mb-1.5 sm:mb-2">
@@ -1120,7 +1098,7 @@ function CommentaryPreview({ overs, players, onSwitchTab }) {
                 {balls.map((b, i) => <BallBadge key={i} ball={b} small />)}
               </div>
               <div className="space-y-0.5 sm:space-y-1">
-                {balls.slice().reverse().map((ball, idx) => (
+                {balls.map((ball, idx) => (
                   <CommentaryBall key={ball._id || idx} over={over} ball={ball} players={players} compact />
                 ))}
               </div>
@@ -1409,7 +1387,7 @@ function BallBadge({ ball, small = false }) {
   const color = isWicket
     ? "bg-red-600 text-white"
     : isSix ? "bg-purple-600 text-white"
-      : isFour ? "bg-blue-600 text-white"
+      : isFour ? "bg-cric-accent text-white"
         : (isWide || isNoBall) ? "bg-amber-500 text-white"
           : "bg-cric-border text-cric-muted";
   return (
@@ -1444,7 +1422,7 @@ function CommentaryTab({ overs, players, visibleOvers, onLoadMore }) {
         <div className="flex gap-1">
           {[
             { key: 'all', label: 'All' },
-            { key: 'fours', label: 'Fours', color: 'bg-blue-600' },
+            { key: 'fours', label: 'Fours', color: 'bg-cric-accent' },
             { key: 'sixes', label: 'Sixes', color: 'bg-purple-600' },
             { key: 'wickets', label: 'Wickets', color: 'bg-red-600' },
           ].map(f => (
@@ -1495,7 +1473,7 @@ function CommentaryTab({ overs, players, visibleOvers, onLoadMore }) {
                 </p>
               )}
               <div className="flex gap-1 sm:gap-1.5 mt-1.5 sm:mt-2 flex-wrap">
-                {(over.balls || []).map((b, i) => (
+                {orderedBallsForDisplay(over.balls || []).map((b, i) => (
                   <BallBadge key={i} ball={b} small />
                 ))}
               </div>
@@ -1503,7 +1481,7 @@ function CommentaryTab({ overs, players, visibleOvers, onLoadMore }) {
 
             {/* Ball-by-ball */}
             <div className="space-y-0.5 sm:space-y-1">
-              {(over.balls || []).slice().reverse().map((ball, index) => (
+              {orderedBallsForDisplay(over.balls || []).map((ball, index) => (
                 <CommentaryBall key={ball._id || index} over={over} ball={ball} players={players} compact={compact} />
               ))}
             </div>

@@ -1,6 +1,61 @@
 import { ScoringEngine } from './ScoringEngine.js';
 import { getBallRunText } from '../../utils/cricketHelpers.js';
 
+const getId = (value) => {
+  if (!value) return "";
+  if (typeof value === "string" || typeof value === "number") return String(value);
+  return String(value._id || value.id || "");
+};
+
+const sameId = (a, b) => getId(a) && getId(a) === getId(b);
+
+function resolveActiveBatters(innings, deliveryData = {}) {
+  const striker =
+    innings?.onStrikeBatsman ||
+    innings?.currentBatsman1 ||
+    deliveryData.batsmanOnStrikeId ||
+    null;
+  const first = innings?.currentBatsman1 || null;
+  const second = innings?.currentBatsman2 || null;
+  let nonStriker = deliveryData.batsmanNonStrikeId || null;
+
+  if (first && second) {
+    nonStriker = sameId(first, striker) ? second : first;
+  } else if (!nonStriker) {
+    nonStriker = sameId(first, striker) ? second : first;
+  }
+
+  return { striker, nonStriker };
+}
+
+function assignActiveBatters(innings, striker, nonStriker) {
+  innings.currentBatsman1 = striker || null;
+  innings.currentBatsman2 = nonStriker || null;
+  innings.onStrikeBatsman = striker || null;
+}
+
+function resolveNextBatters(ballRecord, deliveryData = {}) {
+  let striker = ballRecord?.nextBatsmanOnStrike || ballRecord?.batsmanOnStrike || null;
+  let nonStriker = ballRecord?.nextBatsmanNonStrike || ballRecord?.batsmanNonStrike || null;
+
+  if (ballRecord?.isWicket && ballRecord?.dismissedPlayer) {
+    const dismissed = ballRecord.dismissedPlayer;
+    const replacement = deliveryData.nextBatsmanId || null;
+
+    if (sameId(dismissed, striker)) {
+      striker = replacement;
+    } else if (sameId(dismissed, nonStriker)) {
+      nonStriker = replacement;
+    } else if (sameId(dismissed, ballRecord.batsmanOnStrike)) {
+      striker = replacement;
+    } else if (sameId(dismissed, ballRecord.batsmanNonStrike)) {
+      nonStriker = replacement;
+    }
+  }
+
+  return { striker, nonStriker };
+}
+
 function computeBallNotation(ball) {
   if (ball.isWicket) return 'W';
   if (ball.isWide) return `${(ball.extraRuns || 0)}w`;
@@ -182,46 +237,9 @@ function applyEngineResultToMongoose(mongooseMatch, engineResult, deliveryData) 
   if (ballRecord) {
     const innIdx = engineResult.match?.currentInnings ?? 0;
     const mInn = mongooseMatch.innings[innIdx];
-    if (mInn && ballRecord.batsmanOnStrike && ballRecord.batsmanNonStrike) {
-      mInn.currentBatsman1 = ballRecord.batsmanOnStrike;
-      mInn.currentBatsman2 = ballRecord.batsmanNonStrike;
-      mInn.onStrikeBatsman = ballRecord.batsmanOnStrike;
-    }
-  }
-
-  if (ballRecord && ballRecord.isWicket && ballRecord.dismissedPlayer) {
-    const innIdx = engineResult.match?.currentInnings ?? 0;
-    const mInn = mongooseMatch.innings[innIdx];
     if (mInn) {
-      const dpId = String(ballRecord.dismissedPlayer?._id || ballRecord.dismissedPlayer);
-      const b1Id = mInn.currentBatsman1?._id || mInn.currentBatsman1;
-      const b2Id = mInn.currentBatsman2?._id || mInn.currentBatsman2;
-      if (String(dpId) === String(b1Id)) {
-        mInn.currentBatsman1 = null;
-      } else if (String(dpId) === String(b2Id)) {
-        mInn.currentBatsman2 = null;
-      }
-      if (mInn.onStrikeBatsman && String(mInn.onStrikeBatsman?._id || mInn.onStrikeBatsman) === dpId) {
-        mInn.onStrikeBatsman = null;
-      }
-    }
-  }
-
-  if (deliveryData?.nextBatsmanId) {
-    const innIdx = engineResult.match?.currentInnings ?? 0;
-    const mInn = mongooseMatch.innings[innIdx];
-    if (mInn) {
-      const fallbackStrike = engineResult.ball?.ballNumber || 1;
-      const runsParity = (ballRecord?.batsmanRuns || 0) + (ballRecord?.extraRuns || 0);
-      if (!mInn.currentBatsman1) {
-        mInn.currentBatsman1 = deliveryData.nextBatsmanId;
-        mInn.onStrikeBatsman = deliveryData.nextBatsmanId;
-      } else if (!mInn.currentBatsman2) {
-        mInn.currentBatsman2 = deliveryData.nextBatsmanId;
-        if (!mInn.onStrikeBatsman) {
-          mInn.onStrikeBatsman = runsParity % 2 === 1 ? mInn.currentBatsman1 : mInn.currentBatsman2;
-        }
-      }
+      const { striker, nonStriker } = resolveNextBatters(ballRecord, deliveryData);
+      assignActiveBatters(mInn, striker, nonStriker);
     }
   }
 
@@ -232,8 +250,9 @@ function applyEngineResultToMongoose(mongooseMatch, engineResult, deliveryData) 
 export function processDeliveryWithEngine(mongooseMatch, deliveryData) {
   const inningsIndex = deliveryData.inningsIndex ?? mongooseMatch.currentInnings ?? 0;
   const innings = mongooseMatch.innings[inningsIndex];
+  const { striker: serverStriker, nonStriker: serverNonStriker } = resolveActiveBatters(innings, deliveryData);
 
-  const batsmanOnStrike = innings?.currentBatsman1;
+  const batsmanOnStrike = serverStriker;
   const bowlerPlayer = innings?.currentBowler;
 
   const batsmanName = batsmanOnStrike?.name || deliveryData.batsmanOnStrikeName;
@@ -267,8 +286,8 @@ export function processDeliveryWithEngine(mongooseMatch, deliveryData) {
     dismissedPlayer: deliveryData.dismissedPlayerId || null,
       fielder: deliveryData.fielderId || null,
       didCross: deliveryData.didCross,
-      batsmanOnStrike: deliveryData.batsmanOnStrikeId,
-    batsmanNonStrike: deliveryData.batsmanNonStrikeId,
+    batsmanOnStrike: serverStriker,
+    batsmanNonStrike: serverNonStriker,
     bowler: deliveryData.bowlerId,
     commentary: deliveryData.commentaryText || '',
     vividCommentary: deliveryData.vividCommentary || '',
@@ -307,6 +326,8 @@ export function processDeliveryWithEngine(mongooseMatch, deliveryData) {
   const currentOver = curInnings?.oversHistory?.find(o => o.overNumber === currentOverNumber);
   const ballNumberInOver = displayBallNumberFor(currentOver, result.ball);
   enrichedBall.displayBallNumber = ballNumberInOver;
+  const strikerAfter = curInnings?.onStrikeBatsman || result.ball.nextBatsmanOnStrike || result.ball.batsmanOnStrike;
+  const nonStrikerAfter = curInnings?.currentBatsman2 || result.ball.nextBatsmanNonStrike || result.ball.batsmanNonStrike;
 
   return {
     ball: enrichedBall,
@@ -328,9 +349,13 @@ export function processDeliveryWithEngine(mongooseMatch, deliveryData) {
     isWicket: result.ball.isWicket || false,
     wicketType: result.ball.wicketType || null,
     battingStats: (curInnings?.batting || []).find(b =>
-      deliveryData.batsmanOnStrikeId &&
-      String(b.player?._id || b.player) === String(deliveryData.batsmanOnStrikeId)
+      serverStriker &&
+      String(b.player?._id || b.player) === String(serverStriker?._id || serverStriker)
     ),
+    strikerBeforeId: serverStriker?._id || serverStriker,
+    nonStrikerBeforeId: serverNonStriker?._id || serverNonStriker,
+    strikerAfterId: strikerAfter?._id || strikerAfter,
+    nonStrikerAfterId: nonStrikerAfter?._id || nonStrikerAfter,
   };
 }
 

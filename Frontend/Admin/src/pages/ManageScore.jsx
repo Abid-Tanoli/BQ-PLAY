@@ -127,6 +127,7 @@ export default function ManageScore() {
     } = useMatchScoring();
 
     const [loadTimeout, setLoadTimeout] = useState(false);
+    const [activeScorePanel, setActiveScorePanel] = useState('main');
 
     React.useEffect(() => {
         const timer = setTimeout(() => setLoadTimeout(true), 4000);
@@ -354,10 +355,72 @@ export default function ManageScore() {
         );
     }
 
+    const responsivePanelClass = (panel) =>
+        `${activeScorePanel === panel ? 'block' : 'hidden'} xl:block min-w-0`;
+    const scorePanelTabs = [
+        { id: 'sidebar', label: 'Sidebar' },
+        { id: 'main', label: 'Main' },
+        { id: 'management', label: 'Management' },
+    ];
+
     return (
-        <div className="flex flex-col lg:flex-row min-h-screen bg-cric-bg text-cric-text p-4 lg:p-8 gap-8 transition-colors duration-300">
-            {/* MAIN CONTENT (Left) */}
-            <div className="flex-1 flex flex-col min-w-0">
+        <div className="min-h-screen bg-cric-bg text-cric-text p-3 sm:p-4 xl:p-6 transition-colors duration-300">
+            <div className="xl:hidden sticky top-0 z-40 mb-4 rounded-2xl border border-cric-border bg-cric-card/95 p-1.5 shadow-lg backdrop-blur">
+                <div className="grid grid-cols-3 gap-1">
+                    {scorePanelTabs.map(panel => (
+                        <button
+                            key={panel.id}
+                            type="button"
+                            onClick={() => setActiveScorePanel(panel.id)}
+                            className={`rounded-xl px-2 py-3 text-[10px] font-black uppercase tracking-widest transition-all ${activeScorePanel === panel.id ? 'bg-cric-accent text-white shadow-md' : 'text-cric-muted hover:bg-cric-bg hover:text-cric-text'}`}
+                        >
+                            {panel.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-[280px_minmax(0,1fr)_460px] xl:gap-6">
+                <aside className={responsivePanelClass('sidebar')}>
+                    <div className="xl:sticky xl:top-4 rounded-[2rem] border border-cric-border bg-cric-card p-5 shadow-xl">
+                        <div className="mb-5">
+                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-cric-accent">Match Control</p>
+                            <h2 className="mt-2 text-2xl font-black font-raj italic uppercase leading-none text-cric-text">
+                                {battingTeamTeam?.shortName || battingTeamTeam?.name || 'Batting'} vs {bowlingTeamTeam?.shortName || bowlingTeamTeam?.name || 'Bowling'}
+                            </h2>
+                            <p className="mt-2 text-xs font-semibold text-cric-muted break-words">{selectedMatch.venue || 'Venue TBC'}</p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 text-center">
+                            <div className="rounded-xl bg-cric-bg p-3 ring-1 ring-cric-border">
+                                <p className="text-[9px] font-black uppercase tracking-widest text-cric-muted">Score</p>
+                                <p className="mt-1 text-xl font-black text-cric-text">{curInn?.runs}/{curInn?.wickets}</p>
+                            </div>
+                            <div className="rounded-xl bg-cric-bg p-3 ring-1 ring-cric-border">
+                                <p className="text-[9px] font-black uppercase tracking-widest text-cric-muted">Overs</p>
+                                <p className="mt-1 text-xl font-black text-cric-text">{formatOvers(curInn?.balls)}</p>
+                            </div>
+                        </div>
+
+                        <div className="mt-5 space-y-2">
+                            {TABS.map(tab => (
+                                <NavLink
+                                    key={tab.id}
+                                    to={getScoreTabPath(selectedMatch._id, tab.id)}
+                                    end={tab.id === 'live'}
+                                    onClick={() => setActiveScorePanel('main')}
+                                    className={() => `flex items-center justify-between rounded-xl px-3 py-3 text-xs font-black uppercase tracking-widest transition-all ${activeTab === tab.id ? 'bg-cric-accent text-white' : 'bg-cric-bg text-cric-muted hover:text-cric-text'}`}
+                                >
+                                    <span>{tab.label}</span>
+                                    <span aria-hidden="true">&gt;</span>
+                                </NavLink>
+                            ))}
+                        </div>
+                    </div>
+                </aside>
+
+                {/* MAIN CONTENT */}
+                <main className={`${responsivePanelClass('main')} flex flex-col`}>
                 {/* Header / Match Info */}
                 <div className="bg-cric-card rounded-[1.5rem] lg:rounded-[2.5rem] p-4 md:p-8 border border-cric-border shadow-xl mb-6">
                     <div className="flex justify-between items-center mb-6">
@@ -641,9 +704,9 @@ export default function ManageScore() {
                         </div>
                     )}
                 </div>
-            </div>
+                </main>
 
-            {/* PERMANENT MANAGEMENT PANEL (Right Sidebar) */}
+                <section className={responsivePanelClass('management')}>
             <RightSidebarControls
                 curInn={curInn}
                 handleResetInnings={handleResetInnings}
@@ -688,6 +751,8 @@ export default function ManageScore() {
                 formattedHistory={formattedHistory}
                 matchId={matchId}
             />
+                </section>
+            </div>
 
             {/* MODALS */}
             <TieResolutionModal 

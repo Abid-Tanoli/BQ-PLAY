@@ -103,7 +103,7 @@ class ScoringEngine {
     this._updateStrikeRotation(innings, ballRecord);
 
     if (overComplete) {
-      this._applyEndOfOverStrikeRotation(innings);
+      this._applyEndOfOverStrikeRotation(innings, ballRecord);
     }
 
     this._updatePartnership(innings, ballRecord);
@@ -208,6 +208,8 @@ class ScoringEngine {
       displayBallNumber: (ballType === 'legal' || ballType === 'bye' || ballType === 'legBye') ? displayBallNum : undefined,
       batsmanOnStrike: d.batsmanOnStrike,
       batsmanNonStrike: d.batsmanNonStrike,
+      nextBatsmanOnStrike: d.batsmanOnStrike,
+      nextBatsmanNonStrike: d.batsmanNonStrike,
       bowler: d.bowler,
       runs: ballType === 'legal' ? (d.runs || 0) : (ballType === 'noBall' ? (d.runs || 0) : 0),
       batsmanRuns: 0, extraRuns: 0, penaltyRuns: 0,
@@ -307,7 +309,7 @@ class ScoringEngine {
 
     if (br.wicketType === 'runOut') {
       if (br.didCross === true) {
-        [br.batsmanOnStrike, br.batsmanNonStrike] = [br.batsmanNonStrike, br.batsmanOnStrike];
+        this._swapNextStrike(br);
       }
     }
   }
@@ -427,18 +429,18 @@ class ScoringEngine {
     }
 
     if (crossingRuns > 0 && crossingRuns % 2 === 1) {
-      [br.batsmanOnStrike, br.batsmanNonStrike] = [br.batsmanNonStrike, br.batsmanOnStrike];
+      this._swapNextStrike(br);
     }
   }
 
-  _applyEndOfOverStrikeRotation(innings) {
+  _swapNextStrike(br) {
+    [br.nextBatsmanOnStrike, br.nextBatsmanNonStrike] = [br.nextBatsmanNonStrike, br.nextBatsmanOnStrike];
+  }
+
+  _applyEndOfOverStrikeRotation(innings, br) {
     const lastOver = innings.oversHistory?.[innings.oversHistory.length - 1];
-    if (!lastOver || !lastOver.isComplete) return;
-
-    const lastBall = lastOver.balls?.[lastOver.balls.length - 1];
-    if (!lastBall) return;
-
-    [lastBall.batsmanOnStrike, lastBall.batsmanNonStrike] = [lastBall.batsmanNonStrike, lastBall.batsmanOnStrike];
+    if (!lastOver || !lastOver.isComplete || !br) return;
+    this._swapNextStrike(br);
   }
 
   // ══════════════════════════════════════════════════════════════════════════════

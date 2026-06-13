@@ -221,9 +221,15 @@ export const updateScore = async (req, res) => {
       isWicket: engineWicket,
       wicketType: engineWicketType,
       battingStats: batsmanOnStrikeStats,
+      strikerBeforeId,
+      nonStrikerBeforeId,
+      strikerAfterId,
+      nonStrikerAfterId,
     } = engineResult;
     // Reassign to the outer let-declared isWicket so downstream code sees engine's decision
     isWicket = engineWicket;
+    batsmanOnStrikeId = strikerBeforeId;
+    batsmanNonStrikeId = nonStrikerBeforeId;
 
     // Validate fielder for 1/2/3 runs (non-wicket, non-extras)
     const runsValue = parseInt(String(runs), 10);
@@ -423,30 +429,19 @@ export const updateScore = async (req, res) => {
     // Strike rotation for next ball — engine already applied both odd-runs swap
     // AND end-of-over swap to ball.batsmanOnStrike / ball.batsmanNonStrike.
     // Controller must NOT re-apply any ternary — just read engine's result.
-    const dismissedId = ball.dismissedPlayer || (isWicket ? batsmanOnStrikeId : null);
-    if (isWicket && dismissedId) {
-      const bsId = String(ball.batsmanOnStrike?._id || ball.batsmanOnStrike);
-      const nsId = String(ball.batsmanNonStrike?._id || ball.batsmanNonStrike);
-      const dpId = String(dismissedId?._id || dismissedId);
-      const newBat = nextBatsmanId || null;
-      if (dpId === bsId) {
-        innings.onStrikeBatsman = newBat;
-        innings.currentBatsman1 = newBat;
-        innings.currentBatsman2 = ball.batsmanNonStrike;
-      } else {
-        innings.onStrikeBatsman = ball.batsmanOnStrike;
-        innings.currentBatsman1 = ball.batsmanOnStrike;
-        innings.currentBatsman2 = newBat;
-      }
-    } else {
-      innings.onStrikeBatsman = ball.batsmanOnStrike;
-      innings.currentBatsman1 = ball.batsmanOnStrike;
-      innings.currentBatsman2 = ball.batsmanNonStrike;
-    }
-    console.log(`[STRIKE] Ball ${currentOverNumber}.${ballNumberInOver} runs=${batsmanRuns} extra=${extraRuns} overComplete=${isOverComplete}`);
-    console.log(`[STRIKE]   BEFORE engine: onStrike=${batsmanOnStrikeId} nonStrike=${batsmanNonStrikeId}`);
-    console.log(`[STRIKE]   AFTER  engine: ball.onStrike=${ball.batsmanOnStrike?._id || ball.batsmanOnStrike} ball.nonStrike=${ball.batsmanNonStrike?._id || ball.batsmanNonStrike}`);
-    console.log(`[STRIKE]   PERSISTED: onStrike=${innings.onStrikeBatsman?._id || innings.onStrikeBatsman} curr1=${innings.currentBatsman1?._id || innings.currentBatsman1} curr2=${innings.currentBatsman2?._id || innings.currentBatsman2}`);
+    const persistedStrikerAfter = innings.onStrikeBatsman?._id || innings.onStrikeBatsman || strikerAfterId;
+    const persistedNonStrikerAfter = innings.currentBatsman2?._id || innings.currentBatsman2 || nonStrikerAfterId;
+    const strikeRotationLog = {
+      over: currentOverNumber,
+      ball: ballNumberInOver,
+      runsThisBall: batsmanRuns,
+      isOverComplete,
+      strikerBefore: String(batsmanOnStrikeId || ""),
+      nonStrikerBefore: String(batsmanNonStrikeId || ""),
+      strikerAfter: String(persistedStrikerAfter || ""),
+      nonStrikerAfter: String(persistedNonStrikerAfter || ""),
+    };
+    console.log(`[STRIKE_ROTATION] ${JSON.stringify(strikeRotationLog)}`);
 
     if (isOverComplete && currentOver) {
       currentOver.summary = generateOverSummary(currentOver);
@@ -472,8 +467,8 @@ export const updateScore = async (req, res) => {
 
     try {
       // ─── BALL RECORDED ──────────────────────────────────────
-      const strikerId = ball.batsmanOnStrike?._id || ball.batsmanOnStrike;
-      const nonStrikerId = ball.batsmanNonStrike?._id || ball.batsmanNonStrike;
+      const strikerId = persistedStrikerAfter;
+      const nonStrikerId = persistedNonStrikerAfter;
 
       emitBallRecorded(matchId, {
         inningsIndex,
@@ -488,6 +483,8 @@ export const updateScore = async (req, res) => {
         wicketType: engineWicketType,
         strikerId,
         nonStrikerId,
+        strikerBeforeId: batsmanOnStrikeId,
+        nonStrikerBeforeId: batsmanNonStrikeId,
         commentary: aiGeneratedCommentary || null,
         batsmanName: batsmanOnStrike?.name || "",
         bowlerName: bowlerPlayer?.name || "",
@@ -495,6 +492,7 @@ export const updateScore = async (req, res) => {
 
       // ─── SCORE UPDATE ───────────────────────────────────────
       emitScoreUpdate(matchId, {
+        inningsIndex,
         runs: innings.runs,
         wickets: innings.wickets,
         overs: innings.overs,
@@ -504,6 +502,8 @@ export const updateScore = async (req, res) => {
         powerplayStatus: innings.powerplayStatus,
         powerplayConfig: match.powerplayConfig,
         currentInnings: match.currentInnings,
+        strikerId,
+        nonStrikerId,
       });
 
       // ─── STRIKE CHANGED ─────────────────────────────────────
@@ -704,48 +704,6 @@ export const updateScore = async (req, res) => {
     try {
       await updateMatchAnalytics(match, inningsIndex, { isFour: batsmanRuns === 4 && !isWide && !isNoBall, isSix: batsmanRuns === 6 && !isWide && !isNoBall });
     } catch (e) { console.log("Analytics update error:", e.message); }
-
-    // Broadcast BALL_UPDATE via WebSocket
-    try {
-      const io = getIO();
-      const analytics = await MatchAnalytics.findOne({ matchId: match._id });
-      
-      const partnerships = await Partnership.find({ matchId: match._id, inning: inningsIndex + 1 });
-      const activePartnership = partnerships.find(p => p.isActive);
-      
-      io.to(`match-${matchId}`).emit("BALL_UPDATE", {
-        delivery: ball,
-        match: await populateFullMatch(match),
-        scorecard: { team1: match.innings[0], team2: match.innings[1] },
-        currentBatsmen: { striker: batsmanOnStrikeStats, nonStriker: innings.batting.find(b => String(b.player?._id || b.player) === String(batsmanNonStrikeId)) },
-        currentBowler: innings.bowling.find(b => String(b.player?._id || b.player) === String(bowlerId)),
-        partnerships,
-        activePartnership,
-        analytics,
-        last5Overs: innings.oversHistory.slice(-5).map(o => o.runsScored),
-        requiredRate: innings.requiredRunRate,
-        matchStatus: match.status
-      });
-
-      // Emit Wicket Alert
-      if (isWicket) {
-        io.to(`match-${matchId}`).emit("WICKET_ALERT", {
-          batsman: batsmanOnStrike?.name,
-          wicketType,
-          score: `${innings.runs}/${innings.wickets}`
-        });
-      }
-
-      // Emit Milestone Alert
-      if (batsmanOnStrikeStats) {
-        if (batsmanOnStrikeStats.runs >= 50 && (batsmanOnStrikeStats.runs - batsmanRuns) < 50) {
-          io.to(`match-${matchId}`).emit("MILESTONE_ALERT", { type: '50', player: batsmanOnStrike?.name, runs: batsmanOnStrikeStats.runs });
-        }
-        if (batsmanOnStrikeStats.runs >= 100 && (batsmanOnStrikeStats.runs - batsmanRuns) < 100) {
-          io.to(`match-${matchId}`).emit("MILESTONE_ALERT", { type: '100', player: batsmanOnStrike?.name, runs: batsmanOnStrikeStats.runs });
-        }
-      }
-    } catch (e) { console.log("WebSocket broadcast error:", e.message); }
 
     res.status(200).json({
       match,

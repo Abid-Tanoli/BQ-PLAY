@@ -1,95 +1,10 @@
 import React from 'react';
-
-const number = (value, fallback = 0) => {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : fallback;
-};
-
-const ballRuns = (ball) => number(ball?.runs);
-
-const ballLabel = (ball) => {
-    if (ball?.isWicket) return "W";
-    if (ball?.isWide) return "Wd";
-    if (ball?.isNoBall) return "Nb";
-    if (ball?.isLegBye) return "LB";
-    if (ball?.isBye) return "B";
-    if (ballRuns(ball) === 0) return "\u2022";
-    return String(ballRuns(ball));
-};
-
-const ballClass = (ball) => {
-    if (ball?.isWicket) return "bg-red-600 text-white";
-    if (ball?.isWide || ball?.isNoBall || ball?.isLegBye || ball?.isBye) return "bg-orange-100 text-orange-700 ring-1 ring-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:ring-orange-800";
-    if (ballRuns(ball) === 4) return "bg-blue-600 text-white";
-    if (ballRuns(ball) === 6) return "bg-purple-600 text-white";
-    if (ballRuns(ball) === 0) return "bg-cric-border text-cric-text";
-    return "bg-cric-text text-cric-card";
-};
-
-const overRunsAndWickets = (over) => {
-    const balls = over?.balls || [];
-    const fallbackRuns = balls.reduce((sum, ball) => sum + ballRuns(ball) + (ball.isWide || ball.isNoBall ? 1 : 0), 0);
-    return {
-        runs: number(over?.runsScored, fallbackRuns),
-        wickets: number(over?.wickets, balls.filter(ball => ball.isWicket).length)
-    };
-};
-
-const groupHistoryByOver = (history = []) => {
-    const overMap = new Map();
-    history.forEach(ball => {
-        const overNumber = ball.overNumber;
-        if (overNumber == null) return;
-        if (!overMap.has(overNumber)) {
-            overMap.set(overNumber, { overNumber, balls: [] });
-        }
-        overMap.get(overNumber).balls.push(ball);
-    });
-    return Array.from(overMap.values());
-};
+import RecentBallsStrip, { number } from '../../../../Shared/components/RecentBallsStrip.jsx';
 
 const deliveryOverText = (ball) => {
     if (!ball) return "0.0";
     return `${number(ball.overNumber)}.${ball.displayBallNumber || ball.ballNumber || 1}`;
 };
-
-function RecentBallsStrip({ history = [] }) {
-    const safeOvers = groupHistoryByOver(history);
-
-    if (safeOvers.length === 0) {
-        return <p className="text-xs text-cric-muted">No balls recorded yet.</p>;
-    }
-
-    return (
-        <div className="space-y-3">
-            <div className="flex gap-2 text-[8px] font-black uppercase text-slate-500">
-                <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-blue-600" /> Boundary</span>
-                <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-600" /> Wicket</span>
-            </div>
-            <div className="-mx-2 overflow-x-auto px-2 pb-2 no-scrollbar">
-                <div className="flex gap-3 min-w-fit">
-                    {safeOvers.slice().reverse().map(over => {
-                        const summary = overRunsAndWickets(over);
-                        return (
-                            <div key={over.overNumber} className="flex items-center gap-3 rounded-xl bg-cric-bg p-3 ring-1 ring-cric-border shrink-0">
-                                <div className="shrink-0 text-[10px] font-black uppercase tracking-widest text-cric-muted whitespace-nowrap">
-                                    Over {number(over.overNumber) + 1}: {summary.runs} run{summary.runs === 1 ? "" : "s"}{summary.wickets > 0 ? `, ${summary.wickets} wkt` : ""}
-                                </div>
-                                <div className="flex gap-1.5 flex-nowrap">
-                                    {(over.balls || []).map((ball, index) => (
-                                        <span key={ball._id || `${over.overNumber}-${index}`} title={`${number(over.overNumber)}.${ball.displayBallNumber || ball.ballNumber}`} className={`flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-xs font-black shrink-0 ${ballClass(ball)}`}>
-                                            {ballLabel(ball)}
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-        </div>
-    );
-}
 
 const LiveScoringPanel = ({
     battingXI,

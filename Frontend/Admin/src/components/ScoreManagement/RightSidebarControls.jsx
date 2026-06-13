@@ -4,7 +4,6 @@ import PitchMap, { LINE_ZONES, LENGTH_ZONES } from '../PitchMap';
 import ShotTypePicker from '../ShotTypePicker';
 import ShotDiagram from '../ShotDiagram';
 import FielderSelector from './FielderSelector';
-import CommentaryBox from './CommentaryBox';
 import { SHOTS } from '../../data/shotsData';
 
 const shotToId = (shot) => shot.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
@@ -70,9 +69,6 @@ const RightSidebarControls = ({
     setFieldedById,
     fieldedByPosition,
     setFieldedByPosition,
-    // Commentary
-    formattedHistory,
-    matchId,
 }) => {
     const [showShotPicker, setShowShotPicker] = useState(false);
     const currentShot = findShot(shotToId(pitchMapShot || ''));
@@ -109,18 +105,18 @@ const RightSidebarControls = ({
     ];
     return (
         <>
-        <div className="lg:w-[480px] shrink-0 sticky top-0 mt-0 pt-2 pb-12 px-8 h-screen flex flex-col bg-cric-card rounded-[3.5rem] border border-cric-border shadow-2xl overflow-y-auto no-scrollbar">
-            <div className="mb-8 mt-4 flex justify-between items-start">
+        <div className="w-full shrink-0 xl:sticky xl:top-4 xl:h-[calc(100vh-2rem)] flex flex-col bg-cric-card rounded-[2rem] xl:rounded-[3rem] border border-cric-border shadow-2xl overflow-y-auto px-4 py-5 sm:px-6 xl:px-7">
+            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-start">
                 <div>
-                    <h2 className="text-3xl font-black font-raj tracking-tighter italic text-cric-text uppercase">Management Panel</h2>
+                    <h2 className="text-2xl xl:text-3xl font-black font-raj tracking-tighter italic text-cric-text uppercase">Management Panel</h2>
                     <div className="text-[10px] font-black text-cric-accent uppercase tracking-[0.3em] mt-1">Live Scoring Control</div>
                 </div>
-                <div className="flex flex-col items-end gap-2">
-                    <div className="flex gap-2">
+                <div className="flex flex-col items-start sm:items-end gap-2">
+                    <div className="flex flex-wrap gap-2">
                         <button onClick={handleResetInnings} className="text-[9px] font-black text-cric-accent border border-cric-accent/30 px-3 py-1 rounded-full hover:bg-cric-accent hover:text-white transition-all uppercase tracking-widest whitespace-nowrap">Reset Innings</button>
                         <button onClick={handleEndInnings} className="text-[9px] font-black text-red-500 border border-red-500/30 px-3 py-1 rounded-full hover:bg-red-500 hover:text-white transition-all uppercase tracking-widest whitespace-nowrap">End Innings</button>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                         <button onClick={handleResetMatch} className="text-[9px] font-black text-white bg-red-600 px-3 py-1 rounded-full hover:bg-red-700 transition-all uppercase tracking-widest whitespace-nowrap shadow-lg shadow-red-500/30">Reset Match</button>
                         {curInn?.target > 0 && <button onClick={handleStartNext} className="text-[9px] font-black text-green-500 border border-green-500/30 px-3 py-1 rounded-full hover:bg-green-500 hover:text-white transition-all uppercase tracking-widest whitespace-nowrap">Next Innings</button>}
                     </div>
@@ -167,7 +163,7 @@ const RightSidebarControls = ({
                     </div>
                     <div className="space-y-2 md:col-span-2">
                         <h4 className="text-[9px] font-black uppercase text-slate-500 tracking-widest pl-2">Active Bowler</h4>
-                        <button onClick={() => setShowSelectionModal('bowler')} className="w-full p-6 bg-black/5 dark:bg-white/2 rounded-3xl border border-cric-border text-left font-black font-raj text-lg italic hover:bg-black/10 dark:hover:bg-white/5 transition-all text-blue-500">
+                        <button onClick={() => setShowSelectionModal('bowler')} className="w-full p-6 bg-black/5 dark:bg-white/2 rounded-3xl border border-cric-border text-left font-black font-raj text-lg italic hover:bg-black/10 dark:hover:bg-white/5 transition-all text-cric-accent">
                             {bowlingXI.find(p => String(p._id) === String(bowlerId))?.name || 'SELECT BOWLER'}
                         </button>
                     </div>
@@ -280,7 +276,7 @@ const RightSidebarControls = ({
                             <button
                                 key={type}
                                 onClick={() => setSelectedExtra(selectedExtra === type ? null : type)}
-                                className={`py-4 rounded-2xl text-[10px] font-black tracking-widest transition-all ${selectedExtra === type ? 'bg-blue-600 text-white shadow-lg' : 'bg-black/5 dark:bg-white/2 text-slate-500 hover:text-cric-text border border-transparent hover:border-cric-border/50'}`}
+                                className={`py-4 rounded-2xl text-[10px] font-black tracking-widest transition-all ${selectedExtra === type ? 'bg-cric-accent text-white shadow-lg' : 'bg-black/5 dark:bg-white/2 text-slate-500 hover:text-cric-text border border-transparent hover:border-cric-border/50'}`}
                             >
                                 {type}
                             </button>
@@ -334,11 +330,6 @@ const RightSidebarControls = ({
                     </button>
                 </div>
 
-                {/* 8. Commentary Box */}
-                <CommentaryBox
-                    matchId={matchId}
-                    formattedHistory={formattedHistory}
-                />
             </div>
 
             <div className="mt-auto pt-12 text-center opacity-30 text-[9px] font-black tracking-[0.5em] uppercase">

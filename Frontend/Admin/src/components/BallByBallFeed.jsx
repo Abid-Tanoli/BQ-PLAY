@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
+import { orderedBallsForDisplay } from "../../../Shared/components/RecentBallsStrip.jsx";
 
 // Ball notation badge
 function BallBadge({ ball, small = false }) {
@@ -21,7 +22,7 @@ function BallBadge({ ball, small = false }) {
     const color = isWicket
         ? "bg-red-600 text-white shadow-red-500/40"
         : isSix ? "bg-purple-600 text-white shadow-purple-500/40"
-            : isFour ? "bg-blue-600 text-white shadow-blue-500/40"
+            : isFour ? "bg-cric-accent text-white shadow-cric-accent/40"
                 : (isWide || isNoBall || isLegBye || isBye) ? "bg-amber-500 text-white shadow-amber-500/40"
                     : "bg-white/10 text-slate-300 shadow-white/5";
 
@@ -115,8 +116,7 @@ function OverBlock({ over, balls, onEdit, showReadMore, onReadMore, allPlayers }
     const overWickets = over.wickets ?? balls.filter(b => b.isWicket).length;
     const bowlerName = over.bowlerName || balls[0]?.bowlerName || "Bowler";
 
-    // Sort balls newest first (highest ballNumber first)
-    const sortedBalls = [...balls].reverse();
+    const sortedBalls = orderedBallsForDisplay(balls);
 
     return (
         <div className="border-l-2 border-white/5 pl-4">
@@ -141,7 +141,7 @@ function OverBlock({ over, balls, onEdit, showReadMore, onReadMore, allPlayers }
                 )}
                 {/* Mini wagon-wheel for this over */}
                 <div className="flex gap-1.5 mt-2 flex-wrap">
-                    {[...balls].map((b, i) => (
+                    {orderedBallsForDisplay(balls).map((b, i) => (
                         <BallBadge key={i} ball={b} small />
                     ))}
                 </div>
