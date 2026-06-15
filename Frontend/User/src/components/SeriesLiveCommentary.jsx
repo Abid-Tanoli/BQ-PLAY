@@ -3,15 +3,15 @@ import { api } from "../services/api";
 import { initSocket } from "../services/socket";
 
 const BADGE = {
-  6: { emoji: "💥", label: "SIX!", class: "bg-purple-600" },
-  4: { emoji: "🏏", label: "FOUR!", class: "bg-blue-600" },
-  0: { emoji: "⬛", label: "DOT", class: "bg-slate-600" },
-  W: { emoji: "❌", label: "OUT!", class: "bg-red-600" },
+  6: { marker: "6", label: "SIX!", class: "bg-purple-600" },
+  4: { marker: "4", label: "FOUR!", class: "bg-blue-600" },
+  0: { marker: "0", label: "DOT", class: "bg-slate-600" },
+  W: { marker: "W", label: "OUT!", class: "bg-red-600" },
 };
 
 function getBadge(runs, isWicket) {
   if (isWicket) return BADGE.W;
-  return BADGE[runs] || { emoji: "", label: `${runs}`, class: "bg-slate-500" };
+  return BADGE[runs] || { marker: String(runs), label: `${runs}`, class: "bg-slate-500" };
 }
 
 export default function SeriesLiveCommentary({ seriesId }) {
@@ -22,7 +22,7 @@ export default function SeriesLiveCommentary({ seriesId }) {
   useEffect(() => {
     if (!seriesId) return;
 
-    api.get(`/matches?seriesId=${seriesId}&status=live&limit=1`)
+    api.get(`/matches?series=${seriesId}&status=live&limit=1`)
       .then(async res => {
         const matches = res.data?.matches || res.data || [];
         const liveMatch = Array.isArray(matches) ? matches.find(m => m.status === "live") : null;
@@ -124,7 +124,7 @@ export default function SeriesLiveCommentary({ seriesId }) {
                     {item.over}
                   </span>
                   <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-black text-white ${badge.class}`}>
-                    {badge.emoji} {badge.label}
+                    {badge.marker} {badge.label}
                   </span>
                 </div>
                 <p className="text-xs font-bold text-slate-700">

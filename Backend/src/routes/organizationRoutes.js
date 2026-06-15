@@ -1,4 +1,6 @@
 import express from 'express';
+import { protect, requireAdmin } from '../middleware/authMiddleware.js';
+import validateObjectId from '../middleware/validateObjectId.js';
 import {
   listOrganizations,
   getOrganization,
@@ -13,16 +15,17 @@ import {
 } from '../controllers/organizationController.js';
 
 const router = express.Router();
+const adminOnly = [protect, requireAdmin];
 
 router.get('/', listOrganizations);
 router.get('/tree', getOrganizationTree);
 router.get('/roots', getRootOrganizations);
-router.get('/:id', getOrganization);
-router.get('/:id/children', getOrganizationChildren);
-router.get('/:id/chain', getOrganizationChain);
-router.post('/', createOrganization);
-router.put('/:id', updateOrganization);
-router.delete('/:id', deleteOrganization);
-router.get('/:id/teams', getOrganizationTeams);
+router.get('/:id', validateObjectId('id'), getOrganization);
+router.get('/:id/children', validateObjectId('id'), getOrganizationChildren);
+router.get('/:id/chain', validateObjectId('id'), getOrganizationChain);
+router.post('/', ...adminOnly, createOrganization);
+router.put('/:id', ...adminOnly, validateObjectId('id'), updateOrganization);
+router.delete('/:id', ...adminOnly, validateObjectId('id'), deleteOrganization);
+router.get('/:id/teams', validateObjectId('id'), getOrganizationTeams);
 
 export default router;

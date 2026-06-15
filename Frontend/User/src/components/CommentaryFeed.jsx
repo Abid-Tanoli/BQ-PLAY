@@ -7,6 +7,24 @@ const CommentaryFeed = ({ match, live = true }) => {
   const scrollRef = useRef(null);
   const prevCommentaryRef = useRef([]);
 
+  // Auto-scroll to top (latest commentary) on new ball
+  useEffect(() => {
+    if (live && scrollRef.current && match?.innings?.length) {
+      const allBalls = [];
+      const currentInnings = match.innings[match.currentInnings] || match.innings[0];
+      currentInnings.oversHistory?.forEach(over => {
+        over.balls?.forEach((ball) => {
+          allBalls.push(ball);
+        });
+      });
+      const hasNewBalls = allBalls.length > prevCommentaryRef.current.length;
+      if (hasNewBalls) {
+        scrollRef.current.scrollTop = 0;
+      }
+      prevCommentaryRef.current = allBalls;
+    }
+  }, [live, match?.innings]);
+
   if (!match || !match.innings || match.innings.length === 0) {
     return (
       <div className="text-center py-12 text-slate-400">
@@ -40,19 +58,9 @@ const CommentaryFeed = ({ match, live = true }) => {
   // Reverse to show latest first
   const reversedBalls = [...allBalls].reverse();
 
-  // Auto-scroll to top (latest commentary) on new ball
-  useEffect(() => {
-    if (live && scrollRef.current) {
-      const hasNewBalls = allBalls.length > prevCommentaryRef.current.length;
-      if (hasNewBalls) {
-        scrollRef.current.scrollTop = 0;
-      }
-      prevCommentaryRef.current = allBalls;
-    }
-  }, [allBalls.length, live]);
-
   // Get ball color based on event
   const getBallIndicatorColor = (ball) => {
+    if (ball.wicketCancelled) return 'bg-orange-600 text-white ring-2 ring-red-500';
     if (ball.isWicket) return 'bg-red-500 text-white';
     if (ball.runs === 6) return 'bg-purple-600 text-white';
     if (ball.runs === 4) return 'bg-green-500 text-white';
@@ -63,6 +71,7 @@ const CommentaryFeed = ({ match, live = true }) => {
 
   // Format ball notation
   const getBallNotation = (ball) => {
+    if (ball.wicketCancelled) return 'Nb';
     if (ball.isWicket) return 'W';
     if (ball.isWide) return 'Wd';
     if (ball.isNoBall) return 'Nb';
@@ -73,6 +82,7 @@ const CommentaryFeed = ({ match, live = true }) => {
   const getRunText = (ball) => {
     if (ball.runText) return ball.runText;
     const runs = ball.runs || 0;
+    if (ball.wicketCancelled) return 'no ball, wicket cancelled';
     if (ball.isWicket) return 'OUT!';
     if (ball.isWide) return 'wide';
     if (ball.isNoBall) return 'no ball';
@@ -201,6 +211,14 @@ const CommentaryFeed = ({ match, live = true }) => {
                         <p className="font-bold text-sm text-slate-900 dark:text-white mb-1">
                           {summaryLine}
                         </p>
+                        <div className="flex gap-2 mt-1">
+                          {ball.wicketCancelled && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-black bg-red-500/20 text-red-600 dark:text-red-400 uppercase tracking-wider">Wicket cancelled</span>
+                          )}
+                          {ball.freeHitNext && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-black bg-purple-500/20 text-purple-600 dark:text-purple-400 uppercase tracking-wider">Free Hit next</span>
+                          )}
+                        </div>
                         {(ball.vividCommentary || ball.commentary) && (
                           <p className="text-sm text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
                             {ball.vividCommentary || ball.commentary}

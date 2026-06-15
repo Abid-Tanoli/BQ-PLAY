@@ -7,10 +7,6 @@ import WagonWheel from './WagonWheel';
 const DetailedScorecard = ({ match }) => {
   const [selectedPlayerForWheel, setSelectedPlayerForWheel] = useState(null);
 
-  if (!match || !match.innings || match.innings.length === 0) {
-    return <div className="text-center py-10 text-slate-500">No innings data available.</div>;
-  }
-
   const formatOvers = (balls) => {
     const b = balls || 0;
     const overs = Math.floor(b / 6);
@@ -25,6 +21,9 @@ const DetailedScorecard = ({ match }) => {
 
   // Compute match summary stats
   const matchSummary = useMemo(() => {
+    if (!match || !match.innings || match.innings.length === 0) {
+      return { inningsSummaries: [], highestScore: null, bestBowling: null };
+    }
     const summary = {
       inningsSummaries: [],
       highestScore: null,
@@ -133,6 +132,10 @@ const DetailedScorecard = ({ match }) => {
     // Default: if not marked as out, treat as not out or yet to bat
     return !bat.isOut ? 'not_out' : 'out';
   };
+
+  if (!match || !match.innings || match.innings.length === 0) {
+    return <div className="text-center py-10 text-slate-500">No innings data available.</div>;
+  }
 
   return (
     <div className="space-y-6">

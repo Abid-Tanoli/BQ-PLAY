@@ -20,8 +20,19 @@ const ballSchema = new mongoose.Schema({
   isWicket: { type: Boolean, default: false },
   wicketType: {
     type: String,
-    enum: ["bowled", "caught", "lbw", "run out", "stumped", "hit wicket", ""]
+    enum: [
+      "bowled", "caught", "lbw", "stumped",
+      "run out", "runOut", "run_out",
+      "hit wicket", "hitWicket", "hit_wicket",
+      "retired hurt", "retiredOut", "retired_out",
+      "obstructing the field", "obstructingField", "obstructing_the_field",
+      "hit the ball twice", "hitTwice", "hit_twice",
+      "timed out", "handled the ball", "handled ball",
+      "", null,
+    ]
   },
+  wicketCancelled: { type: Boolean, default: false },
+  freeHitNext: { type: Boolean, default: false },
   dismissedPlayer: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
   fielder: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
   commentary: { type: String, default: "" },
@@ -171,7 +182,7 @@ const matchSchema = new mongoose.Schema(
     },
     matchType: {
       type: String,
-      enum: ["6 Overs", "8 Overs", "T10", "T20", "ODI", "Test", "Tape Ball"],
+      enum: ["6 Overs", "8 Overs", "T10", "T20", "ODI", "Test", "Tape Ball", "Super Over"],
       default: "T20"
     },
     matchCategory: {
@@ -386,6 +397,7 @@ matchSchema.pre('save', function () {
       case 'ODI': this.totalOvers = 50; break;
       case 'Test': this.totalOvers = 90; break;
       case 'Tape Ball': this.totalOvers = 8; break;
+      case 'Super Over': this.totalOvers = 1; break;
       default: this.totalOvers = 20;
     }
     if (this.matchType === 'T20' || this.matchType === 'ODI') {

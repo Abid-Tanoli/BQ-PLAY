@@ -11,6 +11,7 @@ const overRunsAndWickets = (over) => {
 };
 
 const ballClass = (ball) => {
+  if (ball?.wicketCancelled) return "bg-orange-600 text-white ring-2 ring-red-400";
   if (ball?.isWicket) return "bg-red-600 text-white";
   if (ball?.isWide || ball?.isNoBall) return "bg-orange-500 text-white";
   if (ball?.runs === 6) return "bg-purple-600 text-white";
@@ -20,6 +21,7 @@ const ballClass = (ball) => {
 };
 
 const ballLabel = (ball) => {
+  if (ball?.wicketCancelled) return "Nb";
   if (ball?.isWicket) return "W";
   if (ball?.isWide) return "Wd";
   if (ball?.isNoBall) return "Nb";
@@ -29,6 +31,7 @@ const ballLabel = (ball) => {
 
 const getRunText = (ball) => {
   if (ball?.runText) return ball.runText;
+  if (ball?.wicketCancelled) return "no ball, wicket cancelled";
   if (ball?.isWicket) return "OUT!";
   if (ball?.isWide) return "wide";
   if (ball?.isNoBall) return "no ball";
@@ -89,6 +92,8 @@ export default function Commentary({ matchId, className = "" }) {
             bowlerName: ball.bowlerName || ball.bowler?.name || "Bowler",
             batsmanName: ball.batsmanName || ball.batsmanOnStrike?.name || "Batsman",
             isWicket: ball.isWicket,
+            wicketCancelled: ball.wicketCancelled,
+            freeHitNext: ball.freeHitNext,
             isWide: ball.isWide,
             isNoBall: ball.isNoBall,
             isLegBye: ball.isLegBye,
@@ -156,6 +161,8 @@ export default function Commentary({ matchId, className = "" }) {
           bowlerName: ball.bowlerName || data.bowlerName || "Bowler",
           batsmanName: ball.batsmanName || data.batsmanName || ball.batsmanOnStrike?.name || "Batsman",
           isWicket: ball.isWicket,
+          wicketCancelled: ball.wicketCancelled,
+          freeHitNext: ball.freeHitNext,
           isWide: ball.isWide,
           isNoBall: ball.isNoBall,
           isLegBye: ball.isLegBye,
@@ -374,6 +381,16 @@ export default function Commentary({ matchId, className = "" }) {
                               {line}
                             </p>
                           ))}
+                          {c.freeHitNext && (
+                            <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded text-[9px] font-black bg-purple-100 text-purple-700 uppercase tracking-wider">
+                              Free Hit next
+                            </span>
+                          )}
+                          {c.wicketCancelled && (
+                            <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded text-[9px] font-black bg-red-100 text-red-700 uppercase tracking-wider">
+                              Wicket cancelled
+                            </span>
+                          )}
                           {c.timestamp && (
                             <p className="text-[10px] text-slate-400 font-medium mt-1">
                               {new Date(c.timestamp).toLocaleTimeString()}

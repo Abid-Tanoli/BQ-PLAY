@@ -58,7 +58,7 @@ export default function AdminLogin() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 to-slate-900 p-6">
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
+        <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-black text-[#031d44]">BQ-PLAY ADMIN</h1>
             <p className="text-slate-500 mt-2">Sign in to your account</p>

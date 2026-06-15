@@ -57,10 +57,12 @@ const getDismissalText = (batter, allPlayers, wicketBall) => {
         case "lbw":
             return `lbw b ${bowlerName}`;
         case "run out":
+        case "runout":
             return fielderName ? `run out (${fielderName})` : "run out";
         case "stumped":
             return fielderName ? `st ${fielderName} b ${bowlerName}` : `st b ${bowlerName}`;
         case "hit wicket":
+        case "hitwicket":
             return `hit wicket b ${bowlerName}`;
         default:
             return type || "dismissed";
@@ -184,7 +186,7 @@ export default function Scorecard({
             if (ball.isWide) row.wides += 1;
             if (ball.isNoBall) row.noBalls += 1;
             const wicketType = (ball.wicketType || "").toLowerCase();
-            if (ball.isWicket && !["run out", "retired hurt", "obstructing the field", "timed out", "handled ball"].includes(wicketType)) {
+            if (ball.isWicket && !["run out", "runout", "retired hurt", "retiredhurt", "retiredout", "obstructing the field", "obstructingfield", "timed out", "timedout", "handled ball", "handled the ball", "handledball"].includes(wicketType)) {
                 row.wickets += 1;
                 const dismissedId = getId(ball.dismissedPlayer) || getId(ball.batsmanOnStrike);
                 const batterRow = battingRows.find((batter) => getId(batter.player) === dismissedId);
@@ -286,7 +288,7 @@ export default function Scorecard({
             </div>
 
             <div className="overflow-x-auto">
-                <table className="w-full min-w-[720px] text-left">
+                <table className="w-full min-w-[420px] sm:min-w-[720px] text-left">
                     <thead className="bg-slate-50 border-b border-slate-200">
                         <tr>
                             <th className="py-2.5 pl-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Batting</th>
@@ -357,7 +359,7 @@ export default function Scorecard({
 
             <div>
                 <div className="overflow-x-auto">
-                    <table className="w-full min-w-[760px] text-left">
+                    <table className="w-full min-w-[500px] sm:min-w-[760px] text-left">
                         <thead className="bg-slate-50 border-y border-slate-200">
                             <tr>
                                 <th className="py-2.5 pl-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Bowling</th>

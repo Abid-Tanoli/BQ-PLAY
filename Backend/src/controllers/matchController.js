@@ -7,7 +7,17 @@ import { getIO } from "../socket/socket.js";
 import { getBallRunText, normalizeBallRunText } from "../utils/cricketHelpers.js";
 
 const normalStatus = (status = "upcoming") => (status === "innings-break" ? "innings_break" : status);
-const legalMatchStatuses = ["upcoming", "toss_done", "live", "innings_break", "innings-break", "completed"];
+const legalMatchStatuses = [
+  "upcoming",
+  "toss_done",
+  "live",
+  "innings_break",
+  "innings-break",
+  "completed",
+  "abandoned",
+  "pending_tie_resolution",
+  "super_over",
+];
 const toNumber = (value, fallback = 0) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
@@ -142,7 +152,8 @@ export const getMatches = async (req, res) => {
       if (statuses.length) query.status = { $in: statuses };
     }
 
-    if (req.query.series) query.series = req.query.series;
+    const seriesFilter = req.query.series || req.query.seriesId;
+    if (seriesFilter) query.series = seriesFilter;
     if (req.query.tournament) query.tournament = req.query.tournament;
 
     const matches = await populateMatchList(Match.find(query))

@@ -98,8 +98,8 @@ export function Home() {
   const groupBySeries = useCallback((matchList) => {
     const groups = {};
     matchList.forEach(m => {
-      const key = m.tournament?._id || m.tournament?.name || m.series || "Other";
-      if (!groups[key]) groups[key] = { name: m.tournament?.name || m.series || "Other", matches: [] };
+      const key = m.tournament?._id || m.tournament?.name || m.tournament || m.series || "Other";
+      if (!groups[key]) groups[key] = { name: m.tournament?.name || m.series || "Other", key, matches: [] };
       groups[key].matches.push(m);
     });
     return Object.values(groups);
@@ -153,12 +153,16 @@ export function Home() {
   const renderSeriesGroup = (group, compact) => (
     <div key={group.name} className="bg-cric-card rounded-xl shadow-sm border border-cric-border overflow-hidden">
       <div className="flex items-center justify-between px-4 py-2.5 bg-cric-bg/50 border-b border-cric-border">
-        <Link to={`/series/${group.matches[0]?.tournament?.slug || group.matches[0]?.tournament?._id}`} className="text-xs font-black text-cric-text hover:text-cric-accent uppercase tracking-wider">
-          {group.name}
-        </Link>
-        <Link to={`/series/${group.matches[0]?.tournament?.slug || group.matches[0]?.tournament?._id}`} className="text-[10px] font-bold text-cric-accent hover:text-orange-600">
-          {group.matches.length > 1 ? `See all (${group.matches.length})` : "View"}
-        </Link>
+        {group.key && group.key !== "Other" ? (
+          <Link to={`/series/${group.key}`} className="text-xs font-black text-cric-text hover:text-cric-accent uppercase tracking-wider">{group.name}</Link>
+        ) : (
+          <span className="text-xs font-black text-cric-text uppercase tracking-wider">{group.name}</span>
+        )}
+        {group.key && group.key !== "Other" ? (
+          <Link to={`/series/${group.key}`} className="text-[10px] font-bold text-cric-accent hover:text-orange-600">{group.matches.length > 1 ? `See all (${group.matches.length})` : "View"}</Link>
+        ) : (
+          <span className="text-[10px] font-bold text-cric-muted">{group.matches.length > 1 ? `See all (${group.matches.length})` : "View"}</span>
+        )}
       </div>
       <div className={compact ? "" : "divide-y divide-cric-border/30"}>
         {group.matches.map(m => renderMatchCard(m, compact))}

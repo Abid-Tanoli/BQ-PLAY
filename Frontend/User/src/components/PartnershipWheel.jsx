@@ -30,8 +30,8 @@ const PartnershipWheel = ({ partnerships = [], totalScore = 0 }) => {
     <div className="bg-[#0d1b2a] dark:bg-[#020617] rounded-3xl p-6 border border-slate-800/50">
       <h3 className="text-[#ff6b35] text-[10px] font-black uppercase tracking-widest mb-4">Partnership Distribution</h3>
       
-      <div className="flex items-center gap-6">
-        <div className="relative w-48 h-48">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+        <div className="relative w-full max-w-[12rem] mx-auto sm:mx-0 sm:w-48 sm:h-48 shrink-0 aspect-square">
           <svg viewBox="0 0 200 200" className="w-full h-full">
             <circle cx={center} cy={center} r={radius} fill="none" stroke="#1e293b" strokeWidth="30" />
             
@@ -61,7 +61,7 @@ const PartnershipWheel = ({ partnerships = [], totalScore = 0 }) => {
           </svg>
         </div>
         
-        <div className="flex-1 space-y-2 max-h-48 overflow-y-auto">
+        <div className="flex-1 space-y-2 max-h-48 overflow-y-auto min-w-0 w-full">
           {segments.map((seg, idx) => (
             <div key={idx} className="flex items-center gap-2 text-xs">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: seg.color }} />

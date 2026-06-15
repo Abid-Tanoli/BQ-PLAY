@@ -9,7 +9,8 @@
     "build:admin": "npm --prefix Frontend/Admin run build",
     "start": "npm --prefix Backend start",
     "dev:backend": "npm --prefix Backend run dev",
-    "dev:user": "npm --prefix Frontend/User run dev"
+    "dev:user": "npm --prefix Frontend/User run dev",
+    "dev:admin": "npm --prefix Frontend/Admin run dev"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.97.1",

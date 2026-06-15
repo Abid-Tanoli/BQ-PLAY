@@ -241,11 +241,12 @@ const BqScoreboard = ({ match }) => {
               {allRecentBalls.map((ball, idx) => {
                 let bgColor = 'bg-slate-300 dark:bg-slate-600 text-slate-700 dark:text-slate-300';
                 let label = '\u2022';
-                if (ball.isWicket) { bgColor = 'bg-red-500 text-white'; label = 'W'; }
+                if (ball.wicketCancelled) { bgColor = 'bg-orange-500 text-white ring-2 ring-red-500'; label = 'Nb'; }
+                else if (ball.isWicket) { bgColor = 'bg-red-500 text-white'; label = 'W'; }
                 else if (ball.runs === 4) { bgColor = 'bg-green-500 text-white'; label = '4'; }
                 else if (ball.runs === 6) { bgColor = 'bg-emerald-600 text-white'; label = '6'; }
                 else if (ball.isWide) { bgColor = 'bg-orange-400 text-white'; label = `${1 + (ball.runs || 0)}wd`; }
-                else if (ball.isNoBall) { bgColor = 'bg-orange-500 text-white'; label = 'nb'; }
+                else if (ball.isNoBall) { bgColor = 'bg-orange-500 text-white'; label = 'Nb'; }
                 else if (ball.runs > 0) { bgColor = 'bg-blue-500 text-white'; label = `${ball.runs}`; }
 
                 return (

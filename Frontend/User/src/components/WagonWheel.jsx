@@ -30,9 +30,9 @@ const WagonWheel = ({ shots = [], playerName = "Batsman" }) => {
     }, { totalRuns: 0, fours: 0, sixes: 0, offSide: 0, legSide: 0 });
 
     return (
-        <div className="bg-[#0d1b2a] dark:bg-[#020617] rounded-[2.5rem] p-8 shadow-2xl border border-slate-800/50 backdrop-blur-xl relative overflow-hidden fade-in-scale">
+        <div className="bg-[#0d1b2a] dark:bg-[#020617] rounded-2xl sm:rounded-[2.5rem] p-4 sm:p-8 shadow-2xl border border-slate-800/50 backdrop-blur-xl relative overflow-hidden fade-in-scale max-w-full">
             {/* Header */}
-            <div className="flex justify-between items-center mb-8">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4 sm:mb-8">
                 <div>
                     <h3 className="text-[#ff6b35] text-[10px] font-black uppercase tracking-[0.4em] mb-1">
                         Statistical Analysis

@@ -9,6 +9,7 @@ import {
   getCommentary,
   clearCache
 } from '../controllers/cricketApiController.js';
+import { protect, requireAdmin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -20,6 +21,6 @@ router.get('/all', getAllMatches);
 router.get('/match/:matchId', getMatchDetails);
 router.get('/match/:matchId/scorecard', getScorecard);
 router.get('/match/:matchId/commentary', getCommentary);
-router.post('/cache/clear', clearCache);
+router.post('/cache/clear', protect, requireAdmin, clearCache);
 
 export default router;

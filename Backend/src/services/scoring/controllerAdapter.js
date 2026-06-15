@@ -75,8 +75,12 @@ function enrichBallRecord(engineBall, deliveryData, batsmanName, bowlerName) {
       : engineBall.isBye ? 'bye'
         : engineBall.isLegBye ? 'leg_bye'
           : '';
+  const wicketCancelled = engineBall.wicketCancelled != null
+    ? engineBall.wicketCancelled
+    : (deliveryData.isWicket && !engineBall.isWicket && engineBall.isNoBall);
+  const ballWithFlag = { ...engineBall, wicketCancelled };
   return {
-    ...engineBall,
+    ...ballWithFlag,
     ballNumber: engineBall.ballNumber,
     displayBallNumber: engineBall.displayBallNumber || engineBall.legalBallNumber,
     batsmanName: engineBall.batsmanName || batsmanName || deliveryData.batsmanOnStrikeName || 'Batsman',
@@ -84,8 +88,8 @@ function enrichBallRecord(engineBall, deliveryData, batsmanName, bowlerName) {
     fielderName: engineBall.fielderName || deliveryData.fielderName || '',
     extraType,
     extraRuns: engineBall.extraRuns || 0,
-    runText: getBallRunText(engineBall),
-    notation: computeBallNotation(engineBall),
+    runText: getBallRunText(ballWithFlag),
+    notation: computeBallNotation(ballWithFlag),
     shotPlacement: deliveryData.shotPlacement || { angle: 0, distance: 50, position: '' },
     fieldingZone: deliveryData.fieldingZone || '',
     shotType: deliveryData.shotType || '',

@@ -290,14 +290,69 @@ h1, h2, h3, .font-raj {
   }
 }
 
-/* ─── TOUCH TARGETS ─── */
-button, a, select, input[type="checkbox"], input[type="radio"] {
+/* ─── TOUCH TARGETS (scoped — avoid breaking compact tabs) ─── */
+button.touch-target,
+a.touch-target,
+select.touch-target {
   min-height: 44px;
+}
+.match-tab-btn {
+  min-height: auto;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
 }
 @media (max-width: 768px) {
   .nav-link, .tab-button {
     min-height: 48px;
     padding: 12px 16px;
+  }
+}
+
+/* ─── MATCH PAGE (Cricinfo-style mobile cards) ─── */
+.match-card {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  border-radius: 0.75rem;
+  border: 1px solid var(--cric-border);
+  background: var(--cric-card);
+  padding: 0.75rem 1rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+@media (min-width: 640px) {
+  .match-card { padding: 1rem 1.25rem; }
+}
+.match-table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+.match-table-scroll table {
+  white-space: nowrap;
+}
+.match-graph-wrap svg {
+  max-width: 100%;
+  height: auto;
+}
+.match-score-card {
+  max-width: 100%;
+}
+
+/* Tab content responsive */
+.tab-content-section {
+  min-width: 0;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* Table cell responsive sizing */
+@media (max-width: 480px) {
+  .match-table-scroll table {
+    font-size: 10px;
+  }
+  .match-table-scroll th,
+  .match-table-scroll td {
+    padding: 4px 3px;
   }
 }
 

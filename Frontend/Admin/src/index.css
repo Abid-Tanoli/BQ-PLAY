@@ -126,6 +126,23 @@ h1, h2, h3, .font-raj {
 .dark .divide-slate-100,
 .dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) { border-color: var(--cric-border); }
 
+.dark .text-black { color: var(--cric-text); }
+.dark .text-slate-950,
+.dark .text-gray-950 { color: var(--cric-text); }
+
+/* ─── LIVE SCORING MOBILE CONTROLS ─── */
+.score-touch-btn,
+.score-run-btn {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.score-touch-btn {
+  min-height: 44px;
+}
+.score-run-btn {
+  min-height: 48px;
+}
+
 @media (max-width: 1023px) {
   .sidebar-overlay { display: block; }
 }
@@ -282,6 +299,17 @@ h1, h2, h3, .font-raj {
   h2 { font-size: clamp(18px, 4vw, 24px); }
   h3 { font-size: clamp(16px, 3.5vw, 20px); }
   p, td, li { font-size: clamp(12px, 3vw, 14px); }
+}
+
+/* ─── 360px MIN-WIDTH SAFEGUARDS ─── */
+@media (max-width: 360px) {
+  html, body { overflow-x: hidden; }
+  .admin-content { padding: 8px !important; }
+  h1 { font-size: clamp(16px, 4.5vw, 20px) !important; }
+  h2 { font-size: clamp(14px, 4vw, 18px) !important; }
+  p, td, li, button, input, select, textarea { font-size: clamp(11px, 3vw, 13px) !important; }
+  .score-run-btn { min-height: 44px !important; }
+  .modal-content { border-radius: 12px 12px 0 0; }
 }
 
 /* ─── TOUCH TARGETS ─── */

@@ -68,6 +68,8 @@ function buildStructuredCommentary(data) {
     isNoBall = false,
     isWicket = false,
     wicketType = "",
+    wicketCancelled = false,
+    freeHitNext = false,
     batsmanName = "Batsman",
     bowlerName = "Bowler",
     pitchLine = "",
@@ -92,13 +94,15 @@ function buildStructuredCommentary(data) {
       ? "straight delivery"
       : lookup(MOVEMENT_LABELS, ballMovement, ballMovement.replace(/_/g, " "));
   const shotText = shotTypeFinal && shotTypeFinal !== "shot" ? labelize(shotTypeFinal) : "shot";
-  const outcomeText = isWicket
-    ? lookup(WICKET_WORDS, normalizeKey(wicketType), "OUT!")
-    : isWide
-      ? "wide ball"
-      : isNoBall
-        ? "no ball"
-        : lookup(RUN_OUTCOME, runs, `${runs} runs`);
+  const outcomeText = wicketCancelled
+    ? "no ball, wicket cancelled"
+    : isWicket
+      ? lookup(WICKET_WORDS, normalizeKey(wicketType), "OUT!")
+      : isWide
+        ? "wide ball"
+        : isNoBall
+          ? "no ball"
+          : lookup(RUN_OUTCOME, runs, `${runs} runs`);
 
   // Handle extras differently — pitch details may not apply
   if (isWide) {
@@ -108,10 +112,26 @@ function buildStructuredCommentary(data) {
       vivid: `Wide delivery ${wideDesc}, ${moveText}. ${batsmanName} lets it go, called wide by the umpire.`,
     };
   }
-  if (isNoBall && runs === 0) {
+  if (wicketCancelled) {
+    const freeHitLine = freeHitNext ? " Free Hit is coming next ball." : "";
+    const wicketDesc = lookup(WICKET_WORDS, normalizeKey(wicketType), "OUT!").toLowerCase();
     return {
       short: `${bowlerName} to ${batsmanName}, ${outcomeText}`,
-      vivid: `${lengthText} ball ${lineText}, ${moveText} — ${batsmanName} swings but fails to connect. No ball called.`,
+      vivid: `${lengthText} ball ${lineText}, ${moveText} — ${batsmanName} plays the ${shotText}, sends it toward ${dir}. ${wicketDesc} But wait — it is a NO BALL! Wicket cancelled, ${batsmanName} survives. One extra run added.${freeHitLine}`,
+    };
+  }
+  if (isNoBall) {
+    const freeHitLine = freeHitNext ? " Free Hit is coming next ball." : "";
+    if (runs === 0) {
+      return {
+        short: `${bowlerName} to ${batsmanName}, ${outcomeText}`,
+        vivid: `${lengthText} ball ${lineText}, ${moveText} — ${batsmanName} swings but fails to connect. No ball called.${freeHitLine}`,
+      };
+    }
+    const runDesc = runs === 4 ? "FOUR!" : runs === 6 ? "SIX!" : `${runs} run${runs !== 1 ? 's' : ''}`;
+    return {
+      short: `${bowlerName} to ${batsmanName}, ${outcomeText}, ${runs} run${runs !== 1 ? 's' : ''}`,
+      vivid: `${lengthText} ball ${lineText}, ${moveText} — ${batsmanName} gets ${runDesc} on a no ball.${freeHitLine}`,
     };
   }
 

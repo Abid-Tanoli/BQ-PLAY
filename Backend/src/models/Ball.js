@@ -17,6 +17,7 @@ const ballSchema = new mongoose.Schema({
   isLegBye: Boolean,
   isWicket: Boolean,
   wicketType: String,
+  wicketCancelled: { type: Boolean, default: false },
   fielderName: { type: String, default: "" },
   shotType: { type: mongoose.Schema.Types.ObjectId, ref: "CricketShot" },
   shotTypeName: { type: String, default: "" },

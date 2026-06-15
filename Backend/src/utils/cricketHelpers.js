@@ -1,6 +1,7 @@
 export const getBallRunText = (ball = {}) => {
   const runs = Number(ball.runs || 0);
   if (ball.isWicket) return "OUT!";
+  if (ball.wicketCancelled) return "no ball, wicket cancelled";
   if (ball.isWide) return "wide";
   if (ball.isNoBall) return "no ball";
   if (runs === 0) return "no run";

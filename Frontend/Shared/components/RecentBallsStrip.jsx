@@ -31,6 +31,7 @@ export const orderedBallsForDisplay = (balls = []) =>
     .map((entry) => entry.ball);
 
 export const ballLabel = (ball) => {
+  if (ball?.wicketCancelled) return "Nb";
   if (ball?.isWicket) return "W";
   if (ball?.isWide) return "Wd";
   if (ball?.isNoBall) return "Nb";
@@ -41,6 +42,7 @@ export const ballLabel = (ball) => {
 };
 
 export const ballClass = (ball) => {
+  if (ball?.wicketCancelled) return "bg-orange-500 text-white ring-2 ring-red-500";
   if (ball?.isWicket) return "bg-red-600 text-white";
   if (ball?.isWide || ball?.isNoBall || ball?.isLegBye || ball?.isBye) {
     return "bg-orange-100 text-orange-700 ring-1 ring-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:ring-orange-800";

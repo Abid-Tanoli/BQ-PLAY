@@ -62,8 +62,8 @@ export default function WormGraph({ match, compact = false }) {
   const yTicks = [0, 0.25, 0.5, 0.75, 1].map(f => Math.round(data.maxRuns * f));
 
   return (
-    <div className="bg-gray-900 rounded-lg p-3 overflow-x-auto">
-      <div className="flex items-center gap-4 mb-3 text-xs">
+    <div className="bg-gray-900 dark:bg-cric-card rounded-lg p-3 w-full max-w-full">
+      <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-3 text-xs">
         <span className="flex items-center gap-1.5">
           <span className="w-5 h-0.5 rounded" style={{backgroundColor: COLORS.line1}}></span>Team 1
         </span>
@@ -73,7 +73,7 @@ export default function WormGraph({ match, compact = false }) {
           </span>
         )}
       </div>
-      <svg width={W} height={H} className="overflow-visible">
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={compact ? 160 : 220} preserveAspectRatio="xMidYMid meet" className="min-w-[280px] max-w-full overflow-visible">
         {yTicks.map((t, i) => (
           <g key={i}>
             <line x1={PAD.left} y1={yScale(t)} x2={W - PAD.right} y2={yScale(t)} stroke="#374151" strokeWidth="0.5" />

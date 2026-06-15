@@ -49,6 +49,12 @@ export default function IncubationTeams() {
           <div className="flex justify-center py-20">
             <div className="w-12 h-12 border-4 border-purple-600 border-t-transparent rounded-full animate-spin" />
           </div>
+        ) : groups.length === 0 ? (
+          <div className="text-center py-20 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
+            <div className="text-6xl mb-4">🚀</div>
+            <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">No Incubation Groups</h3>
+            <p className="text-slate-400 text-sm mt-2">Internal training teams will appear here once added</p>
+          </div>
         ) : (
           <div className="space-y-8">
             {groups.map((group) => (
@@ -132,14 +138,6 @@ export default function IncubationTeams() {
                 )}
               </div>
             ))}
-
-            {groups.length === 0 && (
-              <div className="text-center py-20 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
-                <div className="text-6xl mb-4">🚀</div>
-                <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">No Incubation Groups</h3>
-                <p className="text-slate-400 text-sm mt-2">Internal training teams will appear here once added</p>
-              </div>
-            )}
           </div>
         )}
       </div>

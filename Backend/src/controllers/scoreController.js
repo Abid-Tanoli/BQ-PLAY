@@ -14,104 +14,7 @@ import MatchAnalytics from "../models/MatchAnalytics.js";
 import { computeProjectedScore, computeWinProbability, updateMatchAnalytics } from "../services/analyticsService.js";
 import { getBallRunText } from "../utils/cricketHelpers.js";
 import { processDeliveryWithEngine, computeShouldEndInnings } from "../services/scoring/controllerAdapter.js";
-
-const calculateWinProbability = (match) => {
-  if (!match || !match.innings || match.innings.length === 0) return { team1: 50, team2: 50 };
-  if (match.status === 'completed') {
-    const winnerId = match.result?.winner?.toString();
-    const team1Id = match.teams[0]?._id?.toString() || match.teams[0]?.toString();
-    return winnerId === team1Id ? { team1: 100, team2: 0 } : { team1: 0, team2: 100 };
-  }
-
-  const currentInnIdx = match.currentInnings;
-  const innings = match.innings[currentInnIdx];
-
-  // First Innings: Based on projected score vs average
-  if (currentInnIdx === 0) {
-    const crr = innings.runRate || 0;
-    const projected = crr * match.totalOvers;
-    // Simple heuristic: 180 is parity
-    const diff = projected - 180;
-    const p1 = Math.max(10, Math.min(90, 50 + (diff / 2)));
-    return { team1: p1, team2: 100 - p1 };
-  }
-
-  // Second Innings: Target vs RRR/CRR
-  if (currentInnIdx === 1) {
-    const target = innings.target || 0;
-    if (target === 0) return { team1: 50, team2: 50 };
-
-    const runsToGet = target - innings.runs;
-    const totalBalls = match.totalOvers * 6;
-    const ballsRemaining = totalBalls - innings.balls;
-
-    if (runsToGet <= 0) return { team1: 0, team2: 100 };
-    if (ballsRemaining <= 0) return { team1: 100, team2: 0 };
-
-    const rrr = (runsToGet / ballsRemaining) * 6;
-    const wicketsLeft = 10 - innings.wickets;
-
-    // Base probability on RRR vs a "standard" difficult RRR of 10
-    let p2 = 50 + (6 - rrr) * 5 + (wicketsLeft - 5) * 5;
-    p2 = Math.max(5, Math.min(95, p2));
-
-    return { team1: 100 - p2, team2: p2 };
-  }
-
-  return { team1: 50, team2: 50 };
-};
-
-const populateFullMatch = async (match) => {
-  await match.populate([
-    {
-      path: "teams",
-      select: "name shortName logo players",
-      populate: { path: "players", select: "name playingRole role bowlingStyle" }
-    },
-    { path: "innings.team", select: "name shortName" },
-    { path: "innings.batting.player", select: "name role playingRole bowlingStyle" },
-    { path: "innings.bowling.player", select: "name role playingRole bowlingStyle" },
-    { path: "innings.currentBatsman1", select: "name role playingRole bowlingStyle" },
-    { path: "innings.currentBatsman2", select: "name role playingRole bowlingStyle" },
-    { path: "innings.onStrikeBatsman", select: "name role playingRole bowlingStyle" },
-    { path: "innings.currentBowler", select: "name role playingRole bowlingStyle" },
-    { path: "innings.fallOfWickets.player", select: "name role playingRole bowlingStyle" },
-    { path: "innings.partnerships.batsman1", select: "name role playingRole bowlingStyle" },
-    { path: "innings.partnerships.batsman2", select: "name role playingRole bowlingStyle" },
-    { path: "innings.oversHistory.balls.batsmanOnStrike", select: "name" },
-    { path: "innings.oversHistory.balls.batsmanNonStrike", select: "name" },
-    { path: "innings.oversHistory.balls.bowler", select: "name" },
-    { path: "innings.oversHistory.bowler", select: "name" },
-    { path: "playingXI.players", select: "name role playingRole bowlingStyle" },
-    { path: "playingXI.team", select: "name shortName logo" },
-    { path: "squad15.players", select: "name role playingRole bowlingStyle" },
-    { path: "squad15.team", select: "name shortName logo" },
-    { path: "twelfthMan.team", select: "name shortName logo" },
-    { path: "twelfthMan.player", select: "name role playingRole bowlingStyle" },
-    { path: "result.winner", select: "name shortName logo" },
-    { path: "tossWinner", select: "name shortName" }
-  ]);
-
-  // Post-population fix for missing names in older balls
-  match.innings.forEach(inn => {
-    inn.oversHistory.forEach(over => {
-      over.balls.forEach(ball => {
-        if (!ball.batsmanName && ball.batsmanOnStrike) {
-          ball.batsmanName = ball.batsmanOnStrike.name || "Batsman";
-        }
-        if (!ball.bowlerName && ball.bowler) {
-          ball.bowlerName = ball.bowler.name || "Bowler";
-        }
-        ball.runs = Number(ball.runs || 0);
-        if (!ball.runText) {
-          ball.runText = getBallRunText(ball);
-        }
-      });
-    });
-  });
-
-  return match;
-};
+import { normalizeWicketType, calculateWinProbability, populateFullMatch } from "../utils/scoringHelpers.js";
 
 export const updateScore = async (req, res) => {
   try {
@@ -169,6 +72,7 @@ export const updateScore = async (req, res) => {
     }
 
     const innings = match.innings[inningsIndex];
+    wicketType = normalizeWicketType(wicketType);
 
     // Use ScoringEngine via adapter for all scoring computation
     let engineResult;
@@ -225,7 +129,10 @@ export const updateScore = async (req, res) => {
       nonStrikerBeforeId,
       strikerAfterId,
       nonStrikerAfterId,
+      freeHitNext,
     } = engineResult;
+    // Track wicket cancelled on no-ball (user requested wicket, engine rejected it)
+    const wicketCancelled = isNoBall && !engineWicket && isWicket;
     // Reassign to the outer let-declared isWicket so downstream code sees engine's decision
     isWicket = engineWicket;
     batsmanOnStrikeId = strikerBeforeId;
@@ -321,6 +228,8 @@ export const updateScore = async (req, res) => {
           isLegBye,
           isWicket: engineWicket,
           wicketType: engineWicketType,
+          wicketCancelled,
+          freeHitNext,
           batsmanName: batsmanOnStrike?.name || "Batsman",
           bowlerName: bowlerPlayer?.name || "Bowler",
           zone: zone.name || "",
@@ -366,6 +275,8 @@ export const updateScore = async (req, res) => {
           isLegBye,
           isWicket: engineWicket,
           wicketType: engineWicketType,
+          wicketCancelled,
+          freeHitNext,
           batsmanName: batsmanOnStrike?.name || "Batsman",
           bowlerName: bowlerPlayer?.name || "Bowler",
           currentScore: innings.runs || 0,
@@ -387,6 +298,8 @@ export const updateScore = async (req, res) => {
     ball.fielderName = fielderPlayer?.name || "";
     ball.extraType = isWide ? "wide" : isNoBall ? "no_ball" : isBye ? "bye" : isLegBye ? "leg_bye" : "";
     ball.extraRuns = extraRuns || 0;
+    ball.wicketCancelled = wicketCancelled;
+    ball.freeHitNext = freeHitNext;
 
     // Set shot/fielding data on ball subdocument
     ball.shotType = shotType || "";
@@ -416,6 +329,8 @@ export const updateScore = async (req, res) => {
       persistedBall.shotDirection = ball.shotDirection;
       persistedBall.fieldingZone = ball.fieldingZone;
       persistedBall.shotTypeName = ball.shotTypeName;
+      persistedBall.wicketCancelled = ball.wicketCancelled;
+      persistedBall.freeHitNext = ball.freeHitNext;
     }
 
     // Set current bowler on innings
@@ -605,6 +520,7 @@ export const updateScore = async (req, res) => {
         extraType: isWide ? 'wide' : isNoBall ? 'no_ball' : isBye ? 'bye' : isLegBye ? 'leg_bye' : null,
         isWicket: isWicket,
         wicketType: wicketType || null,
+        wicketCancelled,
         fielderId: fielderId,
         shotType: shotType || null,
         shotDirection: shotPlacement?.angle || 0,
@@ -636,6 +552,7 @@ export const updateScore = async (req, res) => {
         isLegBye,
         isWicket,
         wicketType: wicketType || null,
+        wicketCancelled,
         fielderName: fielderPlayer?.name || "",
         shotType: shotType || null,
         shotTypeName: shotTypeName || "",
@@ -648,6 +565,7 @@ export const updateScore = async (req, res) => {
         vividCommentary: ball?.vividCommentary || "",
         displayBallNumber: ball.displayBallNumber || ballNumberInOver,
         commentaryGeneratedAt: new Date(),
+        freeHitNext,
       });
       const savedBall = await ballDoc.save();
       if (savedBall) {
@@ -724,256 +642,9 @@ export const updateScore = async (req, res) => {
 };
 
 
-export const endInnings = async (req, res) => {
-  try {
-    const { matchId } = req.params;
-    const { inningsIndex } = req.body;
+// endInnings moved to inningsController.js
 
-    const match = await Match.findById(matchId)
-      .populate("teams", "name shortName logo")
-      .populate("innings.team", "name shortName");
-
-    if (!match) {
-      return res.status(404).json({ message: "Match not found" });
-    }
-
-    if (!match.innings || !match.innings[inningsIndex]) {
-      return res.status(400).json({ message: "Invalid innings index" });
-    }
-
-    const currentInnings = match.innings[inningsIndex];
-    currentInnings.status = "completed";
-
-    if (match.innings[inningsIndex + 1]) {
-      match.innings[inningsIndex + 1].status = "upcoming";
-      match.innings[inningsIndex + 1].target = currentInnings.runs + 1;
-      match.status = "innings_break";
-      match.currentInnings = inningsIndex + 1;
-    } else if (match.result?.resultType === "super_over") {
-      // Handle Super Over phased endings
-      const isFirstInnOfSO = inningsIndex % 2 === 0;
-      const superOverNumber = Math.floor((inningsIndex - 2) / 2) + 1;
-
-      if (isFirstInnOfSO) {
-        // First innings of Super Over ended
-        match.status = "pending_tie_resolution";
-        match.result.description = `Super Over ${superOverNumber}: First innings complete`;
-      } else {
-        // Second innings of Super Over ended
-        const innSO1 = match.innings[inningsIndex - 1];
-        const innSO2 = match.innings[inningsIndex];
-
-        let currentSO = match.superOvers.find(so => so.superOverNumber === superOverNumber);
-
-        if (innSO1.runs > innSO2.runs) {
-          match.status = "completed";
-          match.result.winner = innSO1.team;
-          match.result.margin = `${innSO1.runs - innSO2.runs} runs`;
-          match.result.description = `${innSO1.team.name} won the Super Over by ${match.result.margin}`;
-
-          if (currentSO) {
-            currentSO.result = { winner: innSO1.team, margin: match.result.margin };
-          }
-        } else if (innSO2.runs > innSO1.runs) {
-          match.status = "completed";
-          match.result.winner = innSO2.team;
-          const wicketsLeft = 2 - innSO2.wickets;
-          match.result.margin = `${wicketsLeft} wicket${wicketsLeft !== 1 ? 's' : ''}`;
-          match.result.description = `${innSO2.team.name} won the Super Over by ${match.result.margin}`;
-
-          if (currentSO) {
-            currentSO.result = { winner: innSO2.team, margin: match.result.margin };
-          }
-        } else {
-          // Tied again!
-          match.status = "pending_tie_resolution";
-          match.tieResolution = "pending";
-          match.result.description = `Super Over ${superOverNumber} ended in a tie! Another Super Over required.`;
-        }
-      }
-    } else {
-      match.status = "completed";
-
-      const inn1 = match.innings[0];
-      const inn2 = match.innings[1];
-
-      if (inn1.runs > inn2.runs) {
-        const runMargin = inn1.runs - inn2.runs;
-        match.result = {
-          winner: inn1.team,
-          margin: `${runMargin} runs`,
-          description: `${inn1.team.name} won by ${runMargin} runs`,
-          resultType: "normal"
-        };
-      } else if (inn2.runs > inn1.runs) {
-        const wicketsLeft = 10 - inn2.wickets;
-        const ballsLeft = (match.totalOvers * 6) - ((inn2.overs * 6) + inn2.balls);
-
-        match.result = {
-          winner: inn2.team,
-          margin: `${wicketsLeft} wickets`,
-          description: `${inn2.team.name} won by ${wicketsLeft} wickets (${ballsLeft} balls remaining)`,
-          resultType: "normal"
-        };
-      } else {
-        match.status = "pending_tie_resolution";
-        match.tieResolution = "pending";
-        match.result = {
-          margin: "Match tied",
-          description: "Match ended in a tie - Resolution pending",
-          resultType: "tie"
-        };
-      }
-    }
-
-    await match.save({ validateModifiedOnly: true });
-
-    await populateFullMatch(match);
-
-    try {
-      const io = getIO();
-
-      io.to(`match-${matchId}`).emit("innings:ended", {
-        matchId,
-        inningsIndex,
-        matchStatus: match.status,
-        nextInnings: inningsIndex + 1 < match.innings.length
-      });
-
-      io.emit("match:updated", match);
-      io.emit("match:updateList");
-    } catch (socketError) {
-      console.log("Socket not available:", socketError.message);
-    }
-
-    res.status(200).json({
-      match,
-      message: match.status === "completed"
-        ? "Match completed successfully"
-        : "Innings ended successfully"
-    });
-  } catch (error) {
-    console.error("Error ending innings:", error);
-    res.status(400).json({
-      message: "Failed to end innings",
-      error: error.message
-    });
-  }
-};
-
-export const reduceOvers = async (req, res) => {
-  try {
-    const { matchId } = req.params;
-    const { newTotalOvers } = req.body;
-
-    const match = await Match.findById(matchId);
-    if (!match) {
-      return res.status(404).json({ message: "Match not found" });
-    }
-
-    if (newTotalOvers >= match.totalOvers) {
-      return res.status(400).json({
-        message: "New overs must be less than current total overs"
-      });
-    }
-
-    const oldTotalOvers = match.totalOvers;
-    match.totalOvers = newTotalOvers;
-
-    // If we are in the 2nd innings, we need to recalculate the target
-    // Using a simplified DRS-like logic: Target = (Team1Runs * NewTotalOvers / OldTotalOvers) + 1
-    if (match.currentInnings === 1 && match.innings[0] && match.innings[1]) {
-      const inn1 = match.innings[0];
-      const inn2 = match.innings[1];
-
-      // Simplified DLS formula
-      const newTarget = Math.floor((inn1.runs * newTotalOvers / oldTotalOvers)) + 1;
-      inn2.target = newTarget;
-
-      const totalOversFaced = inn2.overs + (inn2.balls % 6) / 6;
-      const remainingOvers = newTotalOvers - totalOversFaced;
-      const remainingRuns = newTarget - inn2.runs;
-
-      inn2.requiredRunRate = remainingOvers > 0
-        ? (remainingRuns / remainingOvers).toFixed(2)
-        : 0;
-    }
-
-    await match.save({ validateModifiedOnly: true });
-    await populateFullMatch(match);
-
-    try {
-      const io = getIO();
-      io.to(`match-${matchId}`).emit("match:oversReduced", {
-        matchId,
-        newTotalOvers,
-        newTarget: match.innings[1]?.target
-      });
-      io.emit("match:updated", match);
-    } catch (socketError) {
-      console.log("Socket not available:", socketError.message);
-    }
-
-    res.status(200).json({
-      match,
-      message: `Match overs reduced to ${newTotalOvers}`
-    });
-  } catch (error) {
-    console.error("Error reducing overs:", error);
-    res.status(400).json({
-      message: "Failed to reduce overs",
-      error: error.message
-    });
-  }
-};
-
-export const startNextInnings = async (req, res) => {
-  try {
-    const { matchId } = req.params;
-
-    const match = await Match.findById(matchId);
-    if (!match) {
-      return res.status(404).json({ message: "Match not found" });
-    }
-
-    if (!["innings-break", "innings_break"].includes(match.status)) {
-      return res.status(400).json({ message: "Match is not in innings break" });
-    }
-
-    const nextInnings = match.innings[match.currentInnings];
-    if (nextInnings) {
-      nextInnings.status = "live";
-      match.status = "live";
-
-      await match.save({ validateModifiedOnly: true });
-      await populateFullMatch(match);
-
-      try {
-        const io = getIO();
-        io.to(`match-${matchId}`).emit("innings:started", {
-          matchId,
-          inningsIndex: match.currentInnings
-        });
-        io.emit("match:updated", match);
-      } catch (socketError) {
-        console.log("Socket not available:", socketError.message);
-      }
-
-      res.status(200).json({
-        match,
-        message: "Next innings started successfully"
-      });
-    } else {
-      res.status(400).json({ message: "No next innings found" });
-    }
-  } catch (error) {
-    console.error("Error starting next innings:", error);
-    res.status(400).json({
-      message: "Failed to start next innings",
-      error: error.message
-    });
-  }
-};
+// reduceOvers, startNextInnings moved to inningsController.js
 
 function generateDetailedCommentary({
   runs,
@@ -983,6 +654,8 @@ function generateDetailedCommentary({
   isLegBye,
   isWicket,
   wicketType,
+  wicketCancelled,
+  freeHitNext,
   batsmanName,
   bowlerName,
   currentScore,
@@ -991,42 +664,17 @@ function generateDetailedCommentary({
   ballNumber,
   extraRuns = 0
 }) {
-  if (isWicket) {
-    const wicketCommentaries = {
-      "bowled": [
-        `BOWLED! What a delivery from ${bowlerName}! The stumps are shattered! ${batsmanName} departs.`,
-        `OUT! Timber! ${bowlerName} gets through the defense of ${batsmanName}. The off stump goes cartwheeling.`,
-        `BOWLED! Cleaned him up! ${batsmanName} has no answer to that one from ${bowlerName}.`
-      ],
-      "caught": [
-        `OUT! Caught! ${batsmanName} holes out. Great catch! ${bowlerName} gets the breakthrough.`,
-        `CAUGHT! In the air... and taken! ${batsmanName} can't believe it. ${bowlerName} strikes!`,
-        `OUT! Wonderful catch! ${batsmanName} goes for the big shot but finds the fielder. ${bowlerName} is delighted.`
-      ],
-      "lbw": [
-        `OUT! LBW! The finger goes up! ${batsmanName} has to go. ${bowlerName} gets the wicket.`,
-        `PLUMB! That looked out and the umpire agrees. ${batsmanName} is gone lbw to ${bowlerName}.`,
-        `OUT! Dead in front! ${batsmanName} caught plumb in front. ${bowlerName} celebrates.`
-      ],
-      "run out": [
-        `RUN OUT! Direct hit! ${batsmanName} is well short of the crease! What a throw!`,
-        `OUT! Run out! Terrible mix-up and ${batsmanName} has to walk back.`,
-        `RUN OUT! Lightning quick throw and ${batsmanName} is gone! Brilliant fielding!`
-      ],
-      "stumped": [
-        `STUMPED! Quick as a flash! ${batsmanName} is out of his crease and the keeper whips off the bails!`,
-        `OUT! Stumped! Beaten by the turn and the keeper does the rest. ${batsmanName} departs.`,
-        `STUMPED! Superb glovework! ${batsmanName} is caught short. ${bowlerName} gets his man.`
-      ]
-    };
-
-    const comments = wicketCommentaries[wicketType] || [
-      `OUT! ${batsmanName} has to go! ${bowlerName} strikes!`
+  if (wicketCancelled) {
+    const freeHitLine = freeHitNext ? " Free Hit is coming next ball." : "";
+    const nbCancelled = [
+      `NO BALL! ${batsmanName} looked out but the umpire calls it a no ball — wicket cancelled! Just the one extra run from the no-ball.${freeHitLine}`,
+      `No ball called — ${batsmanName} survives! The wicket is cancelled due to the front foot no-ball. One extra run added.${freeHitLine}`,
+      `Big moment! It looked like ${batsmanName} was gone, but the no-ball saves them! Wicket cancelled. One run added.${freeHitLine}`
     ];
-    return comments[Math.floor(Math.random() * comments.length)];
+    return nbCancelled[Math.floor(Math.random() * nbCancelled.length)];
   }
 
-  if (isWide) {
+  if (isWicket) {
     const wideComments = [
       `Wide! ${bowlerName} strays down the leg side.`,
       `WIDE! That's way outside the tramline.`,
@@ -1040,21 +688,22 @@ function generateDetailedCommentary({
   }
 
   if (isNoBall) {
+    const freeHitLine = freeHitNext ? " Free Hit coming next ball!" : "";
     const noballs = [
-      `No ball! ${bowlerName} oversteps. Free hit coming up!`,
-      `NO BALL! That's a big overstep from ${bowlerName}.`,
-      `No ball! ${bowlerName} will have to bowl that again.`
+      `No ball! ${bowlerName} oversteps.${freeHitLine}`,
+      `NO BALL! That's a big overstep from ${bowlerName}.${freeHitLine}`,
+      `No ball! ${bowlerName} will have to bowl that again.${freeHitLine}`
     ];
     let comment = noballs[Math.floor(Math.random() * noballs.length)];
     if (extraRuns > 0) {
       const runComments = {
-        1: "They take a single.",
-        2: "They scamper back for two.",
-        3: "Excellent running, they get three!",
-        4: "FOUR! He's punished that no ball to the fence!",
-        6: "SIX! MASSIVE! Smashed it out of the park on a no ball!"
+        1: " They take a single.",
+        2: " They scamper back for two.",
+        3: " Excellent running, they get three!",
+        4: " FOUR! He's punished that no ball to the fence!",
+        6: " SIX! MASSIVE! Smashed it out of the park on a no ball!"
       };
-      comment += ` ${runComments[extraRuns] || `${extraRuns} runs taken.`}`;
+      comment += runComments[extraRuns] || ` ${extraRuns} runs taken.`;
     } else {
       comment += " Just the one run from the extra.";
     }
@@ -1818,51 +1467,7 @@ export const recordDRSReview = async (req, res) => {
   }
 };
 
-export const resetInnings = async (req, res) => {
-  try {
-    const { matchId } = req.params;
-    const { inningsIndex } = req.body;
-
-    const match = await Match.findById(matchId);
-    if (!match) return res.status(404).json({ message: "Match not found" });
-
-    const innings = match.innings[inningsIndex];
-    if (!innings) return res.status(400).json({ message: "Invalid innings index" });
-
-    // Reset all innings fields
-    innings.runs = 0;
-    innings.wickets = 0;
-    innings.balls = 0;
-    innings.overs = 0;
-    innings.extras = { wides: 0, noBalls: 0, byes: 0, legByes: 0, penalties: 0, total: 0 };
-    innings.batting = [];
-    innings.bowling = [];
-    innings.oversHistory = [];
-    innings.fallOfWickets = [];
-    innings.partnerships = [];
-    innings.battingOrder = [];
-    innings.runRate = 0;
-
-    // Clear current player assignments to force re-selection or handle cleanly
-    innings.onStrikeBatsman = null;
-    innings.currentBatsman1 = null;
-    innings.currentBatsman2 = null;
-    innings.currentBowler = null;
-
-    await match.save({ validateModifiedOnly: true });
-    await populateFullMatch(match);
-
-    try {
-      const io = getIO();
-      io.to(`match-${matchId}`).emit("match:reset", { matchId, inningsIndex });
-      io.emit("match:updated", match);
-    } catch (err) { }
-
-    res.status(200).json({ match, message: "Innings reset successfully" });
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
+// resetInnings moved to inningsController.js
 
 export const retireBatsman = async (req, res) => {
   try {

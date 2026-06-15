@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { api } from '../services/api';
 
 const ZONES = [
@@ -18,7 +18,7 @@ export default function WagonZone({ matchId, match, innings = 0 }) {
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState('all');
 
-  useMemo(() => {
+  useEffect(() => {
     if (!matchId) return;
     setLoading(true);
     api.get(`/matches/${matchId}/wagon-wheel/${innings + 1}`)

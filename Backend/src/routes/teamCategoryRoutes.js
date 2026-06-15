@@ -1,7 +1,10 @@
 import express from 'express';
 import TeamCategory from '../models/TeamCategory.js';
+import { protect, requireAdmin } from '../middleware/authMiddleware.js';
+import validateObjectId from '../middleware/validateObjectId.js';
 
 const router = express.Router();
+const adminOnly = [protect, requireAdmin];
 
 router.get('/', async (req, res) => {
   try {
@@ -21,7 +24,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', ...adminOnly, async (req, res) => {
   try {
     const category = await TeamCategory.create(req.body);
     res.status(201).json({ category, message: "Category created successfully" });
@@ -30,7 +33,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', ...adminOnly, validateObjectId('id'), async (req, res) => {
   try {
     const category = await TeamCategory.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!category) return res.status(404).json({ message: "Category not found" });
@@ -40,7 +43,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', ...adminOnly, validateObjectId('id'), async (req, res) => {
   try {
     const { default: Team } = await import('../models/Team.js');
     const teamsExist = await Team.exists({ categoryRef: req.params.id });

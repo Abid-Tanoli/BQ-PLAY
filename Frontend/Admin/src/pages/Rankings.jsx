@@ -87,113 +87,109 @@ export default function Rankings() {
           <p className="text-slate-400 text-sm mt-2">Complete matches to generate rankings.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
-          {/* Header Row */}
-          <div className="bg-[#031d44] px-6 py-4">
-            <div className="overflow-x-auto no-scrollbar">
-              <div className="grid grid-cols-12 gap-4 text-white text-[10px] font-black uppercase tracking-widest min-w-[600px]">
-                <span className="col-span-1">Rank</span>
-                <span className="col-span-4">Name</span>
-                {activeTab === 'overall' && (
-                  <>
-                    <span className="col-span-1 text-center">P</span>
-                    <span className="col-span-1 text-center">W</span>
-                    <span className="col-span-1 text-center">L</span>
-                    <span className="col-span-1 text-center">Pts</span>
-                    <span className="col-span-1 text-center">NRR</span>
-                    <span className="col-span-2 text-center">Form</span>
-                  </>
-                )}
-                {(activeTab === 'batting' || activeTab === 'bowling' || activeTab === 'allrounder') && (
-                  <>
-                    <span className="col-span-2 text-center">Team</span>
-                    <span className="col-span-1 text-center">{activeTab === 'batting' ? 'Runs' : activeTab === 'bowling' ? 'Wkts' : 'Pts'}</span>
-                    <span className="col-span-1 text-center">Mat</span>
-                    <span className="col-span-2 text-center">Rating</span>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Data Rows */}
-          <div className="overflow-x-auto no-scrollbar">
-            <div className="min-w-[600px] divide-y divide-slate-100">
-              {rankings.map((item, idx) => {
-                const rank = item.overallRank || item.rank || item.categoryRank || idx + 1;
-                const isTeam = activeTab === 'overall';
-                return (
-                  <div
-                    key={item._id || idx}
-                    className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-slate-50 transition-all items-center"
-                  >
-                  <div className="col-span-1">
-                    <span className="text-xl font-black text-slate-300">{getRankBadge(rank)}</span>
-                  </div>
-                  <div className="col-span-4 flex items-center gap-3">
-                    {isTeam && item.team?.logo && (
-                      <img src={item.team.logo} alt="" className="w-8 h-8 rounded-lg object-cover" />
-                    )}
-                    <div>
-                      <Link
-                        to={isTeam ? `/admin/teams/${item.team?._id}` : `/admin/players/${item._id}`}
-                        className="font-bold text-[#031d44] hover:underline"
-                      >
-                        {isTeam ? item.team?.name : item.name}
-                      </Link>
-                      {isTeam && item.team?.branchName && (
-                        <p className="text-[10px] text-slate-400">{item.team.branchName}</p>
+            <div className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden overflow-x-auto no-scrollbar">
+                  {/* Header Row */}
+                  <div className="bg-[#031d44] px-3 sm:px-6 py-3 sm:py-4 min-w-[500px] sm:min-w-0">
+                    <div className="grid grid-cols-12 gap-1 sm:gap-4 text-white text-[9px] sm:text-[10px] font-black uppercase tracking-wider sm:tracking-widest">
+                      <span className="col-span-2 sm:col-span-1">Rank</span>
+                      <span className="col-span-5 sm:col-span-4">Name</span>
+                      {activeTab === 'overall' && (
+                        <>
+                          <span className="col-span-1 text-center hidden sm:block">P</span>
+                          <span className="col-span-1 text-center hidden sm:block">W</span>
+                          <span className="col-span-1 text-center hidden sm:block">L</span>
+                          <span className="col-span-2 sm:col-span-1 text-center">Pts</span>
+                          <span className="col-span-1 text-center hidden sm:block">NRR</span>
+                          <span className="col-span-2 text-center hidden sm:block">Form</span>
+                        </>
+                      )}
+                      {(activeTab === 'batting' || activeTab === 'bowling' || activeTab === 'allrounder') && (
+                        <>
+                          <span className="col-span-2 text-center hidden sm:block">Team</span>
+                          <span className="col-span-2 sm:col-span-1 text-center">{activeTab === 'batting' ? 'Runs' : activeTab === 'bowling' ? 'Wkts' : 'Pts'}</span>
+                          <span className="col-span-1 text-center hidden sm:block">Mat</span>
+                          <span className="col-span-2 text-center hidden sm:block">Rating</span>
+                        </>
                       )}
                     </div>
                   </div>
 
-                  {isTeam && (
-                    <>
-                      <span className="col-span-1 text-center font-bold">{item.matchesPlayed || 0}</span>
-                      <span className="col-span-1 text-center font-bold text-green-600">{item.matchesWon || 0}</span>
-                      <span className="col-span-1 text-center font-bold text-red-600">{item.matchesLost || 0}</span>
-                      <span className="col-span-1 text-center font-bold text-amber-600">{item.points || 0}</span>
-                      <span className="col-span-1 text-center font-bold text-purple-600">{item.netRunRate?.toFixed(2) || '0.00'}</span>
-                      <div className="col-span-2 text-center flex gap-1 justify-center">
-                        {(item.form || '').split('').map((ch, i) => (
-                          <span
-                            key={i}
-                            className={`w-5 h-5 rounded-full text-[8px] font-bold flex items-center justify-center ${
-                              ch === 'W' ? 'bg-green-100 text-green-800' :
-                              ch === 'L' ? 'bg-red-100 text-red-800' :
-                              ch === 'D' ? 'bg-blue-100 text-blue-800' :
-                              'bg-slate-100 text-slate-500'
-                            }`}
-                          >
-                            {ch}
-                          </span>
-                        ))}
-                      </div>
-                    </>
-                  )}
+                  {/* Data Rows */}
+                  <div className="min-w-[500px] sm:min-w-0 divide-y divide-slate-100">
+                    {rankings.map((item, idx) => {
+                      const rank = item.overallRank || item.rank || item.categoryRank || idx + 1;
+                      const isTeam = activeTab === 'overall';
+                      return (
+                        <div
+                          key={item._id || idx}
+                          className="grid grid-cols-12 gap-1 sm:gap-4 px-3 sm:px-6 py-3 sm:py-4 hover:bg-slate-50 transition-all items-center"
+                        >
+                        <div className="col-span-2 sm:col-span-1">
+                          <span className="text-base sm:text-xl font-black text-slate-300">{getRankBadge(rank)}</span>
+                        </div>
+                        <div className="col-span-5 sm:col-span-4 flex items-center gap-2 sm:gap-3 min-w-0">
+                          {isTeam && item.team?.logo && (
+                            <img src={item.team.logo} alt="" className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg object-cover shrink-0" />
+                          )}
+                          <div className="min-w-0">
+                            <Link
+                              to={isTeam ? `/admin/teams/${item.team?._id}` : `/admin/players/${item._id}`}
+                              className="font-bold text-[11px] sm:text-sm text-[#031d44] hover:underline truncate block"
+                            >
+                              {isTeam ? item.team?.name : item.name}
+                            </Link>
+                            {isTeam && item.team?.branchName && (
+                              <p className="text-[9px] sm:text-[10px] text-slate-400 truncate">{item.team.branchName}</p>
+                            )}
+                          </div>
+                        </div>
 
-                  {(activeTab === 'batting' || activeTab === 'bowling' || activeTab === 'allrounder') && (
-                    <>
-                      <div className="col-span-2 text-center">
-                        <span className="text-xs font-bold text-slate-500">{item.team?.name || '-'}</span>
+                        {isTeam && (
+                          <>
+                            <span className="col-span-1 text-center font-bold text-[10px] sm:text-sm hidden sm:block">{item.matchesPlayed || 0}</span>
+                            <span className="col-span-1 text-center font-bold text-green-600 text-[10px] sm:text-sm hidden sm:block">{item.matchesWon || 0}</span>
+                            <span className="col-span-1 text-center font-bold text-red-600 text-[10px] sm:text-sm hidden sm:block">{item.matchesLost || 0}</span>
+                            <span className="col-span-2 sm:col-span-1 text-center font-bold text-amber-600 text-[10px] sm:text-sm">{item.points || 0}</span>
+                            <span className="col-span-1 text-center font-bold text-purple-600 text-[10px] sm:text-sm hidden sm:block">{item.netRunRate?.toFixed(2) || '0.00'}</span>
+                            <div className="col-span-2 text-center flex gap-1 justify-center hidden sm:flex">
+                              {(item.form || '').split('').map((ch, i) => (
+                                <span
+                                  key={i}
+                                  className={`w-5 h-5 rounded-full text-[8px] font-bold flex items-center justify-center ${
+                                    ch === 'W' ? 'bg-green-100 text-green-800' :
+                                    ch === 'L' ? 'bg-red-100 text-red-800' :
+                                    ch === 'D' ? 'bg-blue-100 text-blue-800' :
+                                    'bg-slate-100 text-slate-500'
+                                  }`}
+                                >
+                                  {ch}
+                                </span>
+                              ))}
+                            </div>
+                          </>
+                        )}
+
+                        {(activeTab === 'batting' || activeTab === 'bowling' || activeTab === 'allrounder') && (
+                          <>
+                            <div className="col-span-2 text-center hidden sm:block">
+                              <span className="text-[10px] sm:text-xs font-bold text-slate-500">{item.team?.name || '-'}</span>
+                            </div>
+                            <span className="col-span-3 sm:col-span-1 text-center font-bold text-slate-800 text-[10px] sm:text-sm">
+                              {activeTab === 'batting' ? item.runs || 0 :
+                               activeTab === 'bowling' ? item.wickets || 0 :
+                               item.rankingPoints?.toFixed(0) || 0}
+                            </span>
+                            <span className="col-span-1 text-center text-slate-500 text-[10px] sm:text-sm hidden sm:block">{item.matches || item.stats?.matches || 0}</span>
+                            <span className="col-span-2 text-center font-bold text-purple-600 text-[10px] sm:text-sm hidden sm:block">
+                              {item.rating?.toFixed(2) || item.rankingPoints?.toFixed(1) || '-'}
+                            </span>
+                          </>
+                        )}
                       </div>
-                      <span className="col-span-1 text-center font-bold text-slate-800">
-                        {activeTab === 'batting' ? item.runs || 0 :
-                         activeTab === 'bowling' ? item.wickets || 0 :
-                         item.rankingPoints?.toFixed(0) || 0}
-                      </span>
-                      <span className="col-span-1 text-center text-slate-500">{item.matches || item.stats?.matches || 0}</span>
-                      <span className="col-span-2 text-center font-bold text-purple-600">
-                        {item.rating?.toFixed(2) || item.rankingPoints?.toFixed(1) || '-'}
-                      </span>
-                    </>
-                  )}
+                    );
+                  })}
                 </div>
-              );
-            })}
-          </div>
-        </div>
-        </div>
+                </div>
       )}
     </div>
   );

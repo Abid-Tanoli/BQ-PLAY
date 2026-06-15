@@ -38,9 +38,18 @@ dotenv.config();
 const app = express();
 
 const dbReadyPromise = connectDB();
+const configuredCorsOrigins = (process.env.CORS_ORIGINS || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 const corsOptions = {
-  origin: true, // Allow all origins during development
+  origin: configuredCorsOrigins.length
+    ? (origin, callback) => {
+        if (!origin || configuredCorsOrigins.includes(origin)) return callback(null, true);
+        return callback(new Error("Not allowed by CORS"));
+      }
+    : true,
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
@@ -63,7 +72,9 @@ app.use((req, res, next) => {
 });
 
 app.use((req, res, next) => {
-  console.log(`${req.method} ${req.originalUrl}`);
+  if (process.env.LOG_REQUESTS === "true") {
+    console.log(`${req.method} ${req.originalUrl}`);
+  }
   next();
 });
 

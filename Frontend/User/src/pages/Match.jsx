@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { api } from "../services/api";
 import EnhancedMatchTabs from "../components/EnhancedMatchTabs";
 import ToastNotifications from "../components/ToastNotifications";
+import ThemeToggle from "../components/ThemeToggle";
 import { initSocket, joinMatchRoom, leaveMatchRoom } from "../services/socket";
 
 const Match = () => {
@@ -285,10 +286,19 @@ const Match = () => {
   }
 
   return (
-    <>
+    <div className="min-h-screen bg-cric-bg overflow-x-hidden">
+      <div className="border-b border-cric-border bg-cric-card">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-3 py-2 sm:px-6">
+          <Link to="/live" className="touch-target flex items-center gap-1.5 text-xs font-bold text-cric-muted hover:text-cric-accent shrink-0">
+            <span aria-hidden="true">←</span> Live
+          </Link>
+          <Link to="/" className="text-sm font-black font-raj text-cric-text truncate">BQ-PLAY</Link>
+          <ThemeToggle />
+        </div>
+      </div>
       <ToastNotifications events={events} />
       <EnhancedMatchTabs matchId={matchId} match={match} />
-    </>
+    </div>
   );
 };
 

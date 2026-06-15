@@ -25,11 +25,13 @@ import InternationalMatchDetail from "./pages/InternationalMatchDetail";
 import InternationalSeriesDetail from "./pages/InternationalSeriesDetail";
 import Highlights from "./pages/Highlights";
 import CricketNews from "./pages/CricketNews";
+import Footer from "./components/Footer";
 
 function App() {
   return (
     <ThemeProvider>
       <Router>
+        <div className="flex flex-col min-h-screen">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/live" element={<Live />} />
@@ -60,6 +62,8 @@ function App() {
           <Route path="/highlights" element={<Highlights />} />
           <Route path="/cricket-news" element={<CricketNews />} />
         </Routes>
+        <Footer />
+        </div>
       </Router>
     </ThemeProvider>
   );

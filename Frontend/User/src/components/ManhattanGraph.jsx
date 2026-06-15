@@ -67,7 +67,7 @@ export default function ManhattanGraph({ match, innings = 0, compact = false }) 
   const groupW = barW * 2 + gap;
 
   return (
-    <div className="bg-gray-900 rounded-lg p-3 overflow-x-auto">
+    <div className="bg-gray-900 dark:bg-cric-card rounded-lg p-3 w-full max-w-full">
       <div className="flex items-center gap-4 mb-3 text-xs">
         <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded" style={{backgroundColor: COLORS.bar1}}></span>Team 1</span>
         <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded" style={{backgroundColor: COLORS.bar2}}></span>Team 2</span>

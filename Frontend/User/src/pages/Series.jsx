@@ -5,7 +5,6 @@ import Header from "../components/Header";
 import BlogGallery from "../components/BlogGallery";
 import BoundaryMeter from "../components/BoundaryMeter";
 import { initSocket } from "../services/socket";
-import SeriesLiveCommentary from "../components/SeriesLiveCommentary";
 
 export default function Series() {
   const { seriesId } = useParams();
@@ -17,6 +16,10 @@ export default function Series() {
   const [activeTab, setActiveTab] = useState("matches");
 
   const loadData = useCallback(async () => {
+    if (!seriesId || seriesId === "undefined" || seriesId === "null") {
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       let seriesData = null;
@@ -324,11 +327,6 @@ export default function Series() {
             ))}
           </div>
         </div>
-      </div>
-
-      {/* Live Commentary Panel */}
-      <div className="max-w-7xl mx-auto px-4 pt-6">
-        <SeriesLiveCommentary seriesId={seriesId} />
       </div>
 
       {/* Content */}

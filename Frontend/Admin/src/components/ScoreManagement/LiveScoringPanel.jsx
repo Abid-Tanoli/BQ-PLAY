@@ -88,6 +88,7 @@ const LiveScoringPanel = ({
                             </div>
                             <div className="text-right">
                                 <div className="text-2xl font-black text-cric-text">{Math.max(0, nonStrikerStats?.runs || 0)} ({Math.max(0, nonStrikerStats?.balls || 0)})</div>
+                                <div className="text-[10px] font-bold text-slate-500 uppercase mt-1">4s: {nonStrikerStats?.fours || 0} | 6s: {nonStrikerStats?.sixes || 0}</div>
                             </div>
                         </div>
                     </div>

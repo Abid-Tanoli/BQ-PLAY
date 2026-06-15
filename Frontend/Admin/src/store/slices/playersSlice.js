@@ -191,7 +191,7 @@ const playersSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(bulkDeletePlayers.fulfilled, (state, action) => {
+      .addCase(bulkDeletePlayers.fulfilled, (state) => {
         state.loading = false;
         state.players = [];
       })

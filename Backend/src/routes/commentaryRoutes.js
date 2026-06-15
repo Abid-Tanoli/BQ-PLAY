@@ -1,10 +1,10 @@
 import express from "express";
 import { generateCommentaryForBall } from "../services/commentaryService.js";
-import Ball from "../models/Ball.js";
+import { protect, requireAdmin } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.post("/generate", async (req, res) => {
+router.post("/generate", protect, requireAdmin, async (req, res) => {
   try {
     const commentary = await generateCommentaryForBall(req.body);
     res.json({ commentary });

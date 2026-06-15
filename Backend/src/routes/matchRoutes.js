@@ -1,4 +1,6 @@
 import express from "express";
+import { protect, requireAdmin } from "../middleware/authMiddleware.js";
+import validateObjectId from "../middleware/validateObjectId.js";
 import {
   getMatches,
   getMatch,
@@ -22,9 +24,6 @@ import {
 } from "../controllers/matchController.js";
 import {
   updateScore,
-  endInnings,
-  startNextInnings,
-  reduceOvers,
   resolveTie,
   startSuperOverInnings,
   editCommentary,
@@ -34,11 +33,16 @@ import {
   generateAICommentary,
   useStrategicTimeout,
   recordDRSReview,
-  resetInnings,
   resetMatch,
   editBall,
   retireBatsman
 } from "../controllers/scoreController.js";
+import {
+  endInnings,
+  startNextInnings,
+  reduceOvers,
+  resetInnings
+} from "../controllers/inningsController.js";
 import {
   getMatchPartnerships,
   getActivePartnership,
@@ -55,57 +59,58 @@ import {
   updateMatchStatusOfficial
 } from "../controllers/analyticsController.js";
 
-import Match from "../models/match.js";
+import Match from "../models/Match.js";
 
 const router = express.Router();
+const adminOnly = [protect, requireAdmin];
 
 router.get("/", getMatches);
-router.get("/:id", getMatch);
-router.get("/:id/stats", getMatchStats);
-router.get("/:id/live-stats", getMatchLiveStats);
-router.get("/:id/summary", getMatchSummary);
-router.get("/:id/partnerships", getMatchPartnershipsSummary);
-router.get("/:id/squads", getMatchSquads);
-router.get("/:id/partnerships/:inning", getMatchPartnerships);
-router.get("/:id/partnerships/:inning/active", getActivePartnership);
-router.get("/:id/wagon-wheel/:inning", getWagonWheelData);
-router.get("/:id/wagon-wheel/:inning/:batsmanId", getWagonWheelData);
-router.get("/:id/analytics", getMatchAnalytics);
-router.get("/:id/graph-data", getMatchGraphData);
-router.get("/:id/boundaries", getMatchBoundaries);
-router.get("/:id/drs", getMatchReviews);
-router.get("/:id/commentary", getMatchCommentary);
-router.get("/:id/officials", getMatchOfficials);
+router.get("/:id", validateObjectId("id"), getMatch);
+router.get("/:id/stats", validateObjectId("id"), getMatchStats);
+router.get("/:id/live-stats", validateObjectId("id"), getMatchLiveStats);
+router.get("/:id/summary", validateObjectId("id"), getMatchSummary);
+router.get("/:id/partnerships", validateObjectId("id"), getMatchPartnershipsSummary);
+router.get("/:id/squads", validateObjectId("id"), getMatchSquads);
+router.get("/:id/partnerships/:inning", validateObjectId("id"), getMatchPartnerships);
+router.get("/:id/partnerships/:inning/active", validateObjectId("id"), getActivePartnership);
+router.get("/:id/wagon-wheel/:inning", validateObjectId("id"), getWagonWheelData);
+router.get("/:id/wagon-wheel/:inning/:batsmanId", validateObjectId("id"), validateObjectId("batsmanId"), getWagonWheelData);
+router.get("/:id/analytics", validateObjectId("id"), getMatchAnalytics);
+router.get("/:id/graph-data", validateObjectId("id"), getMatchGraphData);
+router.get("/:id/boundaries", validateObjectId("id"), getMatchBoundaries);
+router.get("/:id/drs", validateObjectId("id"), getMatchReviews);
+router.get("/:id/commentary", validateObjectId("id"), getMatchCommentary);
+router.get("/:id/officials", validateObjectId("id"), getMatchOfficials);
 
-router.post("/", createMatch);
-router.post("/:matchId/score", updateScore);
-router.post("/:matchId/end-innings", endInnings);
-router.post("/:matchId/start-next-innings", startNextInnings);
-router.post("/:matchId/reduce-overs", reduceOvers);
-router.post("/:matchId/resolve-tie", resolveTie);
-router.post("/:matchId/start-super-over", startSuperOverInnings);
-router.put("/:matchId/edit-commentary", editCommentary);
-router.post("/:matchId/field-click", handleFieldClick);
-router.post("/:matchId/revert-ball", revertLastBall);
-router.post("/:matchId/set-bowler", setBowler);
-router.post("/:matchId/ai-commentary", generateAICommentary);
-router.post("/:matchId/timeout", useStrategicTimeout);
-router.post("/:matchId/drs", recordDRSReview);
-router.post("/:matchId/reset-innings", resetInnings);
-router.post("/:matchId/reset-match", resetMatch);
-router.post("/:matchId/retire-batsman", retireBatsman);
-router.put("/:matchId/edit-ball", editBall);
-router.post("/:matchId/officials", assignMatchOfficial);
-router.put("/:matchId/officials/:userId", updateMatchOfficial);
-router.post("/:matchId/umpire-signal", triggerUmpireSignal);
-router.put("/:matchId/official-status", updateMatchStatusOfficial);
+router.post("/", ...adminOnly, createMatch);
+router.post("/:matchId/score", ...adminOnly, validateObjectId("matchId"), updateScore);
+router.post("/:matchId/end-innings", ...adminOnly, validateObjectId("matchId"), endInnings);
+router.post("/:matchId/start-next-innings", ...adminOnly, validateObjectId("matchId"), startNextInnings);
+router.post("/:matchId/reduce-overs", ...adminOnly, validateObjectId("matchId"), reduceOvers);
+router.post("/:matchId/resolve-tie", ...adminOnly, validateObjectId("matchId"), resolveTie);
+router.post("/:matchId/start-super-over", ...adminOnly, validateObjectId("matchId"), startSuperOverInnings);
+router.put("/:matchId/edit-commentary", ...adminOnly, validateObjectId("matchId"), editCommentary);
+router.post("/:matchId/field-click", ...adminOnly, validateObjectId("matchId"), handleFieldClick);
+router.post("/:matchId/revert-ball", ...adminOnly, validateObjectId("matchId"), revertLastBall);
+router.post("/:matchId/set-bowler", ...adminOnly, validateObjectId("matchId"), setBowler);
+router.post("/:matchId/ai-commentary", ...adminOnly, validateObjectId("matchId"), generateAICommentary);
+router.post("/:matchId/timeout", ...adminOnly, validateObjectId("matchId"), useStrategicTimeout);
+router.post("/:matchId/drs", ...adminOnly, validateObjectId("matchId"), recordDRSReview);
+router.post("/:matchId/reset-innings", ...adminOnly, validateObjectId("matchId"), resetInnings);
+router.post("/:matchId/reset-match", ...adminOnly, validateObjectId("matchId"), resetMatch);
+router.post("/:matchId/retire-batsman", ...adminOnly, validateObjectId("matchId"), retireBatsman);
+router.put("/:matchId/edit-ball", ...adminOnly, validateObjectId("matchId"), editBall);
+router.post("/:matchId/officials", ...adminOnly, validateObjectId("matchId"), assignMatchOfficial);
+router.put("/:matchId/officials/:userId", ...adminOnly, validateObjectId("matchId"), validateObjectId("userId"), updateMatchOfficial);
+router.post("/:matchId/umpire-signal", ...adminOnly, validateObjectId("matchId"), triggerUmpireSignal);
+router.put("/:matchId/official-status", ...adminOnly, validateObjectId("matchId"), updateMatchStatusOfficial);
 
-router.put("/:id", updateMatch);
-router.put("/:id/status", updateMatchStatus);
-router.put("/:id/mom", setMOM);
-router.put("/:matchId/playing-xi", setPlayingXI);
-router.put("/:matchId/openers", setOpeners);
-router.put("/:matchId/format", async (req, res) => {
+router.put("/:id", ...adminOnly, validateObjectId("id"), updateMatch);
+router.put("/:id/status", ...adminOnly, validateObjectId("id"), updateMatchStatus);
+router.put("/:id/mom", ...adminOnly, validateObjectId("id"), setMOM);
+router.put("/:matchId/playing-xi", ...adminOnly, validateObjectId("matchId"), setPlayingXI);
+router.put("/:matchId/openers", ...adminOnly, validateObjectId("matchId"), setOpeners);
+router.put("/:matchId/format", ...adminOnly, validateObjectId("matchId"), async (req, res) => {
   try {
     const { matchId } = req.params;
     const { matchFormat, totalOvers, powerplayEnabled, powerplayOvers } = req.body;
@@ -122,12 +127,12 @@ router.put("/:matchId/format", async (req, res) => {
     res.status(400).json({ message: err.message });
   }
 });
-router.put("/:matchId/toss", updateToss);
-router.put("/:matchId/squad15", setSquad15);
-router.put("/:matchId/twelfth-man", setTwelfthMan);
-router.put("/:matchId/bowling-xi", setBowlingXI);
-router.put("/:matchId/team-roles", setTeamRoles);
+router.put("/:matchId/toss", ...adminOnly, validateObjectId("matchId"), updateToss);
+router.put("/:matchId/squad15", ...adminOnly, validateObjectId("matchId"), setSquad15);
+router.put("/:matchId/twelfth-man", ...adminOnly, validateObjectId("matchId"), setTwelfthMan);
+router.put("/:matchId/bowling-xi", ...adminOnly, validateObjectId("matchId"), setBowlingXI);
+router.put("/:matchId/team-roles", ...adminOnly, validateObjectId("matchId"), setTeamRoles);
 
-router.delete("/:id", deleteMatch);
+router.delete("/:id", ...adminOnly, validateObjectId("id"), deleteMatch);
 
 export default router;

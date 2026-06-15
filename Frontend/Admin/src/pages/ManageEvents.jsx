@@ -191,7 +191,7 @@ export default function ManageEvents() {
                         {/* Event Type Selector */}
                         <div>
                             <label className="text-[10px] font-black uppercase text-slate-400 block mb-2">Event Type *</label>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
                                 {EVENT_TYPES.map(et => (
                                     <label key={et.value} className={`p-3 rounded-xl border-2 cursor-pointer transition-all text-center ${selectedType === et.value ? "border-blue-500 bg-blue-50" : "border-slate-200 hover:border-slate-300"}`}>
                                         <input type="radio" value={et.value} {...register("eventType", { required: true })} className="hidden" />

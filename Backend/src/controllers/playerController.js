@@ -1,5 +1,6 @@
 import Player from "../models/Player.js";
 import Team from "../models/Team.js";
+import Match from "../models/Match.js";
 import { getIO } from "../socket/socket.js";
 
 const isTransientDbError = (error) => (
@@ -64,6 +65,44 @@ export const getPlayer = async (req, res) => {
     res.json(player);
   } catch (err) {
     res.status(500).json({ message: "Error fetching player" });
+  }
+};
+
+export const getPlayerMatches = async (req, res) => {
+  try {
+    const playerId = req.params.id;
+    const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 50);
+    const exists = await Player.exists({ _id: playerId });
+
+    if (!exists) {
+      return res.status(404).json({ message: "Player not found" });
+    }
+
+    const matches = await Match.find({
+      $or: [
+        { "playingXI.players": playerId },
+        { "squad15.players": playerId },
+        { "innings.batting.player": playerId },
+        { "innings.bowling.player": playerId },
+        { "innings.oversHistory.balls.batsmanOnStrike": playerId },
+        { "innings.oversHistory.balls.batsmanNonStrike": playerId },
+        { "innings.oversHistory.balls.bowler": playerId },
+        { "innings.oversHistory.balls.dismissedPlayer": playerId },
+        { "innings.oversHistory.balls.fielder": playerId },
+      ],
+    })
+      .select("title venue matchType tournament teams innings currentInnings status result startAt createdAt updatedAt")
+      .populate("teams", "name shortName logo")
+      .populate("tournament", "name shortName slug")
+      .populate("innings.team", "name shortName logo")
+      .populate("result.winner", "name shortName logo")
+      .sort({ startAt: -1, updatedAt: -1 })
+      .limit(limit)
+      .lean();
+
+    res.json({ matches });
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching player matches" });
   }
 };
 

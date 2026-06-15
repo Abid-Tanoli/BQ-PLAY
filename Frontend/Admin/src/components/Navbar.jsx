@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { logout } from "../store/slices/authSlice";
 import { useNavigate } from "react-router-dom";
 
-export default function Navbar({ onMenuClick }) {
+export default function Navbar({ onMenuClick, compact = false }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
@@ -30,14 +30,14 @@ export default function Navbar({ onMenuClick }) {
   };
 
   return (
-    <nav className="bg-cric-card border-b border-cric-border px-6 py-4 flex items-center justify-between transition-colors duration-300">
-      <button onClick={onMenuClick} className="lg:hidden text-cric-muted hover:text-cric-accent">
+    <nav className="bg-cric-card border-b border-cric-border px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-2 transition-colors duration-300 min-w-0">
+      <button type="button" onClick={onMenuClick} className="lg:hidden text-cric-muted hover:text-cric-accent shrink-0 score-touch-btn p-2 -ml-1" aria-label="Menu">
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
         </svg>
       </button>
       
-      <div className="flex items-center gap-4 ml-auto">
+      <div className={`flex items-center gap-2 sm:gap-4 ml-auto min-w-0 ${compact ? "flex-wrap justify-end" : ""}`}>
         {/* Theme Toggle Button */}
         <button
           onClick={() => setIsDark(!isDark)}
@@ -55,9 +55,9 @@ export default function Navbar({ onMenuClick }) {
           )}
         </button>
 
-        <div className="text-right">
-          <p className="text-sm font-semibold text-cric-text">{user?.name || "Admin"}</p>
-          <p className="text-xs text-cric-muted">{user?.email}</p>
+        <div className="text-right hidden sm:block min-w-0">
+          <p className="text-sm font-semibold text-cric-text truncate">{user?.name || "Admin"}</p>
+          <p className="text-xs text-cric-muted truncate max-w-[140px]">{user?.email}</p>
         </div>
         <button
           onClick={handleLogout}

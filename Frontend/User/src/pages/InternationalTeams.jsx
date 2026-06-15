@@ -49,6 +49,12 @@ export default function InternationalTeams() {
           <div className="flex justify-center py-20">
             <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
           </div>
+        ) : teams.length === 0 ? (
+          <div className="text-center py-20">
+            <p className="text-4xl mb-4">🌍</p>
+            <p className="text-xl font-black text-slate-400 dark:text-slate-500">No international teams found</p>
+            <p className="text-slate-400 dark:text-slate-500 text-sm mt-2">Check back later for international teams.</p>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {teams.map((team) => (
@@ -81,12 +87,6 @@ export default function InternationalTeams() {
                 </div>
               </div>
             ))}
-
-            {teams.length === 0 && (
-              <div className="col-span-full text-center py-20 text-slate-400">
-                <p className="font-black uppercase tracking-widest text-xs">No international teams registered yet</p>
-              </div>
-            )}
           </div>
         )}
       </div>

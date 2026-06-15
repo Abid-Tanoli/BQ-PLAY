@@ -251,17 +251,17 @@ const RightSidebarControls = ({
                 {/* 4. Ball Run Selector */}
                 <div className="space-y-4">
                     <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-[0.3em] pl-2">Runs & Extras</h4>
-                    <div className="grid grid-cols-4 gap-4">
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3">
                         {[0, 1, 2, 3, 4, 6].map(num => (
                             <button
                                 key={num}
                                 onClick={() => setSelectedRuns(num)}
-                                className={`h-16 rounded-2xl font-black font-raj text-2xl transition-all ${selectedRuns === num ? 'bg-cric-accent text-white shadow-[0_10px_20px_rgba(255,107,53,0.3)] scale-105 z-10' : 'bg-black/5 dark:bg-white/5 text-cric-text hover:bg-black/10 dark:hover:bg-white/10'}`}
+                                className={`score-run-btn min-h-[52px] sm:min-h-[64px] rounded-2xl font-black font-raj text-xl sm:text-2xl transition-all active:scale-95 ${selectedRuns === num ? 'bg-cric-accent text-white shadow-[0_10px_20px_rgba(255,107,53,0.3)] scale-105 z-10' : 'bg-black/5 dark:bg-white/5 text-cric-text hover:bg-black/10 dark:hover:bg-white/10'}`}
                             >
                                 {num === 0 ? 'DOT' : num}
                             </button>
                         ))}
-                        <button onClick={handleRevert} disabled={reverting} className={`h-16 rounded-2xl transition-all border group ${reverting ? 'bg-slate-400/20 text-slate-400 cursor-not-allowed border-slate-400/20' : 'bg-orange-500/10 text-orange-600 hover:bg-orange-500 hover:text-white border-orange-500/20 hover:border-orange-500'}`} title="Undo last ball">
+                        <button onClick={handleRevert} disabled={reverting} className={`score-run-btn min-h-[52px] sm:min-h-[64px] rounded-2xl transition-all border group col-span-3 sm:col-span-1 ${reverting ? 'bg-slate-400/20 text-slate-400 cursor-not-allowed border-slate-400/20' : 'bg-orange-500/10 text-orange-600 hover:bg-orange-500 hover:text-white border-orange-500/20 hover:border-orange-500'}`} title="Undo last ball">
                             {reverting ? (
                                 <svg className="animate-spin mx-auto" width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="50" strokeLinecap="round" /></svg>
                             ) : (
@@ -271,12 +271,12 @@ const RightSidebarControls = ({
                         </button>
                     </div>
 
-                    <div className="grid grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
                         {['WIDE', 'NO BALL', 'BYE', 'LEG BYE'].map(type => (
                             <button
                                 key={type}
                                 onClick={() => setSelectedExtra(selectedExtra === type ? null : type)}
-                                className={`py-4 rounded-2xl text-[10px] font-black tracking-widest transition-all ${selectedExtra === type ? 'bg-cric-accent text-white shadow-lg' : 'bg-black/5 dark:bg-white/2 text-slate-500 hover:text-cric-text border border-transparent hover:border-cric-border/50'}`}
+                                className={`score-run-btn min-h-[48px] py-3 rounded-2xl text-[10px] sm:text-xs font-black tracking-widest transition-all active:scale-95 ${selectedExtra === type ? 'bg-cric-accent text-white shadow-lg' : 'bg-black/5 dark:bg-white/2 text-cric-muted hover:text-cric-text border border-transparent hover:border-cric-border/50'}`}
                             >
                                 {type}
                             </button>
@@ -313,10 +313,10 @@ const RightSidebarControls = ({
                 </div>
 
                 {/* 6. Wicket and Submit */}
-                <div className="grid grid-cols-2 gap-4 pt-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pt-4 sm:pt-6">
                     <button
                         onClick={() => setShowSelectionModal('wicket')}
-                        className={`py-8 rounded-[2rem] font-black uppercase tracking-[0.2em] text-[11px] relative overflow-hidden transition-all h-32 ${selectedWicket ? 'bg-red-600 text-white shadow-xl' : 'bg-red-600/10 text-red-500 border-2 border-red-500/20 hover:bg-red-600/20 font-raj text-2xl italic'}`}
+                        className={`score-run-btn min-h-[72px] sm:min-h-[8rem] rounded-2xl sm:rounded-[2rem] font-black uppercase tracking-[0.2em] text-sm sm:text-base relative overflow-hidden transition-all active:scale-95 ${selectedWicket ? 'bg-red-600 text-white shadow-xl' : 'bg-red-600/10 text-red-500 border-2 border-red-500/20 hover:bg-red-600/20 font-raj text-xl sm:text-2xl italic'}`}
                     >
                         <div className="relative z-10">
                             {selectedWicket ? `OUT: ${selectedWicket}` : 'FALLEN WICKET'}
@@ -324,7 +324,7 @@ const RightSidebarControls = ({
                     </button>
                     <button
                         onClick={submitBall}
-                        className="py-8 rounded-[2rem] bg-green-600 text-white font-black font-raj text-3xl italic tracking-tighter shadow-[0_20px_50px_rgba(22,163,74,0.3)] hover:scale-105 active:scale-95 transition-all uppercase h-32"
+                        className="score-run-btn min-h-[72px] sm:min-h-[8rem] rounded-2xl sm:rounded-[2rem] bg-green-600 text-white font-black font-raj text-2xl sm:text-3xl italic tracking-tighter shadow-[0_20px_50px_rgba(22,163,74,0.3)] hover:scale-[1.02] active:scale-95 transition-all uppercase"
                     >
                         Submit Ball
                     </button>

@@ -85,10 +85,8 @@ export const registerUser = async (req, res) => {
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
-    console.log("Login Attempt:", email);
 
     if (!email || !password) {
-      console.log("Missing fields");
       return res.status(400).json({ message: "All fields are required" });
     }
 
@@ -100,12 +98,10 @@ export const loginUser = async (req, res) => {
 
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      console.log("password not matched")
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
     const token = generateToken(user);
-    console.log("Login Successful for:", email);
 
     res.json({
       token,

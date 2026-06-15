@@ -2,17 +2,17 @@ import React from "react";
 import { NavLink } from "react-router-dom";
 
 const menuItems = [
-  { to: "/admin", label: "Dashboard", icon: "📊" },
-  { to: "/admin/live", label: "Live Scores", icon: "🏏" },
-  { to: "/admin/international", label: "International", icon: "🌍" },
-  { to: "/admin/score", label: "Live Scoring", icon: "🎯" },
-  { to: "/admin/events", label: "Manage Events", icon: "📅" },
-  { to: "/admin/teams", label: "Manage Teams", icon: "👥" },
-  { to: "/admin/players", label: "Manage Players", icon: "⭐" },
-  { to: "/admin/bulk-import", label: "Bulk Import", icon: "📥" },
-  { to: "/admin/blogs", label: "Manage Blogs", icon: "📝" },
-  { to: "/admin/rankings", label: "Rankings", icon: "🎖️" },
-  { to: "/admin/sync", label: "Sync Panel", icon: "🔄" },
+  { to: "/admin", label: "Dashboard", icon: "DB" },
+  { to: "/admin/live", label: "Live Scores", icon: "LS" },
+  { to: "/admin/international", label: "International", icon: "IN" },
+  { to: "/admin/score", label: "Live Scoring", icon: "SC" },
+  { to: "/admin/events", label: "Manage Events", icon: "EV" },
+  { to: "/admin/teams", label: "Manage Teams", icon: "TM" },
+  { to: "/admin/players", label: "Manage Players", icon: "PL" },
+  { to: "/admin/bulk-import", label: "Bulk Import", icon: "BI" },
+  { to: "/admin/blogs", label: "Manage Blogs", icon: "BL" },
+  { to: "/admin/rankings", label: "Rankings", icon: "RK" },
+  { to: "/admin/sync", label: "Sync Panel", icon: "SY" },
 ];
 
 export default function Sidebar({ open, onClose }) {
@@ -38,8 +38,8 @@ export default function Sidebar({ open, onClose }) {
           </button>
         </div>
       </div>
-      <nav className="flex-1 p-4 overflow-y-auto no-scrollbar">
-        <ul className="space-y-1">
+      <nav className="flex-1 p-3 sm:p-4 overflow-y-auto no-scrollbar overscroll-contain">
+        <ul className="space-y-0.5 sm:space-y-1">
           {menuItems.map((item) => (
             <li key={item.to}>
               <NavLink
@@ -47,14 +47,16 @@ export default function Sidebar({ open, onClose }) {
                 end={item.to === "/admin"}
                 onClick={onClose}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all duration-200 min-h-[44px] ${
+                  `flex items-center gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg text-xs sm:text-sm font-bold transition-all duration-200 min-h-[44px] ${
                     isActive
                       ? "bg-cric-accent text-white shadow-md shadow-cric-accent/20"
                       : "text-cric-muted hover:bg-cric-bg hover:text-cric-text"
                   }`
                 }
               >
-                <span>{item.icon}</span>
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-current/10 text-[10px] font-black">
+                  {item.icon}
+                </span>
                 {item.label}
               </NavLink>
             </li>

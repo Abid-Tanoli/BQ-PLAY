@@ -4,6 +4,7 @@ import {
   createPlayer,
   getPlayerRanking,
   getPlayer,
+  getPlayerMatches,
   updatePlayer,
   deletePlayer,
   bulkDeletePlayers,
@@ -19,8 +20,11 @@ import {
 import validate from "../middleware/validate.js";
 import { createPlayerSchema } from "../validators/playerValidators.js";
 import * as playerService from "../services/playerService.js";
+import { protect, requireAdmin } from "../middleware/authMiddleware.js";
+import validateObjectId from "../middleware/validateObjectId.js";
 
 const router = express.Router();
+const adminOnly = [protect, requireAdmin];
 
 router.get("/", getPlayers);
 router.get("/ranking", getPlayerRanking);
@@ -39,11 +43,12 @@ router.get("/rankings/all-rounder", getAllRounderRankings);
 router.get("/rankings/fielder", getFielderRankings);
 router.get("/rankings/wicket-keeper", getWicketKeeperRankings);
 router.get("/rankings", getPlayerRankings);
-router.get("/:id", getPlayer);
+router.get("/:id/matches", validateObjectId("id"), getPlayerMatches);
+router.get("/:id", validateObjectId("id"), getPlayer);
 
 router.post("/", validate(createPlayerSchema), createPlayer);
-router.post("/bulk-delete", bulkDeletePlayers);
-router.post("/:id/assign-team", async (req, res) => {
+router.post("/bulk-delete", ...adminOnly, bulkDeletePlayers);
+router.post("/:id/assign-team", ...adminOnly, validateObjectId("id"), async (req, res) => {
   try {
     const { teamId, role } = req.body;
     const player = await playerService.assignPlayerToTeam(req.params.id, teamId, role);
@@ -52,9 +57,9 @@ router.post("/:id/assign-team", async (req, res) => {
     res.status(400).json({ message: "Failed to assign player", error: error.message });
   }
 });
-router.put("/:id", updatePlayer);
-router.delete("/:id", deletePlayer);
-router.delete("/:id/team", async (req, res) => {
+router.put("/:id", ...adminOnly, validateObjectId("id"), updatePlayer);
+router.delete("/:id", ...adminOnly, validateObjectId("id"), deletePlayer);
+router.delete("/:id/team", ...adminOnly, validateObjectId("id"), async (req, res) => {
   try {
     const player = await playerService.removePlayerFromTeam(req.params.id);
     res.status(200).json({ player, message: "Player removed from team successfully" });

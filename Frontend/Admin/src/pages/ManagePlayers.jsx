@@ -5,7 +5,7 @@ import { fetchTeams } from "../store/slices/teamSlice";
 import { Link } from "react-router-dom";
 import { useToast } from "../components/Toast";
 import ConfirmModal from "../components/ConfirmModal";
-import PlayerForm from "../components/PlayerForm";
+import PlayerForm from "@shared/components/PlayerForm";
 
 export default function ManagePlayers() {
   const dispatch = useDispatch();

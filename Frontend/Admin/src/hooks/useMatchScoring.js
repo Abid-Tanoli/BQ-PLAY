@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useSelector } from 'react-redux';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from '../components/Toast';
-import { getTabIdFromRoute, getScoreTabPath, FIELD_POSITIONS, WICKET_TYPES, formatOvers } from '../components/ScoreManagement/constants';
+import { getTabIdFromRoute, getScoreTabPath, FIELD_POSITIONS, WICKET_TYPES } from '../components/ScoreManagement/constants';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 const isIllegalDelivery = (ball) => !!(ball?.isWide || ball?.isNoBall);
@@ -33,14 +33,15 @@ export default function useMatchScoring() {
     const [loadingCommentary, setLoadingCommentary] = useState(false);
     const [toast, setToast] = useState('');
     const { showToast } = useToast();
-    const reloadMatch = useCallback(async () => {
+    const     reloadMatch = useCallback(async () => {
         try {
-            const res = await axios.get(`${API_URL}/matches/${selectedMatch?._id || matchId}`);
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+            const res = await axios.get(`${API_URL}/matches/${selectedMatch?._id || matchId}`, { headers });
             setSelectedMatch(res.data);
         } catch (err) {
             console.error("Failed to reload match:", err);
         }
-    }, [selectedMatch, matchId]);
+    }, [selectedMatch, matchId, token]);
     const [confirmModal, setConfirmModal] = useState({ open: false, title: '', message: '', onConfirm: null, variant: 'danger' });
     const [isDRSModalOpen, setIsDRSModalOpen] = useState(false);
     const [drsData, setDrsData] = useState({ result: 'upheld', type: 'lbw' });
@@ -80,7 +81,7 @@ export default function useMatchScoring() {
     });
 
     const [wizardStep, setWizardStep] = useState(1);
-    const [isPreMatchComplete, setIsPreMatchComplete] = useState(true);
+    const [isPreMatchComplete, setIsPreMatchComplete] = useState(false);
 
     const curInn = selectedMatch?.innings[selectedMatch?.currentInnings] || null;
     const firstInn = selectedMatch?.innings[0] || null;
@@ -221,10 +222,11 @@ export default function useMatchScoring() {
         }
     };
 
-    const handleSelectMatch = async (matchId) => {
+    const handleSelectMatch = async (id) => {
         try {
             setLoading(true);
-            const res = await axios.get(`${API_URL}/matches/${matchId}`);
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+            const res = await axios.get(`${API_URL}/matches/${id}`, { headers });
             setSelectedMatch(res.data);
 
             const t1XI = res.data.playingXI?.find(p => (p.team?._id || p.team) === res.data.teams[0]?._id)?.players?.map(p => p._id || p) || [];
@@ -343,7 +345,7 @@ export default function useMatchScoring() {
             pitchShotType: pitchMapShot || '',
             pitchX: pitchMapClickPos ? Math.round(((pitchMapClickPos.x - 60) / 140) * 100) : null,
             pitchY: pitchMapClickPos ? Math.round(((pitchMapClickPos.y - 40) / 440) * 100) : null,
-            commentaryText: useAICommentary ? manualCommentary : (manualCommentary || "Ball recorded."),
+            commentaryText: useAICommentary ? manualCommentary : (manualCommentary || ""),
             customCommentary: !useAICommentary,
             nextBatsmanId: setupState.wicketNewBatter || undefined,
             didCross: setupState.wicketDidCross,
@@ -381,7 +383,6 @@ export default function useMatchScoring() {
 
             if (selectedWicket && setupState.wicketNewBatter) {
                 try {
-                    const newRole = selectedWicket === 'run out' ? 'nonStriker' : 'striker';
                     await setRole(setupState.wicketNewBatter, 'striker');
                 } catch (e) { console.error(e); }
                 setSetupState(s => ({ ...s, wicketDismissal: '', wicketFielder: '', wicketNewBatter: '' }));

@@ -15,21 +15,27 @@ import PlayingXI from "./PlayingXI";
 import Overs from "./Overs";
 import LiveStats from "./LiveStats";
 import RecentBallsStrip, { orderedBallsForDisplay } from "../../../Shared/components/RecentBallsStrip.jsx";
+import ResponsiveGraphWrap from "./ResponsiveGraphWrap";
 
-const TABS = [
+const PRIMARY_TABS = [
   { id: "live", label: "Live" },
   { id: "scorecard", label: "Scorecard" },
   { id: "commentary", label: "Commentary" },
+  { id: "partnerships", label: "Partnerships" },
+  { id: "graphs", label: "Graphs" },
+  { id: "info", label: "Info" },
+];
+
+const MORE_TABS = [
   { id: "playing-xi", label: "Playing XI" },
   { id: "overs", label: "Overs" },
   { id: "live-stats", label: "Live Stats" },
-  { id: "partnerships", label: "Partnerships" },
   { id: "wagon", label: "Wagon Wheel" },
-  { id: "graphs", label: "Graphs" },
   { id: "stats", label: "Analytics" },
   { id: "summary", label: "Summary" },
-  { id: "info", label: "Match Info" },
 ];
+
+const TABS = [...PRIMARY_TABS, ...MORE_TABS];
 
 const idOf = (value) => {
   if (!value) return "";
@@ -232,6 +238,7 @@ const getTossLine = (match) => {
 const ballRuns = (ball) => number(ball.runs);
 
 const ballLabel = (ball) => {
+  if (ball?.wicketCancelled) return "Nb";
   if (ball?.isWicket) return "W";
   if (ball?.isWide) return "Wd";
   if (ball?.isNoBall) return "Nb";
@@ -242,6 +249,7 @@ const ballLabel = (ball) => {
 };
 
 const ballClass = (ball) => {
+  if (ball?.wicketCancelled) return "bg-orange-600 text-white ring-2 ring-red-500";
   if (ball?.isWicket) return "bg-red-600 text-white";
   if (ball?.isWide || ball?.isNoBall || ball?.isLegBye || ball?.isBye) return "bg-orange-100 text-orange-700 ring-1 ring-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:ring-orange-800";
   if (ballRuns(ball) === 4) return "bg-cric-accent text-white";
@@ -252,6 +260,7 @@ const ballClass = (ball) => {
 
 const ballResultText = (ball) => {
   if (ball?.runText) return ball.runText;
+  if (ball?.wicketCancelled) return "no ball, wicket cancelled";
   if (ball?.isWicket) {
     const fielder = ball.fielderName || playerName(ball.fielder);
     const wicketType = labelize(ball.wicketType || "out");
@@ -717,6 +726,8 @@ const EnhancedMatchTabs = ({ match, matchId }) => {
   const [activeTab, setActiveTab] = useState("live");
   const [selectedInnings, setSelectedInnings] = useState(0);
   const [visibleOvers, setVisibleOvers] = useState(5);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const isMoreTab = MORE_TABS.some((tab) => tab.id === activeTab);
 
   const players = useMemo(() => collectPlayers(match), [match]);
   const currentInnings = currentInningsOf(match);
@@ -750,60 +761,102 @@ const EnhancedMatchTabs = ({ match, matchId }) => {
   const currentPartnership = (currentInnings?.partnerships || [])[(currentInnings?.partnerships || []).length - 1] || { runs: 0, balls: 0 };
 
   return (
-    <main className="min-h-screen bg-cric-bg text-cric-text">
+    <main className="min-h-screen bg-cric-bg text-cric-text overflow-x-hidden">
       <section className="bg-[#0b66c3] text-white shadow-sm">
-        <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8 py-2 sm:py-3">
+        <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3">
           <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] sm:text-xs font-bold uppercase tracking-[0.16em] text-blue-100">
-            <span>Live Scores</span>
-            <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 ${banner.tone}`}>
+            <span>{match.tournament?.name || match.matchType || "Live Cricket"}</span>
+            <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[9px] sm:text-[10px] ${banner.tone}`}>
               {banner.live && <span className="h-2 w-2 animate-pulse rounded-full bg-white" />}
               {banner.text}
             </span>
           </div>
-          <div className="mt-3 sm:mt-4 flex flex-col sm:grid sm:gap-4 sm:lg:grid-cols-[1fr_auto] sm:lg:items-end">
+          <div className="mt-3 sm:mt-4 grid gap-3 lg:grid-cols-[1fr_auto] lg:items-end">
             <div className="min-w-0">
-              <h1 className="text-base sm:text-xl lg:text-3xl font-black tracking-tight break-words">
+              <h1 className="text-base sm:text-xl lg:text-3xl font-black tracking-tight break-words leading-tight">
                 {longTeamName(match.teams?.[0])} vs {longTeamName(match.teams?.[1])}
               </h1>
-              <p className="mt-1 text-xs sm:text-sm text-blue-100">{match.venue || "Venue TBC"}</p>
-              <p className="text-[10px] sm:text-xs text-blue-200/80">{match.matchType || "Match"}</p>
-              {getResultLine(match) && <p className="mt-1 text-xs sm:text-sm font-semibold text-amber-100">{getResultLine(match)}</p>}
+              <p className="mt-1 text-xs sm:text-sm text-blue-100 break-words">{match.venue || "Venue TBC"}</p>
+              {getResultLine(match) && <p className="mt-1.5 text-xs sm:text-sm font-semibold text-amber-100">{getResultLine(match)}</p>}
             </div>
-            <div className="rounded-lg bg-cric-card px-4 sm:px-5 py-2.5 sm:py-3 text-right text-cric-text shadow-lg mt-2 sm:mt-0">
-              <div className="text-[9px] sm:text-xs font-black uppercase text-cric-muted truncate max-w-full">{longTeamName(battingTeam)}</div>
-              <div className="text-2xl sm:text-3xl lg:text-4xl font-black tabular-nums">
+            <div className="match-score-card rounded-xl bg-cric-card px-4 py-3 text-cric-text shadow-lg w-full sm:w-auto sm:min-w-[140px] lg:text-right">
+              <div className="text-[9px] sm:text-xs font-black uppercase text-cric-muted truncate">{longTeamName(battingTeam)}</div>
+              <div className="text-2xl sm:text-3xl lg:text-4xl font-black tabular-nums leading-none mt-0.5">
                 {number(currentInnings?.runs)}/{number(currentInnings?.wickets)}
               </div>
-              <div className="text-xs sm:text-sm font-bold text-cric-muted">
+              <div className="text-xs sm:text-sm font-bold text-cric-muted mt-1">
                 {formatOvers(currentInnings?.balls)} ov
-                {target > 0 && <span className="ml-1.5 text-orange-600 dark:text-orange-400 text-xs">T:{target}</span>}
+                {target > 0 && <span className="ml-1.5 text-orange-600 dark:text-orange-400">T:{target}</span>}
               </div>
+              {rrr && target > 0 && (
+                <div className="text-[10px] font-bold text-cric-muted mt-0.5">RRR {rrr}</div>
+              )}
             </div>
           </div>
         </div>
       </section>
 
-      <nav className="sticky top-0 z-30 border-b border-cric-border bg-cric-card/95 backdrop-blur">
-        <div className="no-scrollbar mx-auto flex max-w-7xl flex-nowrap gap-2 sm:gap-4 overflow-x-auto px-3 sm:px-6 lg:px-8">
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              className={`whitespace-nowrap border-b-2 px-1 sm:px-0 py-3 sm:py-4 text-[11px] sm:text-sm font-black transition shrink-0 ${
-                activeTab === tab.id ? "border-[#0b66c3] text-[#0b66c3]" : "border-transparent text-cric-muted hover:text-cric-text"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+      <nav className="sticky top-0 z-30 border-b border-cric-border bg-cric-card/95 backdrop-blur supports-[backdrop-filter]:bg-cric-card/90">
+        <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
+          <div className="no-scrollbar flex flex-nowrap items-center gap-1 sm:gap-2 overflow-x-auto">
+            {PRIMARY_TABS.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => { setActiveTab(tab.id); setMoreOpen(false); }}
+                className={`match-tab-btn whitespace-nowrap border-b-2 px-2.5 sm:px-3 py-3 text-[11px] sm:text-sm font-black transition shrink-0 ${
+                  activeTab === tab.id ? "border-[#0b66c3] text-[#0b66c3]" : "border-transparent text-cric-muted hover:text-cric-text"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+            <div className="relative shrink-0">
+              <button
+                type="button"
+                onClick={() => setMoreOpen((v) => !v)}
+                className={`match-tab-btn whitespace-nowrap border-b-2 px-2.5 sm:px-3 py-3 text-[11px] sm:text-sm font-black transition lg:hidden ${
+                  isMoreTab || moreOpen ? "border-[#0b66c3] text-[#0b66c3]" : "border-transparent text-cric-muted"
+                }`}
+              >
+                More {isMoreTab ? `· ${MORE_TABS.find((t) => t.id === activeTab)?.label}` : ""}
+              </button>
+              {moreOpen && (
+                <div className="absolute right-0 top-full z-40 mt-0 min-w-[160px] rounded-xl border border-cric-border bg-cric-card py-1 shadow-lg lg:hidden">
+                  {MORE_TABS.map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => { setActiveTab(tab.id); setMoreOpen(false); }}
+                      className={`block w-full px-4 py-2.5 text-left text-xs font-bold ${activeTab === tab.id ? "bg-cric-accent/10 text-cric-accent" : "text-cric-text hover:bg-cric-bg"}`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            {MORE_TABS.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`match-tab-btn hidden lg:inline-flex whitespace-nowrap border-b-2 px-2 sm:px-3 py-3 text-sm font-black transition shrink-0 ${
+                  activeTab === tab.id ? "border-[#0b66c3] text-[#0b66c3]" : "border-transparent text-cric-muted hover:text-cric-text"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
       </nav>
 
-      <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8 py-4 sm:py-5">
+      <div className="mx-auto max-w-7xl w-full min-w-0 px-3 sm:px-6 lg:px-8 py-4 sm:py-5">
         {activeTab === "live" && (
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
-            <section className="space-y-4">
+          <div className="grid gap-4 lg:gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+            <section className="space-y-3 sm:space-y-4 min-w-0">
+              <div className="match-card">
               <ScoreSummary
                 innings={currentInnings}
                 battingTeam={battingTeam}
@@ -819,6 +872,8 @@ const EnhancedMatchTabs = ({ match, matchId }) => {
                 strikerId={strikerId}
                 players={players}
               />
+              </div>
+              <div className="match-card match-table-scroll">
               <CurrentPlayers
                 striker={striker}
                 nonStriker={nonStriker}
@@ -827,12 +882,17 @@ const EnhancedMatchTabs = ({ match, matchId }) => {
                 players={players}
                 innings={currentInnings}
               />
+              </div>
+              <div className="match-card">
               <RecentBalls overs={recentOvers} />
+              </div>
+              <div className="match-card">
               <CommentaryPreview overs={commentaryOvers} players={players} onSwitchTab={setActiveTab} />
+              </div>
             </section>
-            <aside className="space-y-4">
-              <MiniInfo match={match} />
-              <ScoreBreakdown match={match} />
+            <aside className="space-y-3 sm:space-y-4 min-w-0">
+              <div className="match-card"><MiniInfo match={match} /></div>
+              <div className="match-card"><ScoreBreakdown match={match} /></div>
             </aside>
           </div>
         )}
@@ -888,7 +948,7 @@ function ScoreSummary({ innings, battingTeam, bowlingTeam, crr, rrr, target, tot
   const remainingBalls = target ? Math.max(number(totalOvers) * 6 - number(innings?.balls), 0) : 0;
 
   return (
-    <div className="border-b border-cric-border bg-cric-card pb-3 sm:pb-4">
+    <div className="pb-1 sm:pb-2">
       <div className="flex flex-wrap items-end justify-between gap-2 sm:gap-4">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-red-600">
@@ -962,9 +1022,9 @@ function CurrentPlayers({ striker, nonStriker, bowler, strikerId, players, innin
   const bowlerRows = [bowler, previousBowler].filter(Boolean);
 
   return (
-    <div className="overflow-hidden border-b border-cric-border bg-cric-card">
-      <div className="overflow-x-auto no-scrollbar">
-        <table className="w-full min-w-[600px] text-xs sm:text-sm text-left">
+    <div className="overflow-hidden">
+      <div className="overflow-x-auto match-table-scroll">
+        <table className="w-full min-w-[360px] sm:min-w-[520px] text-xs sm:text-sm text-left">
           <thead className="bg-cric-bg text-[10px] sm:text-[11px] font-black uppercase tracking-[0.18em] text-cric-muted">
             <tr>
               <th className="px-2 sm:px-3 py-1.5 sm:py-2">Batters</th>
@@ -1268,7 +1328,7 @@ function ScorecardTab({ match, innings, selectedInnings, setSelectedInnings, bat
           <div className="text-sm sm:text-base font-black tabular-nums text-cric-text">{number(innings?.runs)}/{number(innings?.wickets)} <span className="text-xs font-bold text-cric-muted">({formatOvers(innings?.balls)} ov)</span></div>
         </div>
         <div className="overflow-x-auto no-scrollbar">
-          <table className="w-full min-w-[600px] text-left text-xs sm:text-sm">
+          <table className="w-full min-w-[400px] sm:min-w-[600px] text-left text-xs sm:text-sm">
             <thead className="bg-cric-bg text-[10px] sm:text-[11px] uppercase tracking-widest text-cric-muted">
               <tr>
                 <th className="px-2 sm:px-4 py-2 sm:py-3">Batter</th>
@@ -1276,9 +1336,9 @@ function ScorecardTab({ match, innings, selectedInnings, setSelectedInnings, bat
                 <th className="hidden sm:table-cell px-2 sm:px-4 py-2 sm:py-3">Bowler</th>
                 <th className="px-1 sm:px-3 py-2 sm:py-3 text-right">R</th>
                 <th className="px-1 sm:px-3 py-2 sm:py-3 text-right">B</th>
-                <th className="hidden sm:table-cell px-1 sm:px-3 py-2 sm:py-3 text-right">4s</th>
-                <th className="hidden sm:table-cell px-1 sm:px-3 py-2 sm:py-3 text-right">6s</th>
-                <th className="hidden md:table-cell px-2 sm:px-4 py-2 sm:py-3 text-right">SR</th>
+                <th className="px-1 sm:px-3 py-2 sm:py-3 text-right">4s</th>
+                <th className="px-1 sm:px-3 py-2 sm:py-3 text-right">6s</th>
+                <th className="px-2 sm:px-4 py-2 sm:py-3 text-right">SR</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-cric-border">
@@ -1291,9 +1351,9 @@ function ScorecardTab({ match, innings, selectedInnings, setSelectedInnings, bat
                     <td className="hidden sm:table-cell px-2 sm:px-4 py-2 sm:py-3 text-cric-muted">{dismissal.bowler}</td>
                     <td className="px-1 sm:px-3 py-2 sm:py-3 text-right font-black tabular-nums text-cric-text">{number(row.runs)}</td>
                     <td className="px-1 sm:px-3 py-2 sm:py-3 text-right tabular-nums text-cric-muted">{number(row.balls)}</td>
-                    <td className="hidden sm:table-cell px-1 sm:px-3 py-2 sm:py-3 text-right tabular-nums text-cric-muted">{number(row.fours)}</td>
-                    <td className="hidden sm:table-cell px-1 sm:px-3 py-2 sm:py-3 text-right tabular-nums text-cric-muted">{number(row.sixes)}</td>
-                    <td className="hidden md:table-cell px-2 sm:px-4 py-2 sm:py-3 text-right tabular-nums text-cric-muted">{row.strikeRate ? number(row.strikeRate).toFixed(2) : strikeRate(row.runs, row.balls)}</td>
+                    <td className="px-1 sm:px-3 py-2 sm:py-3 text-right tabular-nums text-cric-muted">{number(row.fours)}</td>
+                    <td className="px-1 sm:px-3 py-2 sm:py-3 text-right tabular-nums text-cric-muted">{number(row.sixes)}</td>
+                    <td className="px-2 sm:px-4 py-2 sm:py-3 text-right tabular-nums text-cric-muted">{row.strikeRate ? number(row.strikeRate).toFixed(2) : strikeRate(row.runs, row.balls)}</td>
                   </tr>
                 );
               })}
@@ -1340,7 +1400,7 @@ function ScorecardTab({ match, innings, selectedInnings, setSelectedInnings, bat
       <div className="overflow-hidden rounded-xl bg-cric-card shadow-sm ring-1 ring-cric-border">
         <div className="border-b border-cric-border bg-cric-bg px-3 sm:px-4 py-2 sm:py-3 font-black text-sm sm:text-base text-cric-text">Bowling</div>
         <div className="overflow-x-auto no-scrollbar">
-          <table className="w-full min-w-[580px] text-left text-xs sm:text-sm">
+          <table className="w-full min-w-[400px] sm:min-w-[580px] text-left text-xs sm:text-sm">
             <thead className="bg-cric-bg text-[10px] sm:text-[11px] uppercase tracking-widest text-cric-muted">
               <tr>
                 <th className="px-2 sm:px-4 py-2 sm:py-3">Bowler</th>
@@ -1378,18 +1438,21 @@ function ScorecardTab({ match, innings, selectedInnings, setSelectedInnings, bat
 
 function BallBadge({ ball, small = false }) {
   const isWicket = ball.isWicket;
-  const notation = isWicket ? "W" : (ball.runs === 0 && !ball.isWide && !ball.isNoBall) ? "\u2022" : String(ball.runs || 0);
+  const wc = ball.wicketCancelled;
+  const notation = wc ? "Nb" : isWicket ? "W" : (ball.runs === 0 && !ball.isWide && !ball.isNoBall) ? "\u2022" : String(ball.runs || 0);
   const isFour = ball.runs === 4 && !ball.isWide && !ball.isNoBall && !ball.isWicket;
   const isSix = ball.runs === 6 && !ball.isWide && !ball.isNoBall && !ball.isWicket;
   const isWide = ball.isWide;
   const isNoBall = ball.isNoBall;
   const base = small ? "w-5 h-5 sm:w-6 sm:h-6 text-[8px] sm:text-[9px] rounded" : "w-8 h-8 sm:w-9 sm:h-9 text-[11px] sm:text-xs rounded-lg";
-  const color = isWicket
-    ? "bg-red-600 text-white"
-    : isSix ? "bg-purple-600 text-white"
-      : isFour ? "bg-cric-accent text-white"
-        : (isWide || isNoBall) ? "bg-amber-500 text-white"
-          : "bg-cric-border text-cric-muted";
+  const color = wc
+    ? "bg-orange-600 text-white ring-2 ring-red-500"
+    : isWicket
+      ? "bg-red-600 text-white"
+      : isSix ? "bg-purple-600 text-white"
+        : isFour ? "bg-cric-accent text-white"
+          : (isWide || isNoBall) ? "bg-amber-500 text-white"
+            : "bg-cric-border text-cric-muted";
   return (
     <div className={`${base} ${color} flex items-center justify-center font-black shrink-0 shadow-sm`}>
       {notation}
@@ -2112,43 +2175,40 @@ function GraphsTab({ match, matchId, innings }) {
   const inn2 = match?.innings?.[1];
 
   return (
-    <div className="space-y-6 sm:space-y-8">
-      {/* Manhattan Graph */}
-      <section>
+    <div className="space-y-4 sm:space-y-6">
+      <section className="match-card">
         <h3 className="text-xs sm:text-sm font-black text-cric-text mb-2 sm:mb-3 flex items-center gap-1.5 sm:gap-2">
           <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-indigo-500"></span>
           Runs Per Over (Manhattan)
         </h3>
-        <ManhattanGraph match={match} innings={0} />
+        <ResponsiveGraphWrap><ManhattanGraph match={match} innings={0} /></ResponsiveGraphWrap>
       </section>
 
-      {/* Worm Graph */}
-      <section>
+      <section className="match-card">
         <h3 className="text-xs sm:text-sm font-black text-cric-text mb-2 sm:mb-3 flex items-center gap-1.5 sm:gap-2">
           <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-amber-500"></span>
           Innings Progression (Worm)
         </h3>
-        <WormGraph match={match} />
+        <ResponsiveGraphWrap><WormGraph match={match} /></ResponsiveGraphWrap>
       </section>
 
-      {/* Run Rate Graph */}
       {inn2 && (
-        <section>
+        <section className="match-card">
           <h3 className="text-xs sm:text-sm font-black text-cric-text mb-2 sm:mb-3 flex items-center gap-1.5 sm:gap-2">
             <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-500"></span>
             Run Rate Comparison
           </h3>
-          <RunRateGraph match={match} />
+          <ResponsiveGraphWrap><RunRateGraph match={match} /></ResponsiveGraphWrap>
         </section>
       )}
 
-      {/* Win Probability */}
       {graphData.winProbability?.length > 0 && (
-        <section>
+        <section className="match-card">
           <h3 className="text-xs sm:text-sm font-black text-cric-text mb-2 sm:mb-3 flex items-center gap-1.5 sm:gap-2">
             <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-rose-500"></span>
             Win Probability
           </h3>
+          <ResponsiveGraphWrap>
           <WinProbabilityChart
             winProbHistory={graphData.winProbability}
             currentBattingProb={graphData.winProbability[graphData.winProbability.length - 1]?.team1 || 50}
@@ -2156,21 +2216,19 @@ function GraphsTab({ match, matchId, innings }) {
             battingTeamName={inn2?.team?.name || match?.teams?.[0]?.name || "Team 1"}
             bowlingTeamName={inn1?.team?.name || match?.teams?.[1]?.name || "Team 2"}
           />
+          </ResponsiveGraphWrap>
         </section>
       )}
 
-      {/* Wagon Zone */}
-      <section>
+      <section className="match-card">
         <h3 className="text-xs sm:text-sm font-black text-cric-text mb-2 sm:mb-3 flex items-center gap-1.5 sm:gap-2">
           <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-purple-500"></span>
           Shot Zone Analysis
         </h3>
-        <WagonZone matchId={matchId || match._id} match={match} innings={match.currentInnings || 0} />
+        <ResponsiveGraphWrap><WagonZone matchId={matchId || match._id} match={match} innings={match.currentInnings || 0} /></ResponsiveGraphWrap>
       </section>
     </div>
   );
 }
 
 export default EnhancedMatchTabs;
-
-

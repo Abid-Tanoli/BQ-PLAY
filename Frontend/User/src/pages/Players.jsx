@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import Header from "../components/Header";
 import PlayerCard from "../components/PlayerCard";
 import { getStoredUser, logout as doLogout } from "../pages/auth/auth";
+import { api } from "../services/api";
 
 export default function Players() {
   const [searchParams] = useSearchParams();
@@ -24,9 +25,8 @@ export default function Players() {
     setAuthUser(user);
 
     // Fetch Teams for the filter dropdown
-    fetch(`${import.meta.env.VITE_API_URL}/teams`)
-      .then(res => res.json())
-      .then(data => setTeams(Array.isArray(data) ? data : []))
+    api.get("/teams")
+      .then(res => setTeams(Array.isArray(res.data) ? res.data : []))
       .catch(err => console.error("Failed to fetch teams:", err));
 
     // Initial fetch of players
@@ -37,22 +37,20 @@ export default function Players() {
     fetchPlayers();
   }, [filterTeam, filterRole, filterCampus]);
 
-  const fetchPlayers = () => {
+  const fetchPlayers = async () => {
     setLoading(true);
-    let url = `${import.meta.env.VITE_API_URL}/players?limit=100`;
-    if (filterTeam) url += `&team=${filterTeam}`;
-    if (filterCampus) url += `&Campus=${filterCampus}`;
-
-    fetch(url)
-      .then(res => res.json())
-      .then(data => {
-        setPlayers(Array.isArray(data.players) ? data.players : (Array.isArray(data) ? data : []));
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error("Failed to fetch players:", err);
-        setLoading(false);
-      });
+    try {
+      const params = { limit: 100 };
+      if (filterTeam) params.team = filterTeam;
+      if (filterCampus) params.Campus = filterCampus;
+      const res = await api.get("/players", { params });
+      const data = res.data;
+      setPlayers(Array.isArray(data.players) ? data.players : (Array.isArray(data) ? data : []));
+    } catch (err) {
+      console.error("Failed to fetch players:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleLogout = () => { doLogout(); setAuthUser(null); };

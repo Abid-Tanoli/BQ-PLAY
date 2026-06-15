@@ -3,15 +3,16 @@ import { orderedBallsForDisplay } from "../../../Shared/components/RecentBallsSt
 
 // Ball notation badge
 function BallBadge({ ball, small = false }) {
-    const isWicket = ball.isWicket;
+    const isWicket = ball.isWicket || ball.wicketCancelled;
     const isLegBye = ball.isLegBye;
     const isBye = ball.isBye;
-    const notation = isWicket ? "W"
-        : ball.isWide ? "Wd"
-            : ball.isNoBall ? "Nb"
-                : isLegBye ? "LB"
-                    : isBye ? "B"
-                        : (ball.runs === 0 && !ball.isWide && !ball.isNoBall) ? "•" : String(ball.runs || 0);
+    const notation = ball.wicketCancelled ? "Nb"
+        : isWicket ? "W"
+            : ball.isWide ? "Wd"
+                : ball.isNoBall ? "Nb"
+                    : isLegBye ? "LB"
+                        : isBye ? "B"
+                            : (ball.runs === 0 && !ball.isWide && !ball.isNoBall) ? "•" : String(ball.runs || 0);
 
     const isFour = ball.runs === 4 && !ball.isWide && !ball.isNoBall && !ball.isWicket && !isLegBye && !isBye;
     const isSix = ball.runs === 6 && !ball.isWide && !ball.isNoBall && !ball.isWicket && !isLegBye && !isBye;
@@ -19,12 +20,14 @@ function BallBadge({ ball, small = false }) {
     const isNoBall = ball.isNoBall;
 
     const base = small ? "w-7 h-7 text-[10px]" : "w-9 h-9 text-xs";
-    const color = isWicket
-        ? "bg-red-600 text-white shadow-red-500/40"
-        : isSix ? "bg-purple-600 text-white shadow-purple-500/40"
-            : isFour ? "bg-cric-accent text-white shadow-cric-accent/40"
-                : (isWide || isNoBall || isLegBye || isBye) ? "bg-amber-500 text-white shadow-amber-500/40"
-                    : "bg-white/10 text-slate-300 shadow-white/5";
+    const color = ball.wicketCancelled
+        ? "bg-orange-600 text-white shadow-orange-500/40 ring-2 ring-red-500"
+        : isWicket
+            ? "bg-red-600 text-white shadow-red-500/40"
+            : isSix ? "bg-purple-600 text-white shadow-purple-500/40"
+                : isFour ? "bg-cric-accent text-white shadow-cric-accent/40"
+                    : (isWide || isNoBall || isLegBye || isBye) ? "bg-amber-500 text-white shadow-amber-500/40"
+                        : "bg-white/10 text-slate-300 shadow-white/5";
 
     return (
         <div className={`${base} ${color} rounded-lg flex items-center justify-center font-black shrink-0 shadow`}>
@@ -42,17 +45,19 @@ function fmtOver(totalBalls) {
 
 // Header for one ball
 function BallHeader({ ball, overNum, ballNum, onEdit }) {
-    const notation = ball.notation || (ball.isWicket ? "W" : ball.runs === 0 ? "•" : String(ball.runs));
-    const typeLabel = ball.isWicket
-        ? ball.wicketType?.toUpperCase() || "WICKET"
-        : ball.isWide ? `${ball.runs + 1} WIDE`
-            : ball.isNoBall ? `NB+${ball.runs}`
-                : ball.isBye ? "BYE"
-                    : ball.isLegBye ? "LEG BYE"
-                        : ball.runs === 4 ? "FOUR"
-                            : ball.runs === 6 ? "SIX"
-                                : ball.runs === 0 ? "DOT"
-                                    : `${ball.runs} RUN${ball.runs !== 1 ? "S" : ""}`;
+    const notation = ball.notation || (ball.wicketCancelled ? "Nb" : ball.isWicket ? "W" : ball.runs === 0 ? "•" : String(ball.runs));
+    const typeLabel = ball.wicketCancelled
+        ? "NB, WICKET CANCELLED"
+        : ball.isWicket
+            ? ball.wicketType?.toUpperCase() || "WICKET"
+            : ball.isWide ? `${ball.runs + 1} WIDE`
+                : ball.isNoBall ? `NB+${ball.runs}`
+                    : ball.isBye ? "BYE"
+                        : ball.isLegBye ? "LEG BYE"
+                            : ball.runs === 4 ? "FOUR"
+                                : ball.runs === 6 ? "SIX"
+                                    : ball.runs === 0 ? "DOT"
+                                        : `${ball.runs} RUN${ball.runs !== 1 ? "S" : ""}`;
 
     return (
         <div className="flex items-center gap-3 group">
@@ -62,6 +67,7 @@ function BallHeader({ ball, overNum, ballNum, onEdit }) {
                     <span className="text-slate-900 font-bold text-sm leading-tight">
                         {overNum}.{ballNum} {ball.bowlerName || 'Bowler'} to {ball.batsmanName || 'Batsman'}, {(() => {
                             const runs = ball.runs || 0;
+                            if (ball.wicketCancelled) return "no ball, wicket cancelled";
                             if (ball.isWicket) return "OUT!";
                             if (ball.isWide) return "wide";
                             if (ball.isNoBall) return "no ball";
@@ -157,6 +163,16 @@ function OverBlock({ over, balls, onEdit, showReadMore, onReadMore, allPlayers }
                             ballNum={ball.displayBallNumber || ball.ballNumber}
                             onEdit={onEdit}
                         />
+                        {ball.wicketCancelled && (
+                            <div className="ml-12 mt-2 flex gap-2">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-black bg-red-500/20 text-red-400 uppercase tracking-wider">Wicket cancelled</span>
+                            </div>
+                        )}
+                        {ball.freeHitNext && (
+                            <div className="ml-12 mt-1 flex gap-2">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-black bg-purple-500/20 text-purple-400 uppercase tracking-wider">Free Hit next</span>
+                            </div>
+                        )}
                         {(ball.vividCommentary || ball.commentary) && (
                             <div className="ml-12 mt-2">
                                 <p className="text-[12px] text-slate-600 italic leading-relaxed">
@@ -206,6 +222,8 @@ function EditBallModal({ ball, overNum, ballNum, displayBallNum, onSave, onClose
             isLegBye: extra === "LEG BYE",
             isWicket: !!wicket,
             wicketType: wicket,
+            wicketCancelled: false,
+            freeHitNext: false,
             commentary,
             vividCommentary
         });

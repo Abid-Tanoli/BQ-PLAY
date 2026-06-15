@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { register } from '../pages/auth/auth';
-import PlayerForm from './PlayerForm';
+import PlayerForm from '@shared/components/PlayerForm';
 
 const accountTypes = [
   {

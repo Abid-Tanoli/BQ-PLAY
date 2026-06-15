@@ -3,11 +3,21 @@ import { Server } from "socket.io";
 let io;
 
 const matchRoom = (matchId) => `match-${matchId}`;
+const configuredCorsOrigins = (process.env.CORS_ORIGINS || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+const shouldLogSocket = () => process.env.LOG_SOCKET === "true";
 
 export const initSocket = (server) => {
   io = new Server(server, {
     cors: {
-      origin: true,
+      origin: configuredCorsOrigins.length
+        ? (origin, callback) => {
+            if (!origin || configuredCorsOrigins.includes(origin)) return callback(null, true);
+            return callback(new Error("Not allowed by CORS"));
+          }
+        : true,
       methods: ["GET", "POST", "PUT", "DELETE"],
       credentials: true
     },
@@ -20,30 +30,52 @@ export const initSocket = (server) => {
 
   io.on("connection", (socket) => {
     const clientIp = socket.handshake.address;
-    console.log(`[SOCKET] connect  id=${socket.id} ip=${clientIp} transport=${socket.conn.transport.name}`);
+    if (shouldLogSocket()) {
+      console.log(`[SOCKET] connect  id=${socket.id} ip=${clientIp} transport=${socket.conn.transport.name}`);
+    }
 
     socket.conn.on("upgrade", (transport) => {
-      console.log(`[SOCKET] upgrade  id=${socket.id} transport=${transport.name}`);
+      if (shouldLogSocket()) {
+        console.log(`[SOCKET] upgrade  id=${socket.id} transport=${transport.name}`);
+      }
     });
 
     socket.on("joinRoom", (roomId) => {
       socket.join(roomId);
-      console.log(`[SOCKET] join     id=${socket.id} room=${roomId}`);
+      if (shouldLogSocket()) {
+        console.log(`[SOCKET] join     id=${socket.id} room=${roomId}`);
+      }
     });
 
     socket.on("leaveRoom", (roomId) => {
       socket.leave(roomId);
     });
 
-    socket.on("join-match", (matchId) => {
+    const joinAllMatchRooms = (matchId) => {
+      if (!matchId) return;
       socket.join(matchRoom(matchId));
-      socket.join(matchId);
-      console.log(`[SOCKET] join     id=${socket.id} match=${matchId}`);
+      socket.join(String(matchId));
+      socket.join(`imatch_${matchId}`);
+      socket.join(`m_${matchId}`);
+    };
+
+    const leaveAllMatchRooms = (matchId) => {
+      if (!matchId) return;
+      socket.leave(matchRoom(matchId));
+      socket.leave(String(matchId));
+      socket.leave(`imatch_${matchId}`);
+      socket.leave(`m_${matchId}`);
+    };
+
+    socket.on("join-match", (matchId) => {
+      joinAllMatchRooms(matchId);
+      if (shouldLogSocket()) {
+        console.log(`[SOCKET] join     id=${socket.id} match=${matchId}`);
+      }
     });
 
     socket.on("leave-match", (matchId) => {
-      socket.leave(matchRoom(matchId));
-      socket.leave(matchId);
+      leaveAllMatchRooms(matchId);
     });
 
     socket.on("join-teams", () => { socket.join("teams"); });
@@ -51,45 +83,27 @@ export const initSocket = (server) => {
     socket.on("join-cricket-live", () => { socket.join("cricket-live"); });
 
     socket.on("JOIN_IMATCH", ({ matchId, id } = {}) => {
-      const roomId = matchId || id;
-      if (!roomId) return;
-      socket.join(`imatch_${roomId}`);
-      socket.join(`m_${roomId}`);
+      joinAllMatchRooms(matchId || id);
     });
 
     socket.on("LEAVE_IMATCH", ({ matchId, id } = {}) => {
-      const roomId = matchId || id;
-      if (!roomId) return;
-      socket.leave(`imatch_${roomId}`);
-      socket.leave(`m_${roomId}`);
+      leaveAllMatchRooms(matchId || id);
     });
 
     socket.on("JOIN_MATCH", ({ matchId, id } = {}) => {
-      const roomId = matchId || id;
-      if (!roomId) return;
-      socket.join(`imatch_${roomId}`);
-      socket.join(`m_${roomId}`);
+      joinAllMatchRooms(matchId || id);
     });
 
     socket.on("LEAVE_MATCH", ({ matchId, id } = {}) => {
-      const roomId = matchId || id;
-      if (!roomId) return;
-      socket.leave(`imatch_${roomId}`);
-      socket.leave(`m_${roomId}`);
+      leaveAllMatchRooms(matchId || id);
     });
 
     socket.on("JOIN", ({ matchId, id } = {}) => {
-      const roomId = matchId || id;
-      if (!roomId) return;
-      socket.join(`imatch_${roomId}`);
-      socket.join(`m_${roomId}`);
+      joinAllMatchRooms(matchId || id);
     });
 
     socket.on("LEAVE", ({ matchId, id } = {}) => {
-      const roomId = matchId || id;
-      if (!roomId) return;
-      socket.leave(`imatch_${roomId}`);
-      socket.leave(`m_${roomId}`);
+      leaveAllMatchRooms(matchId || id);
     });
 
     socket.on("match:updateList", () => {
@@ -97,11 +111,13 @@ export const initSocket = (server) => {
     });
 
     socket.on("disconnect", (reason) => {
-      console.log(`[SOCKET] disconnect id=${socket.id} reason=${reason}`);
+      if (shouldLogSocket()) {
+        console.log(`[SOCKET] disconnect id=${socket.id} reason=${reason}`);
+      }
     });
   });
 
-  console.log("✅ Socket.IO initialized successfully (websocket-only)");
+  console.log("Socket.IO initialized successfully (websocket-only)");
   return io;
 };
 
@@ -117,36 +133,48 @@ export const getIO = () => {
 export function emitBallRecorded(matchId, data) {
   if (!io) return;
   const payload = { matchId, ...data };
-  io.to(matchRoom(matchId)).emit("ball:recorded", payload);
-  console.log(`[SOCKET] emit     match=${matchId} event=ball:recorded striker=${data.strikerId} runs=${data.runs}`);
+  io.to(matchRoom(matchId)).to(String(matchId)).emit("ball:recorded", payload);
+  io.emit("match:ballUpdate", payload);
+  io.emit("match:updated", { matchId });
+  if (shouldLogSocket()) {
+    console.log(`[SOCKET] emit     match=${matchId} event=ball:recorded striker=${data.strikerId} runs=${data.runs}`);
+  }
 }
 
 export function emitScoreUpdate(matchId, data) {
   if (!io) return;
-  io.to(matchRoom(matchId)).emit("score:update", { matchId, ...data });
+  const payload = { matchId, ...data };
+  io.to(matchRoom(matchId)).to(String(matchId)).emit("score:update", payload);
+  io.emit("match:scoreUpdate", payload);
+  io.emit("match:updated", { matchId });
 }
 
 export function emitStrikeChanged(matchId, data) {
   if (!io) return;
-  io.to(matchRoom(matchId)).emit("strike:changed", { matchId, ...data });
-  console.log(`[SOCKET] emit     match=${matchId} event=strike:changed striker=${data.strikerId} nonStriker=${data.nonStrikerId}`);
+  io.to(matchRoom(matchId)).to(String(matchId)).emit("strike:changed", { matchId, ...data });
+  if (shouldLogSocket()) {
+    console.log(`[SOCKET] emit     match=${matchId} event=strike:changed striker=${data.strikerId} nonStriker=${data.nonStrikerId}`);
+  }
 }
 
 export function emitOverCompleted(matchId, data) {
   if (!io) return;
-  io.to(matchRoom(matchId)).emit("over:completed", { matchId, ...data });
-  console.log(`[SOCKET] emit     match=${matchId} event=over:completed over=${data.overNumber}`);
+  io.to(matchRoom(matchId)).to(String(matchId)).emit("over:completed", { matchId, ...data });
+  if (shouldLogSocket()) {
+    console.log(`[SOCKET] emit     match=${matchId} event=over:completed over=${data.overNumber}`);
+  }
 }
 
 export function emitInningsEnd(matchId, data) {
   if (!io) return;
-  io.to(matchRoom(matchId)).emit("innings:end", { matchId, ...data });
+  io.to(matchRoom(matchId)).to(String(matchId)).emit("innings:end", { matchId, ...data });
 }
 
 export function emitMatchEnd(matchId, data) {
   if (!io) return;
-  io.to(matchRoom(matchId)).emit("match:end", { matchId, ...data });
+  io.to(matchRoom(matchId)).to(String(matchId)).emit("match:end", { matchId, ...data });
   io.emit("match:updateList");
+  io.emit("match:updated", { matchId });
 }
 
 export function emitWicketAlert(matchId, data) {
