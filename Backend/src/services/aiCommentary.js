@@ -234,6 +234,10 @@ function buildStructuredCommentary(data) {
     };
   }
 
+  const deliveryBase = `${lengthText} ball ${lineText}, ${moveText}`;
+  const shotAction = `plays the ${shotText}`;
+  const shotDir = `toward ${dir}`;
+
   // Free Hit delivery — lead with Free Hit tag
   if (isFreeHit && !isWide && !isNoBall) {
     const fhTag = "Free Hit —";
@@ -264,9 +268,6 @@ function buildStructuredCommentary(data) {
 
   // ─── MAIN TEMPLATE ────────────────────────────────────────────
 
-  const deliveryBase = `${lengthText} ball ${lineText}, ${moveText}`;
-  const shotAction = `plays the ${shotText}`;
-  const shotDir = `toward ${dir}`;
   const wkType = normalizeKey(wicketType);
 
   let vivid;
