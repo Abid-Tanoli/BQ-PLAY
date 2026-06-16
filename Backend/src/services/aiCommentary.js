@@ -49,6 +49,84 @@ const WICKET_WORDS = {
   "hit-wicket": "HIT WICKET! Knocks the stumps over!",
 };
 
+// ─── TEMPLATE VARIATION HELPERS ───────────────────────────────────
+
+const _pick = (arr, seed) => arr[Math.abs([...(seed || "")].reduce((a, c) => a + c.charCodeAt(0), 0)) % arr.length];
+
+const DOT_ENDINGS = [
+  "dot ball, tight bowling.",
+  "no run, well bowled.",
+  "good defence from the batter.",
+  "nothing doing, played back to the bowler.",
+  "safely defended on the front foot.",
+  "dot ball, building pressure.",
+  "dead bat, no run.",
+  "pushed back down the pitch, no run.",
+];
+const BOUNDARY_OPENERS = [
+  "That raced away to the fence!",
+  "Clean strike through the line!",
+  "Elegant shot, timed perfectly!",
+  "CRACK! Sweet sound off the middle!",
+  "That's timed beautifully, no chance for the fielder!",
+  "Superb placement, finds the gap!",
+  "Thumped through the covers, FOUR!",
+];
+const SIX_OPENERS = [
+  "BIG! Gone all the way into the stands!",
+  "Clears the ropes with absolute ease!",
+  "Launched into the crowd, massive hit!",
+  "Maximum! That is out of here!",
+  "That's a massive hit, straight into the stratosphere!",
+  "Into the stands! The crowd goes wild!",
+  "Flat and hard, clean over the rope!",
+];
+const SINGLE_OPENERS = [
+  "Quick single, well judged.",
+  "Pushed into the gap for a single.",
+  "Rotates the strike, easy single.",
+  "One run, good running between the wickets.",
+  "Tapped softly, they take the single.",
+  "Works it into the leg side for one.",
+];
+const DOUBLE_OPENERS = [
+  "Two runs! Excellent running, come back for the second.",
+  "Nicely placed, they scamper back for two.",
+  "Good running, they push for the second and make it comfortably.",
+  "Two! Punched through the gap and they return for the second.",
+  "They turn for two, alert running from both batters.",
+];
+const TRIPLE_OPENERS = [
+  "Three runs! Brilliant running, they push hard for the third.",
+  "Excellent placement and even better running — three taken!",
+  "THREE! They keep the scoreboard ticking with smart running.",
+  "Gap found, they run hard and convert into three.",
+];
+const MISSED_SHOTS = [
+  "beaten by the movement outside off!",
+  "plays and misses, close call!",
+  "through to the keeper, beaten all ends up.",
+  "pushes forward but beaten on the outside edge.",
+  "fends at it but the ball zips past the bat.",
+  "caught in two minds, the ball sails past the edge.",
+];
+const PRESSURE_PHRASES = [
+  "Pressure building here in the middle.",
+  "Drama on the field at a crucial stage!",
+  "Tension is rising, every ball matters now.",
+  "The crowd senses a big moment brewing.",
+  "This is a crucial phase of the match.",
+  "The game hanging in the balance here.",
+  "Big moment in the match, all eyes on the middle.",
+];
+const APPEAL_PHRASES = [
+  "Huge appeal from the fielding side!",
+  "The fielders go up in unison!",
+  "Appeal turned down, umpire not interested.",
+  "Close call! The umpire says not out.",
+  "Loud shout! The keeper joins in the appeal.",
+];
+
 const labelize = (value) =>
   String(value || "")
     .replace(/_/g, " ")
@@ -66,6 +144,9 @@ function buildStructuredCommentary(data) {
     runs = 0,
     isWide = false,
     isNoBall = false,
+    isBye = false,
+    isLegBye = false,
+    isFreeHit = false,
     isWicket = false,
     wicketType = "",
     wicketCancelled = false,
@@ -83,6 +164,7 @@ function buildStructuredCommentary(data) {
     fieldingZone = "",
     nearestPosition = "",
     zone = "",
+    isAppeal = false,
   } = data;
 
   const shotTypeFinal = shotType || shotName || "shot";
@@ -107,38 +189,140 @@ function buildStructuredCommentary(data) {
   // Handle extras differently — pitch details may not apply
   if (isWide) {
     const wideDesc = lineText !== "on the stumps" ? `down ${lineText}` : "down the leg side";
+    const wideVivid = `Wide delivery ${wideDesc}, ${moveText}. ${batsmanName} lets it go, called wide by the umpire.`;
     return {
       short: `${bowlerName} to ${batsmanName}, ${outcomeText}`,
-      vivid: `Wide delivery ${wideDesc}, ${moveText}. ${batsmanName} lets it go, called wide by the umpire.`,
+      vivid: freeHitNext ? `${wideVivid} Free Hit coming up!` : wideVivid,
     };
   }
   if (wicketCancelled) {
-    const freeHitLine = freeHitNext ? " Free Hit is coming next ball." : "";
-    const wicketDesc = lookup(WICKET_WORDS, normalizeKey(wicketType), "OUT!").toLowerCase();
+    const freeHitLine = freeHitNext ? " Free Hit coming up!" : "";
     return {
       short: `${bowlerName} to ${batsmanName}, ${outcomeText}`,
-      vivid: `${lengthText} ball ${lineText}, ${moveText} — ${batsmanName} plays the ${shotText}, sends it toward ${dir}. ${wicketDesc} But wait — it is a NO BALL! Wicket cancelled, ${batsmanName} survives. One extra run added.${freeHitLine}`,
+      vivid: `Drama on the field! ${batsmanName} looked gone, but it is a NO BALL. Wicket cancelled, ${batsmanName} survives. One extra added.${freeHitLine}`,
     };
   }
   if (isNoBall) {
-    const freeHitLine = freeHitNext ? " Free Hit is coming next ball." : "";
+    const freeHitLine = freeHitNext ? " Free Hit is coming next ball!" : "";
     if (runs === 0) {
+      const noBallVivid = `${lengthText} ball ${lineText}, ${moveText} — ${batsmanName} swings but fails to connect. No ball called.${freeHitLine}`;
       return {
         short: `${bowlerName} to ${batsmanName}, ${outcomeText}`,
-        vivid: `${lengthText} ball ${lineText}, ${moveText} — ${batsmanName} swings but fails to connect. No ball called.${freeHitLine}`,
+        vivid: noBallVivid,
       };
     }
     const runDesc = runs === 4 ? "FOUR!" : runs === 6 ? "SIX!" : `${runs} run${runs !== 1 ? 's' : ''}`;
+    const noBallVivid = `${batsmanName} gets ${runDesc} on a no ball! ${lengthText} ball ${lineText}, ${moveText}.${freeHitLine}`;
     return {
       short: `${bowlerName} to ${batsmanName}, ${outcomeText}, ${runs} run${runs !== 1 ? 's' : ''}`,
-      vivid: `${lengthText} ball ${lineText}, ${moveText} — ${batsmanName} gets ${runDesc} on a no ball.${freeHitLine}`,
+      vivid: noBallVivid,
+    };
+  }
+
+  if (isBye) {
+    const runDesc = runs === 4 ? "FOUR!" : runs === 6 ? "SIX!" : `${runs} run${runs !== 1 ? 's' : ''}`;
+    return {
+      short: `${bowlerName} to ${batsmanName}, ${lengthText.toLowerCase()} ${lineText}, byes, ${runs} run${runs !== 1 ? 's' : ''}`,
+      vivid: `${lengthText} ball ${lineText}, ${moveText} — ${batsmanName} misses the shot, ball goes past the keeper. ${runDesc} byes.`,
+    };
+  }
+  if (isLegBye) {
+    const runDesc = runs === 4 ? "FOUR!" : runs === 6 ? "SIX!" : `${runs} run${runs !== 1 ? 's' : ''}`;
+    return {
+      short: `${bowlerName} to ${batsmanName}, ${lengthText.toLowerCase()} ${lineText}, leg byes, ${runs} run${runs !== 1 ? 's' : ''}`,
+      vivid: `${lengthText} ball ${lineText}, ${moveText} — ${batsmanName} tries to play but the ball rolls off the pads. ${runDesc} leg byes.`,
+    };
+  }
+
+  // Free Hit delivery — lead with Free Hit tag
+  if (isFreeHit && !isWide && !isNoBall) {
+    const fhTag = "Free Hit —";
+    const baseVivid = (() => {
+      if (runs === 4) {
+        const opener = _pick(BOUNDARY_OPENERS, `${batsmanName}-${bowlerName}-fh4`);
+        return `${fhTag} ${lengthText} ball ${lineText}, ${moveText} — ${batsmanName} ${shotAction}, sends it ${shotDir}. ${opener}`;
+      }
+      if (runs === 6) {
+        const opener = _pick(SIX_OPENERS, `${batsmanName}-${bowlerName}-fh6`);
+        return `${fhTag} ${lengthText} ball ${lineText}, ${moveText} — ${batsmanName} ${shotAction}, sends it ${shotDir}. ${opener}`;
+      }
+      if (runs > 0) {
+        return `${fhTag} ${lengthText} ball ${lineText}, ${moveText} — ${batsmanName} ${shotAction}, sends it ${shotDir}. ${outcomeText}`;
+      }
+      if (!shotTypeFinal || shotTypeFinal === "shot") {
+        const missed = _pick(MISSED_SHOTS, `${batsmanName}-${bowlerName}-fh${pitchLength}`);
+        return `${fhTag} ${lengthText} ball ${lineText}, ${moveText} — ${batsmanName} ${missed}`;
+      }
+      const ending = _pick(DOT_ENDINGS, `${batsmanName}-${bowlerName}-fh${pitchLength}`);
+      return `${fhTag} ${lengthText} ball ${lineText}, ${moveText} — ${batsmanName} ${shotAction}, sends it ${shotDir}. ${ending}`;
+    })();
+    return {
+      short: `Free Hit — ${bowlerName} to ${batsmanName}, ${lengthText.toLowerCase()} ${lineText}, ${outcomeText.toLowerCase()}`,
+      vivid: baseVivid,
     };
   }
 
   // ─── MAIN TEMPLATE ────────────────────────────────────────────
 
-  const vivid = `${lengthText} ball ${lineText}, ${moveText} — ${batsmanName} plays the ${shotText}, sends it toward ${dir}. ${outcomeText}`;
-  const short = `${bowlerName} to ${batsmanName}, ${lengthText.toLowerCase()} ${lineText}, ${moveText}, ${batsmanName} ${shotText} to ${dir}, ${outcomeText.toLowerCase()}`;
+  const deliveryBase = `${lengthText} ball ${lineText}, ${moveText}`;
+  const shotAction = `plays the ${shotText}`;
+  const shotDir = `toward ${dir}`;
+  const wkType = normalizeKey(wicketType);
+
+  let vivid;
+  if (runs === 4) {
+    const opener = _pick(BOUNDARY_OPENERS, `${batsmanName}-${bowlerName}-4`);
+    vivid = `${deliveryBase} — ${batsmanName} ${shotAction}, sends it ${shotDir}. ${opener}`;
+  } else if (runs === 6) {
+    const opener = _pick(SIX_OPENERS, `${batsmanName}-${bowlerName}-6`);
+    vivid = `${deliveryBase} — ${batsmanName} ${shotAction}, sends it ${shotDir}. ${opener}`;
+  } else if (runs === 3) {
+    const opener = _pick(TRIPLE_OPENERS, `${batsmanName}-${bowlerName}-3`);
+    vivid = `${deliveryBase} — ${batsmanName} ${shotAction}, sends it ${shotDir}. ${opener}`;
+  } else if (runs === 2) {
+    const opener = _pick(DOUBLE_OPENERS, `${batsmanName}-${bowlerName}-2`);
+    vivid = `${deliveryBase} — ${batsmanName} ${shotAction}, sends it ${shotDir}. ${opener}`;
+  } else if (runs === 1) {
+    const opener = _pick(SINGLE_OPENERS, `${batsmanName}-${bowlerName}-1`);
+    vivid = `${deliveryBase} — ${batsmanName} ${shotAction}, sends it ${shotDir}. ${opener}`;
+  } else if (runs === 0 && !isWicket) {
+    if (!shotTypeFinal || shotTypeFinal === "shot") {
+      const missed = _pick(MISSED_SHOTS, `${batsmanName}-${bowlerName}-${pitchLength}`);
+      vivid = `${deliveryBase} — ${batsmanName} ${missed}`;
+    } else {
+      const ending = _pick(DOT_ENDINGS, `${batsmanName}-${bowlerName}-${pitchLength}`);
+      vivid = `${deliveryBase} — ${batsmanName} ${shotAction}, sends it ${shotDir}. ${ending}`;
+    }
+  } else if (isWicket) {
+    const pressure = _pick(PRESSURE_PHRASES, `${batsmanName}-${bowlerName}-wk`);
+    if (wkType === "bowled" || wkType === "lbw") {
+      vivid = `${deliveryBase} — ${outcomeText} ${pressure}`;
+    } else if (wkType === "stumped") {
+      vivid = `${deliveryBase} — ${batsmanName} steps out, beaten, and the keeper whips the bails off! ${outcomeText} ${pressure}`;
+    } else if (wkType === "hit-wicket") {
+      vivid = `${deliveryBase} — ${batsmanName} ${shotAction}, but dislodges the bails! ${outcomeText} ${pressure}`;
+    } else {
+      vivid = `${deliveryBase} — ${batsmanName} ${shotAction}, sends it ${shotDir}. ${outcomeText} ${pressure}`;
+    }
+  } else {
+    vivid = `${deliveryBase} — ${batsmanName} ${shotAction}, sends it ${shotDir}. ${outcomeText}`;
+  }
+
+  if (isAppeal) {
+    const appealPhrase = _pick(APPEAL_PHRASES, `${batsmanName}-${bowlerName}`);
+    vivid = `${appealPhrase} ${vivid}`;
+  }
+
+  let short;
+  if (isWicket && (wkType === "bowled" || wkType === "lbw")) {
+    short = `${bowlerName} to ${batsmanName}, ${lengthText.toLowerCase()} ${lineText}, ${moveText}, ${outcomeText.toLowerCase()}`;
+  } else if (isWicket && wkType === "stumped") {
+    short = `${bowlerName} to ${batsmanName}, ${lengthText.toLowerCase()} ${lineText}, ${moveText}, ${batsmanName} steps out, ${outcomeText.toLowerCase()}`;
+  } else if (isWicket && wkType === "hit-wicket") {
+    short = `${bowlerName} to ${batsmanName}, ${lengthText.toLowerCase()} ${lineText}, ${moveText}, ${batsmanName} on to the stumps, ${outcomeText.toLowerCase()}`;
+  } else {
+    short = `${bowlerName} to ${batsmanName}, ${lengthText.toLowerCase()} ${lineText}, ${moveText}, ${batsmanName} ${shotText} to ${dir}, ${outcomeText.toLowerCase()}`;
+  }
 
   return { short, vivid };
 }
@@ -186,6 +370,7 @@ class AICommentaryService {
       pitchLength = "",
       ballMovement = "none",
       shotType = "",
+      shotName = "",
       shotDirection = "",
       fieldingZone = "",
       nearestPosition = "",
@@ -203,7 +388,8 @@ class AICommentaryService {
       !ballMovement || ballMovement === "none"
         ? "straight"
         : ballMovement.replace(/_/g, " ");
-  const shotText = shotTypeFinal && shotTypeFinal !== "shot" ? labelize(shotTypeFinal) : "shot";
+    const shotTypeFinal = shotType || shotName || "shot";
+    const shotText = shotTypeFinal && shotTypeFinal !== "shot" ? labelize(shotTypeFinal) : "shot";
     const dir = shotDirection || fieldingZone || nearestPosition || zone || "the outfield";
     const matchSit = matchContext.target
       ? `Need ${matchContext.target - currentScore} from ${Math.max(0, ((matchContext.totalOvers || 1) - (overNumber + ballNumber / 6)) * 6 | 0)} balls`
@@ -311,8 +497,18 @@ BQ-PLAY analyst style. No emojis. Plain flowing text only.`;
     return this._overFallback(data);
   }
 
-  _overFallback({ bowlerName, runsThisOver, wicketsThisOver }) {
-    return `${runsThisOver} run${runsThisOver !== 1 ? "s" : ""} from the over. ${wicketsThisOver > 0 ? `${wicketsThisOver} wicket${wicketsThisOver > 1 ? "s" : ""} fell.` : "A productive set of deliveries."}`;
+  _overFallback({ bowlerName, runsThisOver, wicketsThisOver, overNumber }) {
+    const overNum = (overNumber || 0) + 1;
+    if (wicketsThisOver > 0 && runsThisOver === 0) {
+      return `Over ${overNum}: A wicket maiden from ${bowlerName || "the bowler"}! ${wicketsThisOver} wicket${wicketsThisOver > 1 ? "s" : ""} fell, no runs conceded.`;
+    }
+    if (wicketsThisOver > 0) {
+      return `Over ${overNum}: ${runsThisOver} run${runsThisOver !== 1 ? "s" : ""} and ${wicketsThisOver} wicket${wicketsThisOver > 1 ? "s" : ""} from it. ${bowlerName || "The bowler"} struck!`;
+    }
+    if (runsThisOver === 0) {
+      return `Over ${overNum}: A maiden over from ${bowlerName || "the bowler"}! Dot balls building pressure.`;
+    }
+    return `Over ${overNum}: ${runsThisOver} run${runsThisOver !== 1 ? "s" : ""} from the over. ${bowlerName || "The bowler"} kept it tight.`;
   }
 
   async regenerateEditedBallCommentary(data) {

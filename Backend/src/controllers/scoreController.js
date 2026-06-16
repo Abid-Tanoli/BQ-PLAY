@@ -51,7 +51,8 @@ export const updateScore = async (req, res) => {
       didCross,
       groundZone = "",
       fieldedByPosition = "",
-      shotTypeName = ""
+      shotTypeName = "",
+      isAppeal = false
     } = req.body;
 
     const match = await Match.findById(matchId)
@@ -226,10 +227,12 @@ export const updateScore = async (req, res) => {
           isNoBall,
           isBye,
           isLegBye,
+          isFreeHit: ball.isFreeHit || false,
           isWicket: engineWicket,
           wicketType: engineWicketType,
           wicketCancelled,
           freeHitNext,
+          isAppeal,
           batsmanName: batsmanOnStrike?.name || "Batsman",
           bowlerName: bowlerPlayer?.name || "Bowler",
           zone: zone.name || "",
@@ -283,7 +286,8 @@ export const updateScore = async (req, res) => {
           currentWickets: innings.wickets || 0,
           overNumber: currentOverNumber,
           ballNumber: ballNumberInOver,
-          extraRuns: runs
+          extraRuns: runs,
+          isAppeal
         });
         vividCommentary = `The delivery was bowled and played toward the ${shotPlacement?.position || fieldingZone || "fielding area"}. ${batsmanOnStrike?.name || "The batsman"} managed to pick up ${runs} run${runs !== 1 ? "s" : ""}.`;
       }
@@ -396,6 +400,8 @@ export const updateScore = async (req, res) => {
         extraRuns,
         isWicket: engineWicket,
         wicketType: engineWicketType,
+        wicketCancelled,
+        freeHitNext,
         strikerId,
         nonStrikerId,
         strikerBeforeId: batsmanOnStrikeId,
@@ -492,7 +498,7 @@ export const updateScore = async (req, res) => {
       }
 
       // ─── LEGACY: match:updateList for match-list pages ──────
-      io.emit("match:updateList");
+      getIO().emit("match:updateList");
     } catch (socketError) {
       console.log("Socket not available:", socketError.message);
     }
@@ -662,19 +668,24 @@ function generateDetailedCommentary({
   currentWickets,
   overNumber,
   ballNumber,
-  extraRuns = 0
+  extraRuns = 0,
+  isAppeal = false
 }) {
+  const appealPrefix = isAppeal
+    ? (["Huge appeal! ", "Loud shout! ", "The fielders appeal! ", "Appeal from the bowling side! "])[Math.floor(Math.random() * 4)]
+    : "";
+
   if (wicketCancelled) {
     const freeHitLine = freeHitNext ? " Free Hit is coming next ball." : "";
     const nbCancelled = [
-      `NO BALL! ${batsmanName} looked out but the umpire calls it a no ball — wicket cancelled! Just the one extra run from the no-ball.${freeHitLine}`,
-      `No ball called — ${batsmanName} survives! The wicket is cancelled due to the front foot no-ball. One extra run added.${freeHitLine}`,
-      `Big moment! It looked like ${batsmanName} was gone, but the no-ball saves them! Wicket cancelled. One run added.${freeHitLine}`
+      `${appealPrefix}NO BALL! ${batsmanName} looked out but the umpire calls it a no ball — wicket cancelled! Just the one extra run from the no-ball.${freeHitLine}`,
+      `${appealPrefix}No ball called — ${batsmanName} survives! The wicket is cancelled due to the front foot no-ball. One extra run added.${freeHitLine}`,
+      `${appealPrefix}Big moment! It looked like ${batsmanName} was gone, but the no-ball saves them! Wicket cancelled. One run added.${freeHitLine}`
     ];
     return nbCancelled[Math.floor(Math.random() * nbCancelled.length)];
   }
 
-  if (isWicket) {
+  if (isWide) {
     const wideComments = [
       `Wide! ${bowlerName} strays down the leg side.`,
       `WIDE! That's way outside the tramline.`,
@@ -716,6 +727,21 @@ function generateDetailedCommentary({
 
   if (isLegBye) {
     return `${runs} leg ${runs === 1 ? 'bye' : 'byes'}! Off the pads and away.`;
+  }
+
+  if (isWicket) {
+    const wicketTypeNorm = (wicketType || "").toLowerCase().replace(/[_-]/g, " ");
+    const wicketFallbacks = {
+      bowled: `Bowled him! ${bowlerName} knocks over ${batsmanName}'s stumps. What a delivery!`,
+      caught: `CAUGHT! ${batsmanName} is out! The fielder takes a clean catch. ${bowlerName} strikes!`,
+      lbw: `LBW! ${batsmanName} is struck in front. The umpire raises the finger. ${bowlerName} celebrates!`,
+      "run out": `RUN OUT! Direct hit and ${batsmanName} is short of the crease!`,
+      stumped: `STUMPED! ${batsmanName} steps out and the keeper whips the bails off in a flash!`,
+      "hit wicket": `HIT WICKET! ${batsmanName} steps back and dislodges the bails! Unlucky!`,
+    };
+    let fallback = wicketFallbacks[wicketTypeNorm] || `OUT! ${batsmanName} is dismissed. ${wicketType || "Wicket"} for ${bowlerName}!`;
+    if (runs > 0) fallback += ` ${runs} run${runs !== 1 ? 's' : ''} scored on the ball.`;
+    return appealPrefix + fallback;
   }
 
   const runCommentaries = {
@@ -1019,7 +1045,7 @@ export const editCommentary = async (req, res) => {
 export const handleFieldClick = async (req, res) => {
   try {
     const { matchId } = req.params;
-    const { x, y, runs, isWicket, wicketType, overNumber, ballNumber } = req.body;
+    const { x, y, runs, isWicket, wicketType, overNumber, ballNumber, isAppeal = false } = req.body;
 
     const match = await Match.findById(matchId)
       .populate("teams", "name shortName logo")
@@ -1054,10 +1080,12 @@ export const handleFieldClick = async (req, res) => {
       isNoBall: false,
       isBye: false,
       isLegBye: false,
+      isFreeHit: false,
       isWicket: isWicket || false,
       wicketType: wicketType || "",
       batsmanName,
       bowlerName,
+      isAppeal,
       zone: zone.name,
       distanceCategory,
       overNumber: overNumber || Math.floor(innings.balls / 6) + 1,

@@ -128,6 +128,18 @@ npm --prefix Frontend/User run dev
 npm --prefix Frontend/Admin run dev
 ```
 
+### Auth Flow
+
+| Role | Access | Auth Required |
+|------|--------|---------------|
+| **Guest / Spectator** | Read-only public pages (live scores, match detail, scorecard, commentary, teams, players, rankings, news) | No |
+| **Admin / Scorer** | Dashboard, match scoring, team/player/event management | Yes (JWT login at `/admin/login`) |
+| **Future: Google Login** | Not yet implemented; placeholder hidden until OAuth is configured | — |
+
+- Public user app has `/login` and `/register` routes; users can also **Continue as Guest** for read-only browsing.
+- Admin console uses `ProtectedRoute` components; unauthenticated requests redirect to `/admin/login`.
+- Guest users cannot access admin scoring or match control pages.
+
 ### User App Routes
 
 | Path | Page |
@@ -143,30 +155,62 @@ npm --prefix Frontend/Admin run dev
 | `/points-table` | Tournament points table |
 | `/news`, `/videos`, `/highlights` | Media pages |
 | `/international` | International cricket |
+| `/login` | Login / Register / Guest entry |
+| `/register` | Registration form |
 
 ### Admin Routes
 
-| Path | Page |
-|------|------|
-| `/admin` | Dashboard |
-| `/admin/score` | Match selection for scoring |
-| `/admin/score/:matchId` | Live scoring interface |
-| `/admin/teams` | Team management |
-| `/admin/players` | Player management |
-| `/admin/events` | Event/tournament management |
-| `/admin/blogs` | Blog management |
-| `/admin/bulk-import` | Bulk import data |
-| `/admin/rankings` | Rankings management |
-| `/admin/international` | International cricket management |
-| `/admin/sync` | External data sync panel |
+| Path | Page | Auth |
+|------|------|------|
+| `/admin` | Dashboard | Required |
+| `/admin/login` | Admin login | Public |
+| `/admin/score` | Match selection for scoring | Required |
+| `/admin/score/:matchId` | Live scoring interface | Required |
+| `/admin/teams` | Team management | Required |
+| `/admin/players` | Player management | Required |
+| `/admin/events` | Event/tournament management | Required |
+| `/admin/blogs` | Blog management | Required |
+| `/admin/bulk-import` | Bulk import data | Required |
+| `/admin/rankings` | Rankings management | Required |
+| `/admin/international` | International cricket management | Required |
+| `/admin/sync` | External data sync panel | Required |
 
-## Production Build
+### Commentary System
+
+- **AI-powered** commentary via Anthropic Claude API when `ANTHROPIC_API_KEY` is configured in `Backend/.env`.
+- **Fallback structured** commentary generated server-side with varied templates (dot ball, single, boundary, six, wicket, no-ball, wide, free-hit, no-ball+wicket-cancelled).
+- Commentary is **always factual**: does not invent shot types, wicket modes, or runs.
+- Templates include cricketing expressions ("Clean strike!", "Drama on the field!", "Free Hit coming up!", "Pressure building here.") selected deterministically for variety.
+- Over summaries provide context-aware analysis (maiden, wicket maiden, run-scoring over).
+- Ball-level commentary exposes `short` (broadcast summary) and `vivid` (descriptive) text.
+
+### Manual Testing Checklist
+
+| Area | What to Check |
+|------|---------------|
+| **User Home** | Live scores load from API; no hardcoded data; loading/error states work |
+| **Match Detail** | Tabs (Live, Scorecard, Commentary, Partnerships, Graphs, Info) all render with real data |
+| **Scorecard** | Batting/bowling tables show correct runs, wickets, overs, extras |
+| **Commentary** | Ball-by-ball commentary appears in real-time; varied templates not repetitive |
+| **Commentary — Wicket** | Bowled says "stumps shattered" not "sent to deep cover"; caught says fielder/direction; lbw/bowled do not mention shot type or direction |
+| **Commentary — No-ball + Wicket** | When admin marks wicket on no-ball, commentary says "No ball called, wicket cancelled, batter survives, Free Hit coming" — never says "out" |
+| **Commentary — Free Hit** | Free Hit mentioned next ball after no-ball; commentary doesn't say "out" on free-hit wicket attempt |
+| **Commentary — Fallback** | Disconnect AI API key, verify structured fallback works for dot/single/boundary/wide/no-ball/wicket |
+| **Commentary — Over Summary** | At over end, summary shows runs/wickets/maiden context |
+| **Partnerships** | Partnership bars render correctly for each wicket |
+| **Graphs** | Run-rate graph, wicket chart use team names from match data |
+| **Admin Score Page** | Responsive at 360px–1440px; no horizontal overflow; buttons tap-friendly; sidebar works on mobile; Mid Session button visible |
+| **Admin Auth** | `/admin/*` redirects to login when unauthenticated; login works |
+| **Guest Flow** | Public pages accessible without login; no 401 errors; header shows Login/Join instead of profile |
+| **Scoring** | Striker/non-striker/bowler selection works; extras/wicket/no-ball/free-hit UI readable; match-not-started shows correct state (not infinite loading) |
+
+## Production Build (not yet verified in current pass)
 
 ```bash
 npm run build
 ```
 
-The root build script installs Backend, User, and Admin dependencies, then builds all frontend dist folders.
+The root build script installs Backend, User, and Admin dependencies, then builds all frontend dist folders. **Note**: production build has not been run or verified during the latest cleanup pass.
 
 ## Deployment
 
