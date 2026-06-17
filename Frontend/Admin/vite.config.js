@@ -8,6 +8,13 @@ export default defineConfig({
   resolve: {
     alias: {
       '@shared': path.resolve(__dirname, '../Shared'),
+      react: path.resolve(__dirname, 'node_modules/react'),
+      'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
+      'react-hook-form': path.resolve(__dirname, 'node_modules/react-hook-form'),
+      '@hookform/resolvers': path.resolve(__dirname, 'node_modules/@hookform/resolvers'),
+      zod: path.resolve(__dirname, 'node_modules/zod'),
+      axios: path.resolve(__dirname, 'node_modules/axios'),
+      'socket.io-client': path.resolve(__dirname, 'node_modules/socket.io-client'),
     },
   },
   server: {

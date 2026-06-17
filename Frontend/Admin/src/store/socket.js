@@ -1,95 +1,31 @@
-import { io } from "socket.io-client";
+import {
+  initSocket as sharedInit,
+  getSocket as sharedGet,
+  disconnectSocket as sharedDisconnect,
+  isSocketConnected as sharedIsConnected,
+  emitSocket as sharedEmit,
+  joinMatchRoom as sharedJoin,
+  leaveMatchRoom as sharedLeave,
+} from "../../../Shared/services/socket.js";
 
-const SOCKET_KEY = "__BQ_PLAY_ADMIN_SOCKET__";
-let socket = globalThis[SOCKET_KEY] || null;
+const NS = "admin";
 
-const setSocket = (nextSocket) => {
-  socket = nextSocket;
-  globalThis[SOCKET_KEY] = nextSocket;
-};
+export const getSocket = () => sharedGet(NS);
 
-export const initSocket = () => {
-  if (socket?.connected) return socket;
+export const initSocket = () => sharedInit(NS);
 
-  if (socket) {
-    // Previous socket exists but disconnected — remove stale listeners before reconnecting
-    socket.removeAllListeners();
-    socket.connect();
-    return socket;
-  }
+export const disconnectSocket = () => sharedDisconnect(NS);
 
-  const url = import.meta.env.VITE_SOCKET_URL || "http://localhost:5000";
-  socket = io(url, {
-    transports: ["websocket"],
-    reconnection: true,
-    reconnectionDelay: 2000,
-    reconnectionDelayMax: 10000,
-    reconnectionAttempts: Infinity,
-    timeout: 30000,
-    autoConnect: true,
-    withCredentials: true,
-  });
-  setSocket(socket);
+export const isSocketConnected = () => sharedIsConnected(NS);
 
-  socket.on("connect", () => {
-    console.log(`[SOCKET] connect    id=${socket.id}`);
-  });
-  socket.on("disconnect", (reason) => {
-    console.log(`[SOCKET] disconnect id=${socket?.id} reason=${reason}`);
-    if (reason === "io server disconnect" || reason === "transport close") {
-      // Server restarted — reconnect is automatic via socket.io-client
-    }
-  });
-  socket.on("connect_error", (error) => {
-    if (!socket?.connected) {
-      console.warn(`[SOCKET] error      ${error.message}`);
-    }
-  });
-  socket.on("reconnect", (attemptNumber) => {
-    console.log(`[SOCKET] reconnect  id=${socket.id} after ${attemptNumber} attempts`);
-  });
-  socket.io.on("reconnect_attempt", (attempt) => {
-    console.log(`[SOCKET] reconnect_attempt #${attempt}`);
-  });
+export const emitSocket = (event, data) => sharedEmit(event, data, NS);
 
-  return socket;
-};
+export const joinMatchRoom = (matchId) => sharedJoin(matchId, NS);
 
-export const getSocket = () => {
-  if (!socket) return initSocket();
-  return socket;
-};
+export const leaveMatchRoom = (matchId) => sharedLeave(matchId, NS);
 
-export const disconnectSocket = () => {
-  if (socket) {
-    console.log("[SOCKET] manual disconnect");
-    socket.removeAllListeners();
-    socket.disconnect();
-    setSocket(null);
-  }
-};
-
-export const isSocketConnected = () => {
-  return socket && socket.connected;
-};
-
-export const emitSocket = (event, data) => {
-  if (isSocketConnected()) {
-    socket.emit(event, data);
-    return true;
-  }
-  console.warn(`[SOCKET] cannot emit ${event} — not connected`);
-  return false;
-};
-
-// HMR: do NOT disconnect — just remove listeners so they're re-attached on re-render.
-// Socket.IO keeps the underlying WebSocket alive across HMR.
 if (import.meta.hot) {
-  import.meta.hot.dispose(() => {
-    if (socket) {
-      socket.removeAllListeners();
-    }
-  });
+  import.meta.hot.dispose(() => {});
 }
 
-export default { initSocket, getSocket, disconnectSocket, isSocketConnected, emitSocket };
+export default { initSocket, getSocket, disconnectSocket, isSocketConnected, emitSocket, joinMatchRoom, leaveMatchRoom };

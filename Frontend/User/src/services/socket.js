@@ -1,89 +1,36 @@
-import { io as clientIo } from "socket.io-client";
+import {
+  initSocket as sharedInit,
+  getSocket as sharedGet,
+  joinMatchRoom as sharedJoin,
+  leaveMatchRoom as sharedLeave,
+  disconnectSocket as sharedDisconnect,
+} from "../../../Shared/services/socket.js";
 
-const SOCKET_KEY = "__BQ_PLAY_USER_SOCKET__";
-let socket = globalThis[SOCKET_KEY] || null;
-
-const setSocket = (nextSocket) => {
-  socket = nextSocket;
-  globalThis[SOCKET_KEY] = nextSocket;
-};
-
-export function initSocket() {
-  if (socket?.connected) return socket;
-
-  if (socket) {
-    socket.removeAllListeners();
-    socket.connect();
-    return socket;
-  }
-
-  const SERVER = import.meta.env.VITE_SOCKET_URL || (import.meta.env.DEV ? "http://localhost:5000" : window.location.origin);
-
-  socket = clientIo(SERVER, {
-    transports: ["websocket"],
-    reconnection: true,
-    reconnectionDelay: 2000,
-    reconnectionDelayMax: 10000,
-    reconnectionAttempts: Infinity,
-    timeout: 30000,
-    withCredentials: true,
-  });
-  setSocket(socket);
-
-  socket.on("connect", () => {
-    console.log(`[SOCKET] connect    id=${socket.id}`);
-  });
-
-  socket.on("disconnect", (reason) => {
-    console.log(`[SOCKET] disconnect id=${socket?.id} reason=${reason}`);
-  });
-
-  socket.on("connect_error", (err) => {
-    if (!socket?.connected) {
-      console.warn(`[SOCKET] error      ${err.message}`);
-    }
-  });
-
-  socket.on("reconnect", (attemptNumber) => {
-    console.log(`[SOCKET] reconnect  id=${socket.id} after ${attemptNumber} attempts`);
-  });
-
-  return socket;
-}
+const NS = "user";
 
 export function getSocket() {
-  return initSocket();
+  return sharedGet(NS);
+}
+
+export function initSocket() {
+  return sharedInit(NS);
 }
 
 export function joinMatchRoom(matchId) {
-  const s = initSocket();
-  s.emit("join-match", matchId);
+  return sharedJoin(matchId, NS);
 }
 
 export function leaveMatchRoom(matchId) {
-  if (!socket) return;
-  socket.emit("leave-match", matchId);
+  return sharedLeave(matchId, NS);
 }
 
 export function disconnectSocket() {
-  if (socket) {
-    socket.removeAllListeners();
-    socket.disconnect();
-    setSocket(null);
-  }
-}
-
-// HMR: do NOT disconnect — just clear listeners
-if (import.meta.hot) {
-  import.meta.hot.dispose(() => {
-    if (socket) {
-      socket.removeAllListeners();
-    }
-  });
+  return sharedDisconnect(NS);
 }
 
 export default {
   initSocket,
+  getSocket,
   joinMatchRoom,
   leaveMatchRoom,
   disconnectSocket,

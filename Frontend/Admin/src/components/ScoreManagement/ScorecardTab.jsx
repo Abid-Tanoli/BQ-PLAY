@@ -2,7 +2,7 @@ import React from 'react';
 import Scorecard from '../Scorecard';
 import { formatOvers } from './constants';
 
-export default function ScorecardTab({
+export default React.memo(function ScorecardTab({
     curInn,
     battingTeamName,
     bowlingTeamName,
@@ -29,4 +29,4 @@ export default function ScorecardTab({
             tossInfo={tossInfo}
         />
     );
-}
+});

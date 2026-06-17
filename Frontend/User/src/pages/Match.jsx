@@ -4,6 +4,7 @@ import { api } from "../services/api";
 import EnhancedMatchTabs from "../components/EnhancedMatchTabs";
 import ToastNotifications from "../components/ToastNotifications";
 import ThemeToggle from "../components/ThemeToggle";
+import PDFReport from "../components/PDFReport";
 import { initSocket, joinMatchRoom, leaveMatchRoom } from "../services/socket";
 
 const Match = () => {
@@ -206,14 +207,16 @@ const Match = () => {
     socket.on("score:update", applyScoreUpdate);
     socket.on("strike:changed", applyStrikeUpdate);
     socket.on("over:completed", handleOverCompleted);
-    socket.on("innings:end", (payload) => {
+    const handleInningsEnd = (payload) => {
       handleInningsComplete(payload);
       loadMatch();
-    });
-    socket.on("match:end", (payload) => {
+    };
+    const handleMatchEnd = (payload) => {
       handleMatchResult(payload || {});
       loadMatch();
-    });
+    };
+    socket.on("innings:end", handleInningsEnd);
+    socket.on("match:end", handleMatchEnd);
 
     // ─── LEGACY EVENTS (backward compat) ──────────────────────
     socket.on("connect", joinRoom);
@@ -245,8 +248,8 @@ const Match = () => {
       socket.off("score:update", applyScoreUpdate);
       socket.off("strike:changed", applyStrikeUpdate);
       socket.off("over:completed", handleOverCompleted);
-      socket.off("innings:end");
-      socket.off("match:end");
+      socket.off("innings:end", handleInningsEnd);
+      socket.off("match:end", handleMatchEnd);
       socket.off("connect", joinRoom);
       socket.off("match:updated", applyIncomingMatch);
       socket.off("match:update", applyIncomingMatch);
@@ -293,7 +296,17 @@ const Match = () => {
             <span aria-hidden="true">←</span> Live
           </Link>
           <Link to="/" className="text-sm font-black font-raj text-cric-text truncate">BQ-PLAY</Link>
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            <PDFReport match={match} label="PDF" />
+            <button
+              onClick={() => { navigator.clipboard.writeText(window.location.href); alert('Match link copied!'); }}
+              className="text-xs font-bold text-cric-muted hover:text-cric-accent px-2 py-1 rounded-lg border border-cric-border hover:border-cric-accent/50 transition"
+              title="Share match"
+            >
+              Share
+            </button>
+            <ThemeToggle />
+          </div>
         </div>
       </div>
       <ToastNotifications events={events} />

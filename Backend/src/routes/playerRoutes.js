@@ -8,6 +8,7 @@ import {
   updatePlayer,
   deletePlayer,
   bulkDeletePlayers,
+  getHeadToHead,
 } from "../controllers/playerController.js";
 import {
   getBattingRankings,
@@ -45,6 +46,7 @@ router.get("/rankings/wicket-keeper", getWicketKeeperRankings);
 router.get("/rankings", getPlayerRankings);
 router.get("/:id/matches", validateObjectId("id"), getPlayerMatches);
 router.get("/:id", validateObjectId("id"), getPlayer);
+router.get("/head-to-head/:batsmanId/:bowlerId", validateObjectId("batsmanId"), validateObjectId("bowlerId"), getHeadToHead);
 
 router.post("/", validate(createPlayerSchema), createPlayer);
 router.post("/bulk-delete", ...adminOnly, bulkDeletePlayers);

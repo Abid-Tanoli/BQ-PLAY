@@ -3,8 +3,8 @@ import BlogGallery from "../components/BlogGallery";
 
 export default function News() {
   return (
-    <div className="bg-[#f8fafc] min-h-screen">
-      <div className="bg-[#031d44] pt-32 pb-20 px-4 text-center relative overflow-hidden">
+    <div className="bg-cric-bg min-h-screen">
+      <div className="bg-cric-accent pt-32 pb-20 px-4 text-center relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full opacity-10">
           <div className="absolute top-0 left-0 w-64 h-64 bg-blue-400 rounded-full -ml-32 -mt-32 blur-3xl" />
           <div className="absolute bottom-0 right-0 w-96 h-96 bg-red-600 rounded-full -mr-48 -mb-48 blur-3xl" />
@@ -24,18 +24,18 @@ export default function News() {
          <div className="space-y-16">
             <section>
                <div className="flex items-center gap-4 mb-12">
-                  <div className="h-0.5 flex-1 bg-slate-200" />
-                  <h2 className="text-2xl font-black text-[#031d44] uppercase tracking-tighter italic">Top Headlines</h2>
-                  <div className="h-0.5 flex-1 bg-slate-200" />
+                  <div className="h-0.5 flex-1 bg-cric-border" />
+                  <h2 className="text-2xl font-black text-cric-accent uppercase tracking-tighter italic">Top Headlines</h2>
+                  <div className="h-0.5 flex-1 bg-cric-border" />
                </div>
                <BlogGallery category="General" />
             </section>
 
             <section>
                <div className="flex items-center gap-4 mb-12">
-                  <div className="h-0.5 flex-1 bg-slate-200" />
-                  <h2 className="text-2xl font-black text-[#031d44] uppercase tracking-tighter italic">Match Analysis</h2>
-                  <div className="h-0.5 flex-1 bg-slate-200" />
+                  <div className="h-0.5 flex-1 bg-cric-border" />
+                  <h2 className="text-2xl font-black text-cric-accent uppercase tracking-tighter italic">Match Analysis</h2>
+                  <div className="h-0.5 flex-1 bg-cric-border" />
                </div>
                <BlogGallery category="Match" />
             </section>

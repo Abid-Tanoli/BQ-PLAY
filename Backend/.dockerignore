@@ -1,0 +1,10 @@
+node_modules
+.git
+.gitignore
+README.txt
+.env
+.env.example
+check_data.js
+reset_match.js
+utils
+*.log

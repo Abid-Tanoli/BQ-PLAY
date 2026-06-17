@@ -151,7 +151,7 @@ export default function CreatePlayerProfile({ onSuccess, onCancel }) {
 
           {err && <p className="text-red-500 text-sm font-bold">{err}</p>}
 
-          <button type="submit" disabled={loading} className="w-full py-4 bg-cric-accent hover:bg-[#e55a2b] text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-xl active:scale-95 disabled:opacity-60">
+          <button type="submit" disabled={loading} className="w-full py-4 bg-cric-accent hover:bg-cric-accent/90 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-xl active:scale-95 disabled:opacity-60">
             {loading ? "Creating..." : success ? "Done!" : "Enlist Player"}
           </button>
         </form>

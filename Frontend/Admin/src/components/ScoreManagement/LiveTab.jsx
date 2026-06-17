@@ -1,8 +1,9 @@
 import React from 'react';
 import LiveScoringPanel from './LiveScoringPanel';
 import BallByBallFeed from '../BallByBallFeed';
+import { formatOvers } from './constants';
 
-export default function LiveTab({
+export default React.memo(function LiveTab({
     battingXI,
     bowlingXI,
     strikerId,
@@ -33,12 +34,7 @@ export default function LiveTab({
                 winProb={winProb}
                 selectedMatch={selectedMatch}
                 formattedHistory={formattedHistory}
-                formatOvers={(balls) => {
-                    if (!balls) return "0.0";
-                    const overs = Math.floor(balls / 6);
-                    const rem = balls % 6;
-                    return `${overs}.${rem}`;
-                }}
+                formatOvers={formatOvers}
                 onRetire={onRetire}
             />
 
@@ -60,4 +56,4 @@ export default function LiveTab({
             </div>
         </div>
     );
-}
+});

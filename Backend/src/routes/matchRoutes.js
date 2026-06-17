@@ -59,10 +59,29 @@ import {
   updateMatchStatusOfficial
 } from "../controllers/analyticsController.js";
 
+import validate from "../middleware/validate.js";
+import rateLimiter from "../middleware/rateLimiter.js";
+import {
+  updateScoreSchema,
+  editCommentarySchema,
+  handleFieldClickSchema,
+  revertLastBallSchema,
+  setBowlerSchema,
+  endInningsSchema,
+  reduceOversSchema,
+  resetInningsSchema,
+  resolveTieSchema,
+  startSuperOverInningsSchema,
+  editBallSchema,
+  recordDRSReviewSchema,
+  useStrategicTimeoutSchema,
+  retireBatsmanSchema,
+} from "../validators/scoreValidators.js";
 import Match from "../models/Match.js";
 
 const router = express.Router();
 const adminOnly = [protect, requireAdmin];
+const scoringRateLimit = rateLimiter({ windowMs: 1000, max: 5 });
 
 router.get("/", getMatches);
 router.get("/:id", validateObjectId("id"), getMatch);
@@ -83,23 +102,23 @@ router.get("/:id/commentary", validateObjectId("id"), getMatchCommentary);
 router.get("/:id/officials", validateObjectId("id"), getMatchOfficials);
 
 router.post("/", ...adminOnly, createMatch);
-router.post("/:matchId/score", ...adminOnly, validateObjectId("matchId"), updateScore);
-router.post("/:matchId/end-innings", ...adminOnly, validateObjectId("matchId"), endInnings);
+router.post("/:matchId/score", ...adminOnly, scoringRateLimit, validateObjectId("matchId"), validate(updateScoreSchema), updateScore);
+router.post("/:matchId/end-innings", ...adminOnly, validateObjectId("matchId"), validate(endInningsSchema), endInnings);
 router.post("/:matchId/start-next-innings", ...adminOnly, validateObjectId("matchId"), startNextInnings);
-router.post("/:matchId/reduce-overs", ...adminOnly, validateObjectId("matchId"), reduceOvers);
-router.post("/:matchId/resolve-tie", ...adminOnly, validateObjectId("matchId"), resolveTie);
-router.post("/:matchId/start-super-over", ...adminOnly, validateObjectId("matchId"), startSuperOverInnings);
-router.put("/:matchId/edit-commentary", ...adminOnly, validateObjectId("matchId"), editCommentary);
-router.post("/:matchId/field-click", ...adminOnly, validateObjectId("matchId"), handleFieldClick);
-router.post("/:matchId/revert-ball", ...adminOnly, validateObjectId("matchId"), revertLastBall);
-router.post("/:matchId/set-bowler", ...adminOnly, validateObjectId("matchId"), setBowler);
+router.post("/:matchId/reduce-overs", ...adminOnly, validateObjectId("matchId"), validate(reduceOversSchema), reduceOvers);
+router.post("/:matchId/resolve-tie", ...adminOnly, validateObjectId("matchId"), validate(resolveTieSchema), resolveTie);
+router.post("/:matchId/start-super-over", ...adminOnly, validateObjectId("matchId"), validate(startSuperOverInningsSchema), startSuperOverInnings);
+router.put("/:matchId/edit-commentary", ...adminOnly, validateObjectId("matchId"), validate(editCommentarySchema), editCommentary);
+router.post("/:matchId/field-click", ...adminOnly, scoringRateLimit, validateObjectId("matchId"), validate(handleFieldClickSchema), handleFieldClick);
+router.post("/:matchId/revert-ball", ...adminOnly, scoringRateLimit, validateObjectId("matchId"), validate(revertLastBallSchema), revertLastBall);
+router.post("/:matchId/set-bowler", ...adminOnly, validateObjectId("matchId"), validate(setBowlerSchema), setBowler);
 router.post("/:matchId/ai-commentary", ...adminOnly, validateObjectId("matchId"), generateAICommentary);
-router.post("/:matchId/timeout", ...adminOnly, validateObjectId("matchId"), useStrategicTimeout);
-router.post("/:matchId/drs", ...adminOnly, validateObjectId("matchId"), recordDRSReview);
-router.post("/:matchId/reset-innings", ...adminOnly, validateObjectId("matchId"), resetInnings);
-router.post("/:matchId/reset-match", ...adminOnly, validateObjectId("matchId"), resetMatch);
-router.post("/:matchId/retire-batsman", ...adminOnly, validateObjectId("matchId"), retireBatsman);
-router.put("/:matchId/edit-ball", ...adminOnly, validateObjectId("matchId"), editBall);
+router.post("/:matchId/timeout", ...adminOnly, validateObjectId("matchId"), validate(useStrategicTimeoutSchema), useStrategicTimeout);
+router.post("/:matchId/drs", ...adminOnly, validateObjectId("matchId"), validate(recordDRSReviewSchema), recordDRSReview);
+router.post("/:matchId/reset-innings", ...adminOnly, scoringRateLimit, validateObjectId("matchId"), validate(resetInningsSchema), resetInnings);
+router.post("/:matchId/reset-match", ...adminOnly, scoringRateLimit, validateObjectId("matchId"), resetMatch);
+router.post("/:matchId/retire-batsman", ...adminOnly, validateObjectId("matchId"), validate(retireBatsmanSchema), retireBatsman);
+router.put("/:matchId/edit-ball", ...adminOnly, scoringRateLimit, validateObjectId("matchId"), validate(editBallSchema), editBall);
 router.post("/:matchId/officials", ...adminOnly, validateObjectId("matchId"), assignMatchOfficial);
 router.put("/:matchId/officials/:userId", ...adminOnly, validateObjectId("matchId"), validateObjectId("userId"), updateMatchOfficial);
 router.post("/:matchId/umpire-signal", ...adminOnly, validateObjectId("matchId"), triggerUmpireSignal);

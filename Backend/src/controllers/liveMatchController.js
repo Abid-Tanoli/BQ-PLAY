@@ -1,4 +1,3 @@
-import Ball from "../models/Ball.js";
 import Match from "../models/Match.js";
 
 export const addBall = async (req, res) => {
@@ -6,23 +5,19 @@ export const addBall = async (req, res) => {
     const { matchId } = req.params;
     const data = req.body;
 
-    const ball = await Ball.create({ matchId, ...data });
-
     const match = await Match.findById(matchId);
+    if (!match) return res.status(404).json({ message: "Match not found" });
 
-    match.score.runs += data.runs;
-    if (data.isWicket) match.score.wickets += 1;
+    const innings = match.innings[match.currentInnings];
+    if (!innings) return res.status(400).json({ message: "No active innings" });
 
-    match.score.overs = data.over + data.ball / 6;
+    innings.runs = (innings.runs || 0) + (data.runs || 0);
+    if (data.isWicket) innings.wickets = (innings.wickets || 0) + 1;
+    if (!data.isWide && !data.isNoBall) innings.balls = (innings.balls || 0) + 1;
+    innings.overs = Math.floor(innings.balls / 6);
     await match.save({ validateModifiedOnly: true });
 
-    req.io.to(`match-${matchId}`).emit("ball-update", {
-      ball,
-      score: match.score
-    });
-
-    res.status(201).json({ success: true, ball, score: match.score });
-
+    res.status(200).json({ success: true, match });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

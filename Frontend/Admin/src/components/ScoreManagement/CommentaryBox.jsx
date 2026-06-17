@@ -91,7 +91,7 @@ const sameDelivery = (a, b) =>
     a.bowlerName === b.bowlerName
   );
 
-export default function CommentaryBox({ matchId, formattedHistory }) {
+const CommentaryBox = React.memo(function CommentaryBox({ matchId, formattedHistory }) {
   const [commentaryFeed, setCommentaryFeed] = useState([]);
   const scrollRef = useRef(null);
 
@@ -187,6 +187,11 @@ export default function CommentaryBox({ matchId, formattedHistory }) {
                 {commentaryText ? (
                   <p className="text-[11px] text-cric-text/80 leading-relaxed">
                     {commentaryText}
+                    {item.isAi && (
+                      <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[7px] font-black bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-purple-400 uppercase tracking-wider border border-purple-500/30">
+                        AI
+                      </span>
+                    )}
                   </p>
                 ) : (
                   <div className="flex items-center gap-2">
@@ -239,4 +244,6 @@ export default function CommentaryBox({ matchId, formattedHistory }) {
       </div>
     </div>
   );
-}
+});
+
+export default CommentaryBox;

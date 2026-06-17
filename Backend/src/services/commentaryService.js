@@ -120,7 +120,7 @@ export async function saveAndEmitCommentary(ballId, commentary, ballData) {
   try {
     const io = getIO();
     if (io) {
-      io.to(ballData.matchId).emit("commentary", {
+      io.to(`match-${ballData.matchId}`).emit("commentary", {
         ballId,
         commentary,
         bowler: ballData.bowlerName,

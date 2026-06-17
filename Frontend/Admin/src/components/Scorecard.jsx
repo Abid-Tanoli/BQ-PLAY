@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { formatOvers as formatOversUtil } from "./ScoreManagement/constants";
 
 const getId = (value) => {
     if (!value) return "";
@@ -14,8 +15,6 @@ const uniqueById = (players) => {
         return true;
     });
 };
-
-const formatOversFromBalls = (balls = 0) => `${Math.floor(balls / 6)}.${balls % 6}`;
 
 const formatDecimalOvers = (value) => {
     if (value === null || value === undefined || Number.isNaN(Number(value))) return "?";
@@ -223,7 +222,7 @@ export default function Scorecard({
                 return {
                     id: getId(row.player),
                     name: getPlayerName(row.player, playerPool),
-                    overs: formatOversFromBalls(ballsBowled),
+                    overs: formatOversUtil(ballsBowled),
                     maidens: Number(row.maidens ?? fallback.maidens ?? 0),
                     runs,
                     wickets: Number(row.wickets ?? fallback.wickets ?? 0),
@@ -239,7 +238,7 @@ export default function Scorecard({
         const yetToBat = battingXI.filter((player) => !battedIds.has(getId(player)));
         const fallOfWickets = curInn.fallOfWickets || [];
         const legalBalls = Number(curInn.balls || 0);
-        const oversDisplay = formatOvers ? formatOvers(legalBalls) : formatOversFromBalls(legalBalls);
+        const oversDisplay = formatOvers ? formatOvers(legalBalls) : formatOversUtil(legalBalls);
         const oversDecimal = legalBalls / 6;
         const runRate = oversDecimal > 0 ? (Number(curInn.runs || 0) / oversDecimal).toFixed(2) : "0.00";
 

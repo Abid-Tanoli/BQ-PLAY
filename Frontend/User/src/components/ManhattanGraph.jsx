@@ -2,37 +2,11 @@ import { useMemo } from 'react';
 
 const COLORS = { bar1: '#4f46e5', bar2: '#f59e0b', wicket: '#ef4444' };
 
-function ManhattanTooltip({ over, show }) {
-  if (!show || !over) return null;
-  return (
-    <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-10 shadow-lg">
-      Over {over.over}: <span style={{color: COLORS.bar1}}>{over.runs1}</span> / <span style={{color: COLORS.bar2}}>{over.runs2}</span> runs
-    </div>
-  );
-}
-
-function Bar({ runs, maxRuns, color, wicket, onClick }) {
-  const h = maxRuns > 0 ? (runs / maxRuns) * 100 : 0;
-  return (
-    <div className="relative flex-1 flex flex-col items-center justify-end h-full cursor-pointer group" onClick={onClick}>
-      <div
-        className="w-3/4 rounded-t transition-all duration-300 hover:opacity-80 relative flex items-start justify-center"
-        style={{ height: `${Math.max(h, 2)}%`, backgroundColor: color, minHeight: runs > 0 ? '4px' : '0' }}
-      >
-        {wicket > 0 && (
-          <span className="absolute -top-1 text-[8px] font-bold" style={{color: COLORS.wicket}}>
-            {wicket > 1 ? `W×${wicket}` : 'W'}
-          </span>
-        )}
-      </div>
-      {runs > 0 && <span className="text-[9px] text-gray-400 mt-0.5">{runs}</span>}
-    </div>
-  );
-}
-
 export default function ManhattanGraph({ match, innings = 0, compact = false }) {
   const inn1 = match?.innings?.[0];
   const inn2 = match?.innings?.[1];
+  const team1Name = inn1?.team?.shortName || inn1?.team?.name || match?.teams?.[0]?.shortName || match?.teams?.[0]?.name || 'Team A';
+  const team2Name = inn2?.team?.shortName || inn2?.team?.name || match?.teams?.[1]?.shortName || match?.teams?.[1]?.name || 'Team B';
 
   const data = useMemo(() => {
     const overs1 = inn1?.oversHistory || [];
@@ -69,8 +43,8 @@ export default function ManhattanGraph({ match, innings = 0, compact = false }) 
   return (
     <div className="bg-gray-900 dark:bg-cric-card rounded-lg p-3 w-full max-w-full">
       <div className="flex items-center gap-4 mb-3 text-xs">
-        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded" style={{backgroundColor: COLORS.bar1}}></span>Team 1</span>
-        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded" style={{backgroundColor: COLORS.bar2}}></span>Team 2</span>
+        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded" style={{backgroundColor: COLORS.bar1}}></span>{team1Name}</span>
+        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded" style={{backgroundColor: COLORS.bar2}}></span>{team2Name}</span>
       </div>
       <svg width={SVG_W} height={SVG_H} className="overflow-visible">
         {Array.from({ length: 5 }).map((_, i) => {
@@ -112,13 +86,13 @@ export default function ManhattanGraph({ match, innings = 0, compact = false }) 
       {!compact && inn1 && inn2 && (
         <div className="grid grid-cols-2 gap-3 mt-2 text-xs">
           <div className="bg-gray-800 rounded p-2">
-            <div className="text-gray-400">Team 1 Highest Over</div>
+            <div className="text-gray-400">{team1Name} Highest Over</div>
             <div className="text-white font-semibold">
               {Math.max(...data.rows.map(r => r.runs1))} runs (Over {data.rows.findIndex(r => r.runs1 === Math.max(...data.rows.map(x => x.runs1))) + 1})
             </div>
           </div>
           <div className="bg-gray-800 rounded p-2">
-            <div className="text-gray-400">Team 2 Highest Over</div>
+            <div className="text-gray-400">{team2Name} Highest Over</div>
             <div className="text-white font-semibold">
               {Math.max(...data.rows.map(r => r.runs2))} runs (Over {data.rows.findIndex(r => r.runs2 === Math.max(...data.rows.map(x => x.runs2))) + 1})
             </div>

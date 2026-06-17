@@ -121,11 +121,11 @@ export default function PlayingXI({ matchId, compact = false, className = "" }) 
     return (
       <div className={`${className} ${compact ? "space-y-2" : "space-y-4"}`}>
         {[1, 2].map(i => (
-          <div key={i} className="animate-pulse bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div className="bg-slate-100 h-14" />
+          <div key={i} className="animate-pulse bg-cric-card rounded-xl border border-cric-border overflow-hidden">
+            <div className="bg-cric-bg h-14" />
             <div className="p-3 space-y-2">
               {[1, 2, 3].map(j => (
-                <div key={j} className="h-8 bg-slate-100 rounded" />
+                <div key={j} className="h-8 bg-cric-bg rounded" />
               ))}
             </div>
           </div>
@@ -136,11 +136,11 @@ export default function PlayingXI({ matchId, compact = false, className = "" }) 
 
   if (!playing || playing.length === 0) {
     return (
-      <div className={`p-6 text-center bg-white rounded-xl border border-slate-200 ${className}`}>
+      <div className={`p-6 text-center bg-cric-card rounded-xl border border-cric-border ${className}`}>
         <svg className="w-12 h-12 mx-auto mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
-        <p className="text-sm font-bold text-slate-400">Playing XI not available</p>
+        <p className="text-sm font-bold text-cric-muted">Playing XI not available</p>
       </div>
     );
   }
@@ -218,8 +218,8 @@ export default function PlayingXI({ matchId, compact = false, className = "" }) 
             onClick={() => setActiveTeam(idx)}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-black transition-all ${
               activeTeam === idx
-                ? "bg-[#031d44] text-white shadow-lg"
-                : "bg-white text-slate-600 border border-slate-200 hover:border-slate-300"
+                ? "bg-cric-accent text-white shadow-lg"
+                : "bg-cric-card text-cric-muted border border-cric-border hover:border-cric-border"
             }`}
           >
             {team.logo && <img src={team.logo} alt="" className="w-5 h-5 rounded-full" />}
@@ -231,13 +231,13 @@ export default function PlayingXI({ matchId, compact = false, className = "" }) 
         ))}
       </div>
 
-      <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
-        <div className="bg-[#07172f] px-5 py-4">
+      <div className="overflow-hidden rounded-2xl bg-cric-card shadow-sm ring-1 ring-cric-border">
+        <div className="bg-cric-accent px-5 py-4">
           <div className="flex items-center gap-3">
             {team.logo && <img src={team.logo} alt="" className="w-10 h-10 rounded-full ring-2 ring-white/20" />}
             <div>
               <h3 className="text-lg font-black text-white">{team.name}</h3>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-cric-muted">
                 {team.players?.length || 0} players • {sameId(team.teamId, battingTeamId) ? "Currently batting" : match?.status === "completed" ? "Match complete" : "Yet to bat"}
               </p>
             </div>
@@ -246,7 +246,7 @@ export default function PlayingXI({ matchId, compact = false, className = "" }) 
             <button
               onClick={() => setShowStats(false)}
               className={`px-3 py-1 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all ${
-                !showStats ? "bg-white/20 text-white" : "text-slate-400 hover:text-white"
+                !showStats ? "bg-white/20 text-white" : "text-cric-muted hover:text-white"
               }`}
             >
               Players
@@ -254,7 +254,7 @@ export default function PlayingXI({ matchId, compact = false, className = "" }) 
             <button
               onClick={() => setShowStats(true)}
               className={`px-3 py-1 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all ${
-                showStats ? "bg-white/20 text-white" : "text-slate-400 hover:text-white"
+                showStats ? "bg-white/20 text-white" : "text-cric-muted hover:text-white"
               }`}
             >
               Stats
@@ -262,7 +262,7 @@ export default function PlayingXI({ matchId, compact = false, className = "" }) 
           </div>
         </div>
 
-        <div className="divide-y divide-slate-100">
+        <div className="divide-y divide-cric-border">
           {sortedPlayers.length > 0 ? sortedPlayers.map((p, i) => {
             const pid = idOf(p);
             const isCaptain = sameId(teamRolesForTeam.captain, pid);
@@ -274,55 +274,55 @@ export default function PlayingXI({ matchId, compact = false, className = "" }) 
             const role = p.playingRole || p.role || "";
 
             return (
-              <div key={pid || i} className="flex items-center justify-between gap-3 px-5 py-3 hover:bg-slate-50 transition-colors">
+              <div key={pid || i} className="flex items-center justify-between gap-3 px-5 py-3 hover:bg-cric-bg transition-colors">
                 <div className="flex items-center gap-3 min-w-0">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] font-black text-slate-500">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-cric-bg text-[11px] font-black text-cric-muted">
                     {battingOrder !== undefined ? battingOrder + 1 : i + 1}
                   </span>
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <p className="truncate text-sm font-black text-slate-900">{playerName(p)}</p>
-                      {hasBatted && <span className="text-[9px] text-slate-400 font-bold shrink-0">({battingOrder + 1})</span>}
+                      <p className="truncate text-sm font-black text-cric-text">{playerName(p)}</p>
+                      {hasBatted && <span className="text-[9px] text-cric-muted font-bold shrink-0">({battingOrder + 1})</span>}
                     </div>
                     {showStats ? (
                       <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
                         {stats.bat && (
-                          <span className="text-[10px] font-bold text-slate-500">
-                            <span className="text-blue-600">{stats.bat.runs}</span>
-                            <span className="text-slate-400">({stats.bat.balls}b, {stats.bat.fours}x4, {stats.bat.sixes}x6)</span>
+                          <span className="text-[10px] font-bold text-cric-muted">
+                            <span className="text-cric-accent">{stats.bat.runs}</span>
+                            <span className="text-cric-muted">({stats.bat.balls}b, {stats.bat.fours}x4, {stats.bat.sixes}x6)</span>
                           </span>
                         )}
                         {stats.bowl && stats.bowl.wickets > 0 && (
-                          <span className="text-[10px] font-bold text-slate-500">
+                          <span className="text-[10px] font-bold text-cric-muted">
                             <span className="text-red-600">{stats.bowl.wickets}/{stats.bowl.runs}</span>
-                            <span className="text-slate-400">({stats.bowl.balls ? `${Math.floor(stats.bowl.balls / 6)}.${stats.bowl.balls % 6}` : "0.0"} ov)</span>
+                            <span className="text-cric-muted">({stats.bowl.balls ? `${Math.floor(stats.bowl.balls / 6)}.${stats.bowl.balls % 6}` : "0.0"} ov)</span>
                           </span>
                         )}
                         {!stats.bat && !stats.bowl && (
-                          <span className="text-[10px] text-slate-400 font-medium">{role || "Yet to feature"}</span>
+                          <span className="text-[10px] text-cric-muted font-medium">{role || "Yet to feature"}</span>
                         )}
                       </div>
                     ) : (
-                      role && <p className="text-[10px] text-slate-400 font-medium mt-0.5">{role}</p>
+                      role && <p className="text-[10px] text-cric-muted font-medium mt-0.5">{role}</p>
                     )}
                     <div className="flex gap-1 mt-0.5">
                       {isCaptain && <span className="rounded-full bg-blue-50 px-1.5 py-0.5 text-[9px] font-black text-blue-700 leading-none">C</span>}
                       {isViceCaptain && <span className="rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9px] font-black text-emerald-700 leading-none">VC</span>}
                       {isKeeper && <span className="rounded-full bg-amber-50 px-1.5 py-0.5 text-[9px] font-black text-amber-700 leading-none">WK</span>}
-                      {hasBatted && <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-black text-slate-500 leading-none">BAT</span>}
+                      {hasBatted && <span className="rounded-full bg-cric-bg px-1.5 py-0.5 text-[9px] font-black text-cric-muted leading-none">BAT</span>}
                     </div>
                   </div>
                 </div>
                 {showStats && stats.bat && (
                   <div className="text-right shrink-0">
-                    <p className="text-sm font-black text-slate-800">{stats.bat.runs}</p>
-                    <p className="text-[9px] text-slate-400 font-bold">SR {stats.bat.strikeRate}</p>
+                    <p className="text-sm font-black text-cric-text">{stats.bat.runs}</p>
+                    <p className="text-[9px] text-cric-muted font-bold">SR {stats.bat.strikeRate}</p>
                   </div>
                 )}
               </div>
             );
           }) : (
-            <p className="px-5 py-6 text-sm text-slate-400 text-center">No players listed for this team</p>
+            <p className="px-5 py-6 text-sm text-cric-muted text-center">No players listed for this team</p>
           )}
         </div>
       </div>
@@ -335,8 +335,8 @@ export default function PlayingXI({ matchId, compact = false, className = "" }) 
               onClick={() => setActiveTeam(idx)}
               className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
                 activeTeam === idx
-                  ? "bg-[#031d44] text-white"
-                  : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                  ? "bg-cric-accent text-white"
+                  : "bg-cric-bg text-cric-muted hover:bg-cric-bg"
               }`}
             >
               {team.shortName || team.name}

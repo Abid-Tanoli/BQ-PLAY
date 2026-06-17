@@ -38,6 +38,7 @@ const ballSchema = new mongoose.Schema({
   commentary: { type: String, default: "" },
   vividCommentary: { type: String, default: "" },
   runText: { type: String, default: "" },
+  isAi: { type: Boolean, default: false },
   batsmanName: { type: String, default: "" },
   bowlerName: { type: String, default: "" },
   fielderName: { type: String, default: "" },

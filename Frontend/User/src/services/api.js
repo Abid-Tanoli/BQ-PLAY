@@ -28,7 +28,7 @@ api.interceptors.response.use(
       localStorage.removeItem("bq_token");
       localStorage.removeItem("token");
       localStorage.removeItem("bq_user");
-      window.location.href = "/login";
+      window.dispatchEvent(new CustomEvent("bq-auth-expired"));
     }
     const message = error.response?.data?.message || error.message || "An error occurred";
     return Promise.reject(new Error(message));

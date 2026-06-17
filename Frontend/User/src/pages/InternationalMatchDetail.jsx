@@ -72,9 +72,9 @@ const normalizeImage = (value) => value || '';
 
 function EmptyState({ title, detail }) {
   return (
-    <div className="rounded-lg border border-dashed border-slate-300 bg-white px-6 py-14 text-center dark:border-slate-700 dark:bg-slate-900">
-      <p className="text-base font-black text-[#031d44] dark:text-white">{title}</p>
-      {detail && <p className="mx-auto mt-2 max-w-2xl text-sm font-semibold leading-6 text-slate-500">{detail}</p>}
+    <div className="rounded-lg border border-dashed border-cric-border bg-cric-card px-6 py-14 text-center dark:border-slate-700 dark:bg-slate-900">
+      <p className="text-base font-black text-cric-accent dark:text-white">{title}</p>
+      {detail && <p className="mx-auto mt-2 max-w-2xl text-sm font-semibold leading-6 text-cric-muted">{detail}</p>}
     </div>
   );
 }
@@ -105,13 +105,13 @@ function ScoreStrip({ scores, teams }) {
   return (
     <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
       {scoreRows.map((score, index) => (
-        <div key={`${scoreTeam(score)}-${index}`} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+        <div key={`${scoreTeam(score)}-${index}`} className="rounded-lg border border-cric-border bg-cric-card p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Team</p>
-              <h3 className="mt-1 text-lg font-black text-[#031d44] dark:text-white">{scoreTeam(score)}</h3>
+              <p className="text-[11px] font-black uppercase tracking-widest text-cric-muted">Team</p>
+              <h3 className="mt-1 text-lg font-black text-cric-accent dark:text-white">{scoreTeam(score)}</h3>
             </div>
-            <p className="text-right text-2xl font-black text-[#031d44] dark:text-white">{getScoreLine(score)}</p>
+            <p className="text-right text-2xl font-black text-cric-accent dark:text-white">{getScoreLine(score)}</p>
           </div>
         </div>
       ))}
@@ -175,15 +175,11 @@ export default function InternationalMatchDetail() {
       }));
     };
 
-    socket.emit('JOIN_IMATCH', { matchId });
-    socket.emit('JOIN_MATCH', { matchId });
+    socket.emit("join-match", matchId);
     socket.on('INTERNATIONAL_MATCH_UPDATE', handleUpdate);
-    socket.on('MATCH_UPDATE', handleUpdate);
     return () => {
-      socket.emit('LEAVE_IMATCH', { matchId });
-      socket.emit('LEAVE_MATCH', { matchId });
+      socket.emit("leave-match", matchId);
       socket.off('INTERNATIONAL_MATCH_UPDATE', handleUpdate);
-      socket.off('MATCH_UPDATE', handleUpdate);
     };
   };
 
@@ -203,13 +199,13 @@ export default function InternationalMatchDetail() {
     <div className="space-y-5">
       <ScoreStrip scores={scores} teams={teams} />
 
-      <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-        <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Match Status</p>
-        <h2 className="mt-2 text-xl font-black text-[#031d44] dark:text-white">
+      <section className="rounded-lg border border-cric-border bg-cric-card p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+        <p className="text-[11px] font-black uppercase tracking-widest text-cric-muted">Match Status</p>
+        <h2 className="mt-2 text-xl font-black text-cric-accent dark:text-white">
           {matchData.status || stats.status || liveScore.status || 'Live status will appear from the original API'}
         </h2>
-        {liveScore.runRate && <p className="mt-2 text-sm font-black text-blue-700">Run Rate: {liveScore.runRate}</p>}
-        <p className="mt-2 text-sm font-semibold text-slate-500">
+        {liveScore.runRate && <p className="mt-2 text-sm font-black text-cric-accent">Run Rate: {liveScore.runRate}</p>}
+        <p className="mt-2 text-sm font-semibold text-cric-muted">
           {matchData.venue || 'Venue TBD'} {matchData.dateTimeGMT || matchData.date ? `- ${formatDate(matchData.dateTimeGMT || matchData.date)}` : ''}
         </p>
       </section>
@@ -217,30 +213,30 @@ export default function InternationalMatchDetail() {
       {(asArray(liveScore.batsmen).length > 0 || asArray(liveScore.bowlers).length > 0) && (
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
           {asArray(liveScore.batsmen).length > 0 && (
-            <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-              <h2 className="mb-4 text-lg font-black text-[#031d44] dark:text-white">Current Batting</h2>
+            <section className="rounded-lg border border-cric-border bg-cric-card p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+              <h2 className="mb-4 text-lg font-black text-cric-accent dark:text-white">Current Batting</h2>
               {asArray(liveScore.batsmen).map((batter, index) => (
-                <div key={`${batter.name}-${index}`} className="flex items-center justify-between border-b border-slate-100 py-3 last:border-0 dark:border-slate-800">
+                <div key={`${batter.name}-${index}`} className="flex items-center justify-between border-b border-cric-border py-3 last:border-0 dark:border-slate-800">
                   <div>
-                    <p className="font-black text-slate-800 dark:text-slate-100">{batter.name}{batter.isStriker ? ' *' : ''}</p>
-                    <p className="text-xs font-bold text-slate-400">SR {batter.sr || '-'}</p>
+                    <p className="font-black text-cric-text dark:text-slate-100">{batter.name}{batter.isStriker ? ' *' : ''}</p>
+                    <p className="text-xs font-bold text-cric-muted">SR {batter.sr || '-'}</p>
                   </div>
-                  <p className="text-xl font-black text-[#031d44] dark:text-white">{batter.runs}<span className="text-sm text-slate-400"> ({batter.balls})</span></p>
+                  <p className="text-xl font-black text-cric-accent dark:text-white">{batter.runs}<span className="text-sm text-cric-muted"> ({batter.balls})</span></p>
                 </div>
               ))}
             </section>
           )}
 
           {asArray(liveScore.bowlers).length > 0 && (
-            <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-              <h2 className="mb-4 text-lg font-black text-[#031d44] dark:text-white">Current Bowling</h2>
+            <section className="rounded-lg border border-cric-border bg-cric-card p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+              <h2 className="mb-4 text-lg font-black text-cric-accent dark:text-white">Current Bowling</h2>
               {asArray(liveScore.bowlers).map((bowler, index) => (
-                <div key={`${bowler.name}-${index}`} className="flex items-center justify-between border-b border-slate-100 py-3 last:border-0 dark:border-slate-800">
+                <div key={`${bowler.name}-${index}`} className="flex items-center justify-between border-b border-cric-border py-3 last:border-0 dark:border-slate-800">
                   <div>
-                    <p className="font-black text-slate-800 dark:text-slate-100">{bowler.name}</p>
-                    <p className="text-xs font-bold text-slate-400">{bowler.overs} ov, eco {bowler.economy || '-'}</p>
+                    <p className="font-black text-cric-text dark:text-slate-100">{bowler.name}</p>
+                    <p className="text-xs font-bold text-cric-muted">{bowler.overs} ov, eco {bowler.economy || '-'}</p>
                   </div>
-                  <p className="text-xl font-black text-[#031d44] dark:text-white">{bowler.wickets}<span className="text-sm text-slate-400">/{bowler.runs}</span></p>
+                  <p className="text-xl font-black text-cric-accent dark:text-white">{bowler.wickets}<span className="text-sm text-cric-muted">/{bowler.runs}</span></p>
                 </div>
               ))}
             </section>
@@ -249,12 +245,12 @@ export default function InternationalMatchDetail() {
       )}
 
       {latestComment ? (
-        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+        <section className="rounded-lg border border-cric-border bg-cric-card p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
           <div className="mb-3 flex items-center justify-between gap-3">
-            <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Latest Ball</p>
-            {latestComment.over && <span className="rounded-full bg-[#031d44] px-3 py-1 text-xs font-black text-white">{latestComment.over}</span>}
+            <p className="text-[11px] font-black uppercase tracking-widest text-cric-muted">Latest Ball</p>
+            {latestComment.over && <span className="rounded-full bg-cric-accent px-3 py-1 text-xs font-black text-white">{latestComment.over}</span>}
           </div>
-          <p className="text-base font-bold leading-7 text-slate-700 dark:text-slate-200">{latestComment.text}</p>
+          <p className="text-base font-bold leading-7 text-cric-text dark:text-slate-200">{latestComment.text}</p>
         </section>
       ) : (
         <EmptyState title="Ball-by-ball live feed not available yet" detail="The current live provider gives score updates when available. Full commentary needs a richer live-data plan." />
@@ -273,14 +269,14 @@ export default function InternationalMatchDetail() {
           const batting = getBatting(inningsData);
           const bowling = getBowling(inningsData);
           return (
-            <section key={`${inningsData.inning || index}`} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+            <section key={`${inningsData.inning || index}`} className="rounded-lg border border-cric-border bg-cric-card p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
               <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
                 <div>
-                  <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Innings</p>
-                  <h2 className="mt-1 text-xl font-black text-[#031d44] dark:text-white">{inningsData.inning || scoreTeam(inningsData)}</h2>
+                  <p className="text-[11px] font-black uppercase tracking-widest text-cric-muted">Innings</p>
+                  <h2 className="mt-1 text-xl font-black text-cric-accent dark:text-white">{inningsData.inning || scoreTeam(inningsData)}</h2>
                 </div>
                 {(inningsData.r !== undefined || inningsData.runs !== undefined) && (
-                  <p className="text-lg font-black text-[#031d44] dark:text-white">
+                  <p className="text-lg font-black text-cric-accent dark:text-white">
                     {inningsData.r ?? inningsData.runs}/{inningsData.w ?? inningsData.wickets} ({inningsData.o ?? inningsData.overs} ov)
                   </p>
                 )}
@@ -289,27 +285,27 @@ export default function InternationalMatchDetail() {
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[620px] text-sm">
                   <thead>
-                    <tr className="border-b-2 border-slate-200 dark:border-slate-700">
-                      <th className="py-2 pr-3 text-left text-[10px] font-black uppercase tracking-widest text-slate-400">Batter</th>
-                      <th className="px-3 py-2 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">R</th>
-                      <th className="px-3 py-2 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">B</th>
-                      <th className="px-3 py-2 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">4s</th>
-                      <th className="px-3 py-2 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">6s</th>
-                      <th className="py-2 pl-3 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">SR</th>
+                    <tr className="border-b-2 border-cric-border dark:border-slate-700">
+                      <th className="py-2 pr-3 text-left text-[10px] font-black uppercase tracking-widest text-cric-muted">Batter</th>
+                      <th className="px-3 py-2 text-right text-[10px] font-black uppercase tracking-widest text-cric-muted">R</th>
+                      <th className="px-3 py-2 text-right text-[10px] font-black uppercase tracking-widest text-cric-muted">B</th>
+                      <th className="px-3 py-2 text-right text-[10px] font-black uppercase tracking-widest text-cric-muted">4s</th>
+                      <th className="px-3 py-2 text-right text-[10px] font-black uppercase tracking-widest text-cric-muted">6s</th>
+                      <th className="py-2 pl-3 text-right text-[10px] font-black uppercase tracking-widest text-cric-muted">SR</th>
                     </tr>
                   </thead>
                   <tbody>
                     {batting.map((batter, batterIndex) => (
-                      <tr key={`${playerName(batter, 'batsman')}-${batterIndex}`} className="border-b border-slate-100 last:border-0 dark:border-slate-800">
+                      <tr key={`${playerName(batter, 'batsman')}-${batterIndex}`} className="border-b border-cric-border last:border-0 dark:border-slate-800">
                         <td className="py-3 pr-3">
-                          <div className="font-black text-slate-800 dark:text-slate-100">{playerName(batter, 'batsman')}</div>
-                          <div className="text-xs font-semibold text-slate-400">{batter.dismissal || batter.outDesc || 'not out'}</div>
+                          <div className="font-black text-cric-text dark:text-slate-100">{playerName(batter, 'batsman')}</div>
+                          <div className="text-xs font-semibold text-cric-muted">{batter.dismissal || batter.outDesc || 'not out'}</div>
                         </td>
-                        <td className="px-3 py-3 text-right font-black text-[#031d44] dark:text-white">{batter.r ?? batter.runs ?? 0}</td>
-                        <td className="px-3 py-3 text-right font-semibold text-slate-500">{batter.b ?? batter.balls ?? 0}</td>
-                        <td className="px-3 py-3 text-right font-semibold text-slate-500">{batter.fours ?? batter['4s'] ?? 0}</td>
-                        <td className="px-3 py-3 text-right font-semibold text-slate-500">{batter.sixes ?? batter['6s'] ?? 0}</td>
-                        <td className="py-3 pl-3 text-right font-semibold text-slate-500">{batter.sr ?? '-'}</td>
+                        <td className="px-3 py-3 text-right font-black text-cric-accent dark:text-white">{batter.r ?? batter.runs ?? 0}</td>
+                        <td className="px-3 py-3 text-right font-semibold text-cric-muted">{batter.b ?? batter.balls ?? 0}</td>
+                        <td className="px-3 py-3 text-right font-semibold text-cric-muted">{batter.fours ?? batter['4s'] ?? 0}</td>
+                        <td className="px-3 py-3 text-right font-semibold text-cric-muted">{batter.sixes ?? batter['6s'] ?? 0}</td>
+                        <td className="py-3 pl-3 text-right font-semibold text-cric-muted">{batter.sr ?? '-'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -320,24 +316,24 @@ export default function InternationalMatchDetail() {
                 <div className="mt-6 overflow-x-auto">
                   <table className="w-full min-w-[560px] text-sm">
                     <thead>
-                      <tr className="border-b-2 border-slate-200 dark:border-slate-700">
-                        <th className="py-2 pr-3 text-left text-[10px] font-black uppercase tracking-widest text-slate-400">Bowler</th>
-                        <th className="px-3 py-2 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">O</th>
-                        <th className="px-3 py-2 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">M</th>
-                        <th className="px-3 py-2 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">R</th>
-                        <th className="px-3 py-2 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">W</th>
-                        <th className="py-2 pl-3 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">Eco</th>
+                      <tr className="border-b-2 border-cric-border dark:border-slate-700">
+                        <th className="py-2 pr-3 text-left text-[10px] font-black uppercase tracking-widest text-cric-muted">Bowler</th>
+                        <th className="px-3 py-2 text-right text-[10px] font-black uppercase tracking-widest text-cric-muted">O</th>
+                        <th className="px-3 py-2 text-right text-[10px] font-black uppercase tracking-widest text-cric-muted">M</th>
+                        <th className="px-3 py-2 text-right text-[10px] font-black uppercase tracking-widest text-cric-muted">R</th>
+                        <th className="px-3 py-2 text-right text-[10px] font-black uppercase tracking-widest text-cric-muted">W</th>
+                        <th className="py-2 pl-3 text-right text-[10px] font-black uppercase tracking-widest text-cric-muted">Eco</th>
                       </tr>
                     </thead>
                     <tbody>
                       {bowling.map((bowler, bowlerIndex) => (
-                        <tr key={`${playerName(bowler, 'bowler')}-${bowlerIndex}`} className="border-b border-slate-100 last:border-0 dark:border-slate-800">
-                          <td className="py-3 pr-3 font-black text-slate-800 dark:text-slate-100">{playerName(bowler, 'bowler')}</td>
-                          <td className="px-3 py-3 text-right font-semibold text-slate-500">{bowler.o ?? bowler.overs ?? 0}</td>
-                          <td className="px-3 py-3 text-right font-semibold text-slate-500">{bowler.m ?? bowler.maidens ?? 0}</td>
-                          <td className="px-3 py-3 text-right font-semibold text-slate-500">{bowler.r ?? bowler.runs ?? 0}</td>
-                          <td className="px-3 py-3 text-right font-black text-[#031d44] dark:text-white">{bowler.w ?? bowler.wickets ?? 0}</td>
-                          <td className="py-3 pl-3 text-right font-semibold text-slate-500">{bowler.eco ?? '-'}</td>
+                        <tr key={`${playerName(bowler, 'bowler')}-${bowlerIndex}`} className="border-b border-cric-border last:border-0 dark:border-slate-800">
+                          <td className="py-3 pr-3 font-black text-cric-text dark:text-slate-100">{playerName(bowler, 'bowler')}</td>
+                          <td className="px-3 py-3 text-right font-semibold text-cric-muted">{bowler.o ?? bowler.overs ?? 0}</td>
+                          <td className="px-3 py-3 text-right font-semibold text-cric-muted">{bowler.m ?? bowler.maidens ?? 0}</td>
+                          <td className="px-3 py-3 text-right font-semibold text-cric-muted">{bowler.r ?? bowler.runs ?? 0}</td>
+                          <td className="px-3 py-3 text-right font-black text-cric-accent dark:text-white">{bowler.w ?? bowler.wickets ?? 0}</td>
+                          <td className="py-3 pl-3 text-right font-semibold text-cric-muted">{bowler.eco ?? '-'}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -355,12 +351,12 @@ export default function InternationalMatchDetail() {
     commentary.length ? (
       <div className="space-y-3">
         {commentary.map((item, index) => (
-          <article key={item.id || index} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+          <article key={item.id || index} className="rounded-lg border border-cric-border bg-cric-card p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <div className="flex gap-4">
-              <div className="w-16 shrink-0 text-sm font-black text-[#031d44] dark:text-white">{item.over || item.ball || '-'}</div>
+              <div className="w-16 shrink-0 text-sm font-black text-cric-accent dark:text-white">{item.over || item.ball || '-'}</div>
               <div>
-                {item.event && item.event !== 'NONE' && <p className="mb-1 text-xs font-black uppercase tracking-widest text-blue-600">{item.event}</p>}
-                <p className="text-sm font-semibold leading-6 text-slate-700 dark:text-slate-200">{item.text}</p>
+                {item.event && item.event !== 'NONE' && <p className="mb-1 text-xs font-black uppercase tracking-widest text-cric-accent">{item.event}</p>}
+                <p className="text-sm font-semibold leading-6 text-cric-text dark:text-slate-200">{item.text}</p>
               </div>
             </div>
           </article>
@@ -375,42 +371,42 @@ export default function InternationalMatchDetail() {
     <div className="space-y-5">
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         {asArray(stats.inningsSummary).map((item, index) => (
-          <div key={`${item.team}-${index}`} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-            <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">{item.team}</p>
-            <p className="mt-2 text-2xl font-black text-[#031d44] dark:text-white">{item.runs}/{item.wickets}</p>
-            <p className="text-sm font-bold text-slate-500">{item.overs} overs</p>
+          <div key={`${item.team}-${index}`} className="rounded-lg border border-cric-border bg-cric-card p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+            <p className="text-[11px] font-black uppercase tracking-widest text-cric-muted">{item.team}</p>
+            <p className="mt-2 text-2xl font-black text-cric-accent dark:text-white">{item.runs}/{item.wickets}</p>
+            <p className="text-sm font-bold text-cric-muted">{item.overs} overs</p>
           </div>
         ))}
-        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-          <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Overs Tracked</p>
-          <p className="mt-2 text-2xl font-black text-[#031d44] dark:text-white">{stats.oversCount || 0}</p>
-          <p className="text-sm font-bold text-slate-500">from original feed</p>
+        <div className="rounded-lg border border-cric-border bg-cric-card p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+          <p className="text-[11px] font-black uppercase tracking-widest text-cric-muted">Overs Tracked</p>
+          <p className="mt-2 text-2xl font-black text-cric-accent dark:text-white">{stats.oversCount || 0}</p>
+          <p className="text-sm font-bold text-cric-muted">from original feed</p>
         </div>
       </div>
 
       {asArray(stats.topBatters).length || asArray(stats.topBowlers).length ? (
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-            <h2 className="mb-4 text-lg font-black text-[#031d44] dark:text-white">Top Batters</h2>
+          <section className="rounded-lg border border-cric-border bg-cric-card p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+            <h2 className="mb-4 text-lg font-black text-cric-accent dark:text-white">Top Batters</h2>
             {asArray(stats.topBatters).map(player => (
-              <div key={`${player.name}-${player.team}`} className="flex items-center justify-between border-b border-slate-100 py-3 last:border-0 dark:border-slate-800">
+              <div key={`${player.name}-${player.team}`} className="flex items-center justify-between border-b border-cric-border py-3 last:border-0 dark:border-slate-800">
                 <div>
-                  <p className="font-black text-slate-800 dark:text-slate-100">{player.name}</p>
-                  <p className="text-xs font-bold text-slate-400">{player.team}</p>
+                  <p className="font-black text-cric-text dark:text-slate-100">{player.name}</p>
+                  <p className="text-xs font-bold text-cric-muted">{player.team}</p>
                 </div>
-                <p className="text-lg font-black text-[#031d44] dark:text-white">{player.runs} <span className="text-xs text-slate-400">({player.balls})</span></p>
+                <p className="text-lg font-black text-cric-accent dark:text-white">{player.runs} <span className="text-xs text-cric-muted">({player.balls})</span></p>
               </div>
             ))}
           </section>
-          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-            <h2 className="mb-4 text-lg font-black text-[#031d44] dark:text-white">Top Bowlers</h2>
+          <section className="rounded-lg border border-cric-border bg-cric-card p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+            <h2 className="mb-4 text-lg font-black text-cric-accent dark:text-white">Top Bowlers</h2>
             {asArray(stats.topBowlers).map(player => (
-              <div key={`${player.name}-${player.overs}`} className="flex items-center justify-between border-b border-slate-100 py-3 last:border-0 dark:border-slate-800">
+              <div key={`${player.name}-${player.overs}`} className="flex items-center justify-between border-b border-cric-border py-3 last:border-0 dark:border-slate-800">
                 <div>
-                  <p className="font-black text-slate-800 dark:text-slate-100">{player.name}</p>
-                  <p className="text-xs font-bold text-slate-400">{player.overs} ov, eco {player.eco || '-'}</p>
+                  <p className="font-black text-cric-text dark:text-slate-100">{player.name}</p>
+                  <p className="text-xs font-bold text-cric-muted">{player.overs} ov, eco {player.eco || '-'}</p>
                 </div>
-                <p className="text-lg font-black text-[#031d44] dark:text-white">{player.wickets}/{player.runs}</p>
+                <p className="text-lg font-black text-cric-accent dark:text-white">{player.wickets}/{player.runs}</p>
               </div>
             ))}
           </section>
@@ -425,18 +421,18 @@ export default function InternationalMatchDetail() {
     overs.length ? (
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {overs.map((over, index) => (
-          <article key={over.id || index} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+          <article key={over.id || index} className="rounded-lg border border-cric-border bg-cric-card p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-base font-black text-[#031d44] dark:text-white">Over {over.over}</h2>
-              {(over.runs !== '' || over.wickets !== '') && <p className="text-sm font-black text-slate-500">{over.runs} runs {over.wickets !== '' ? `${over.wickets} wkts` : ''}</p>}
+              <h2 className="text-base font-black text-cric-accent dark:text-white">Over {over.over}</h2>
+              {(over.runs !== '' || over.wickets !== '') && <p className="text-sm font-black text-cric-muted">{over.runs} runs {over.wickets !== '' ? `${over.wickets} wkts` : ''}</p>}
             </div>
-            {over.bowler && <p className="mb-3 text-xs font-bold text-slate-400">Bowler: {over.bowler}</p>}
+            {over.bowler && <p className="mb-3 text-xs font-bold text-cric-muted">Bowler: {over.bowler}</p>}
             <div className="flex flex-wrap gap-2">
               {asArray(over.balls).length ? asArray(over.balls).map((ball, ballIndex) => (
-                <span key={ball.id || ballIndex} className="grid h-9 min-w-9 place-items-center rounded-full bg-slate-100 px-3 text-xs font-black text-[#031d44] dark:bg-slate-800 dark:text-white">
+                <span key={ball.id || ballIndex} className="grid h-9 min-w-9 place-items-center rounded-full bg-cric-bg px-3 text-xs font-black text-cric-accent dark:bg-slate-800 dark:text-white">
                   {ball.value || ball}
                 </span>
-              )) : <p className="text-sm font-semibold text-slate-500">{over.summary || 'Over details from API'}</p>}
+              )) : <p className="text-sm font-semibold text-cric-muted">{over.summary || 'Over details from API'}</p>}
             </div>
           </article>
         ))}
@@ -450,20 +446,20 @@ export default function InternationalMatchDetail() {
     playingXI.length ? (
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         {playingXI.map(team => (
-          <section key={team.teamName} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-            <h2 className="mb-4 text-lg font-black text-[#031d44] dark:text-white">{team.teamName}</h2>
+          <section key={team.teamName} className="rounded-lg border border-cric-border bg-cric-card p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+            <h2 className="mb-4 text-lg font-black text-cric-accent dark:text-white">{team.teamName}</h2>
             <div className="space-y-2">
               {asArray(team.players).map((player, index) => (
-                <div key={`${team.teamName}-${player.id || player.name}-${index}`} className="flex items-center gap-3 border-b border-slate-100 py-2 last:border-0 dark:border-slate-800">
+                <div key={`${team.teamName}-${player.id || player.name}-${index}`} className="flex items-center gap-3 border-b border-cric-border py-2 last:border-0 dark:border-slate-800">
                   {normalizeImage(player.image) ? (
                     <img src={player.image} alt={player.name} className="h-9 w-9 rounded-full object-cover" />
                   ) : (
-                    <div className="grid h-9 w-9 place-items-center rounded-full bg-slate-100 text-xs font-black text-slate-500 dark:bg-slate-800">{player.name?.[0] || 'P'}</div>
+                    <div className="grid h-9 w-9 place-items-center rounded-full bg-cric-bg text-xs font-black text-cric-muted dark:bg-slate-800">{player.name?.[0] || 'P'}</div>
                   )}
                   <div>
-                    <p className="font-black text-slate-800 dark:text-slate-100">{player.name}</p>
+                    <p className="font-black text-cric-text dark:text-slate-100">{player.name}</p>
                     {(player.role || player.captain || player.keeper) && (
-                      <p className="text-xs font-bold text-slate-400">
+                      <p className="text-xs font-bold text-cric-muted">
                         {[player.role, player.captain ? 'C' : '', player.keeper ? 'WK' : ''].filter(Boolean).join(' - ')}
                       </p>
                     )}
@@ -483,11 +479,11 @@ export default function InternationalMatchDetail() {
     photos.length ? (
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {photos.map((photo, index) => (
-          <a key={photo.id || index} href={photo.url || '#'} target={photo.url ? '_blank' : undefined} rel="noreferrer" className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition hover:shadow-lg dark:border-slate-700 dark:bg-slate-900">
+          <a key={photo.id || index} href={photo.url || '#'} target={photo.url ? '_blank' : undefined} rel="noreferrer" className="overflow-hidden rounded-lg border border-cric-border bg-cric-card shadow-sm transition hover:shadow-lg dark:border-slate-700 dark:bg-slate-900">
             {photo.image && <img src={photo.image} alt={photo.title} className="h-44 w-full object-cover" />}
             <div className="p-4">
-              <h2 className="line-clamp-2 text-sm font-black text-[#031d44] dark:text-white">{photo.title}</h2>
-              {photo.publishedAt && <p className="mt-2 text-xs font-bold text-slate-400">{formatDate(photo.publishedAt)}</p>}
+              <h2 className="line-clamp-2 text-sm font-black text-cric-accent dark:text-white">{photo.title}</h2>
+              {photo.publishedAt && <p className="mt-2 text-xs font-bold text-cric-muted">{formatDate(photo.publishedAt)}</p>}
             </div>
           </a>
         ))}
@@ -501,12 +497,12 @@ export default function InternationalMatchDetail() {
     news.length ? (
       <div className="space-y-4">
         {news.map((article, index) => (
-          <a key={article.id || index} href={article.url || '#'} target={article.url ? '_blank' : undefined} rel="noreferrer" className="grid gap-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-lg dark:border-slate-700 dark:bg-slate-900 md:grid-cols-[160px_1fr]">
+          <a key={article.id || index} href={article.url || '#'} target={article.url ? '_blank' : undefined} rel="noreferrer" className="grid gap-4 rounded-lg border border-cric-border bg-cric-card p-4 shadow-sm transition hover:shadow-lg dark:border-slate-700 dark:bg-slate-900 md:grid-cols-[160px_1fr]">
             {article.image && <img src={article.image} alt={article.title} className="h-28 w-full rounded-md object-cover" />}
             <div>
-              <h2 className="text-base font-black text-[#031d44] dark:text-white">{article.title}</h2>
-              {article.description && <p className="mt-2 line-clamp-2 text-sm font-semibold leading-6 text-slate-500">{article.description}</p>}
-              <p className="mt-2 text-xs font-black uppercase tracking-widest text-slate-400">{article.source || 'Original API'}</p>
+              <h2 className="text-base font-black text-cric-accent dark:text-white">{article.title}</h2>
+              {article.description && <p className="mt-2 line-clamp-2 text-sm font-semibold leading-6 text-cric-muted">{article.description}</p>}
+              <p className="mt-2 text-xs font-black uppercase tracking-widest text-cric-muted">{article.source || 'Original API'}</p>
             </div>
           </a>
         ))}
@@ -520,12 +516,12 @@ export default function InternationalMatchDetail() {
     videos.length ? (
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {videos.map((video, index) => (
-          <a key={video.videoId || index} href={video.watchUrl || '#'} target={video.watchUrl ? '_blank' : undefined} rel="noreferrer" className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition hover:shadow-lg dark:border-slate-700 dark:bg-slate-900">
+          <a key={video.videoId || index} href={video.watchUrl || '#'} target={video.watchUrl ? '_blank' : undefined} rel="noreferrer" className="overflow-hidden rounded-lg border border-cric-border bg-cric-card shadow-sm transition hover:shadow-lg dark:border-slate-700 dark:bg-slate-900">
             {video.thumbnail && <img src={video.thumbnail} alt={video.title} className="h-48 w-full object-cover" />}
             <div className="p-4">
-              <h2 className="line-clamp-2 text-base font-black text-[#031d44] dark:text-white">{video.title}</h2>
-              {video.description && <p className="mt-2 line-clamp-2 text-sm font-semibold text-slate-500">{video.description}</p>}
-              <p className="mt-3 text-xs font-black uppercase tracking-widest text-slate-400">{video.source || 'Original API'}</p>
+              <h2 className="line-clamp-2 text-base font-black text-cric-accent dark:text-white">{video.title}</h2>
+              {video.description && <p className="mt-2 line-clamp-2 text-sm font-semibold text-cric-muted">{video.description}</p>}
+              <p className="mt-3 text-xs font-black uppercase tracking-widest text-cric-muted">{video.source || 'Original API'}</p>
             </div>
           </a>
         ))}
@@ -560,12 +556,12 @@ export default function InternationalMatchDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+      <div className="min-h-screen bg-cric-bg dark:bg-slate-950">
         <Header />
         <div className="flex min-h-[70vh] items-center justify-center">
           <div className="text-center">
-            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-[#031d44] border-t-transparent" />
-            <p className="mt-4 text-sm font-bold text-slate-500">Loading original match centre...</p>
+            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-cric-accent border-t-transparent" />
+            <p className="mt-4 text-sm font-bold text-cric-muted">Loading original match centre...</p>
           </div>
         </div>
       </div>
@@ -573,17 +569,17 @@ export default function InternationalMatchDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen bg-cric-bg dark:bg-slate-950">
       <Header />
       <main className="mx-auto max-w-6xl px-4 py-7">
         <div className="mb-5 flex items-center justify-between gap-4">
-          <Link to="/international" className="text-xs font-black uppercase tracking-widest text-blue-700 hover:text-blue-900">
+          <Link to="/international" className="text-xs font-black uppercase tracking-widest text-cric-accent hover:text-cric-accent">
             Back to International
           </Link>
           <button
             type="button"
             onClick={fetchData}
-            className="rounded-lg bg-[#031d44] px-4 py-2 text-xs font-black uppercase tracking-widest text-white shadow-sm transition hover:bg-blue-900"
+            className="rounded-lg bg-cric-accent px-4 py-2 text-xs font-black uppercase tracking-widest text-white shadow-sm transition hover:bg-cric-accent"
           >
             Refresh
           </button>
@@ -591,20 +587,20 @@ export default function InternationalMatchDetail() {
 
         <ApiWarning status={apiStatus} />
 
-        <section className="mb-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+        <section className="mb-5 rounded-lg border border-cric-border bg-cric-card p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
           <div className="mb-4 flex flex-wrap items-center gap-3">
             <span className={`rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-widest ${stateClass(matchData)}`}>
               {stateLabel(matchData)}
             </span>
-            {matchData.matchType && <span className="text-xs font-black uppercase tracking-widest text-slate-400">{matchData.matchType}</span>}
+            {matchData.matchType && <span className="text-xs font-black uppercase tracking-widest text-cric-muted">{matchData.matchType}</span>}
           </div>
-          <h1 className="text-2xl font-black text-[#031d44] dark:text-white lg:text-3xl">
+          <h1 className="text-2xl font-black text-cric-accent dark:text-white lg:text-3xl">
             {matchData.name || 'International match centre'}
           </h1>
-          <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">
+          <p className="mt-2 text-sm font-semibold leading-6 text-cric-muted">
             {[matchData.venue, matchData.series?.name, formatDate(matchData.dateTimeGMT || matchData.date)].filter(Boolean).join(' - ')}
           </p>
-          {matchData.status && <p className="mt-3 text-base font-black text-slate-700 dark:text-slate-200">{matchData.status}</p>}
+          {matchData.status && <p className="mt-3 text-base font-black text-cric-text dark:text-slate-200">{matchData.status}</p>}
         </section>
 
         <div className="mb-6 overflow-x-auto">
@@ -617,8 +613,8 @@ export default function InternationalMatchDetail() {
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex h-11 items-center gap-2 rounded-lg px-4 text-[11px] font-black uppercase tracking-widest transition-all ${
                     activeTab === tab.id
-                      ? 'bg-[#031d44] text-white shadow-lg'
-                      : 'border border-slate-200 bg-white text-slate-500 hover:text-[#031d44] dark:border-slate-700 dark:bg-slate-900'
+                      ? 'bg-cric-accent text-white shadow-lg'
+                      : 'border border-cric-border bg-cric-card text-cric-muted hover:text-cric-accent dark:border-slate-700 dark:bg-slate-900'
                   }`}
                   type="button"
                 >

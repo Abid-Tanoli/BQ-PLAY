@@ -5,6 +5,8 @@ const COLORS = { line1: '#4f46e5', line2: '#f59e0b', fill1: '#4f46e533', fill2: 
 export default function WormGraph({ match, compact = false }) {
   const inn1 = match?.innings?.[0];
   const inn2 = match?.innings?.[1];
+  const team1Name = inn1?.team?.shortName || inn1?.team?.name || match?.teams?.[0]?.shortName || match?.teams?.[0]?.name || 'Team A';
+  const team2Name = inn2?.team?.shortName || inn2?.team?.name || match?.teams?.[1]?.shortName || match?.teams?.[1]?.name || 'Team B';
 
   const data = useMemo(() => {
     const buildPoints = (overs, totalRuns) => {
@@ -65,11 +67,11 @@ export default function WormGraph({ match, compact = false }) {
     <div className="bg-gray-900 dark:bg-cric-card rounded-lg p-3 w-full max-w-full">
       <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-3 text-xs">
         <span className="flex items-center gap-1.5">
-          <span className="w-5 h-0.5 rounded" style={{backgroundColor: COLORS.line1}}></span>Team 1
+          <span className="w-5 h-0.5 rounded" style={{backgroundColor: COLORS.line1}}></span>{team1Name}
         </span>
         {data.pts2.length > 0 && (
           <span className="flex items-center gap-1.5">
-            <span className="w-5 h-0.5 rounded" style={{backgroundColor: COLORS.line2}}></span>Team 2
+            <span className="w-5 h-0.5 rounded" style={{backgroundColor: COLORS.line2}}></span>{team2Name}
           </span>
         )}
       </div>
@@ -99,9 +101,9 @@ export default function WormGraph({ match, compact = false }) {
       </svg>
       {!compact && (
         <div className="flex justify-between mt-2 text-xs text-gray-400">
-          <span>Team 1: {data.pts1.length > 0 ? `${data.pts1[data.pts1.length - 1].cum}/${match?.innings?.[0]?.wickets || 0}` : '0/0'}</span>
+          <span>{team1Name}: {data.pts1.length > 0 ? `${data.pts1[data.pts1.length - 1].cum}/${match?.innings?.[0]?.wickets || 0}` : '0/0'}</span>
           {data.pts2.length > 0 && (
-            <span>Team 2: {data.pts2[data.pts2.length - 1].cum}/{match?.innings?.[1]?.wickets || 0}</span>
+            <span>{team2Name}: {data.pts2[data.pts2.length - 1].cum}/{match?.innings?.[1]?.wickets || 0}</span>
           )}
           {inn2?.target && <span className="text-red-400">Target: {inn2.target}</span>}
         </div>

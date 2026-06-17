@@ -86,12 +86,13 @@ npm --prefix Frontend/Admin install
 
 ### Environment Variables
 
-Create `Backend/.env`:
+Create `Backend/.env` (see `Backend/.env.example` for all options):
 
 ```env
 PORT=5000
 MONGO_URL=mongodb://localhost:27017/bqplay
 JWT_SECRET=your-secret-key
+CORS_ORIGINS=http://localhost:5173,http://localhost:5174
 RAPIDAPI_KEY=
 RAPIDAPI_CRICKET_HOST=free-cricbuzz-cricket-api.p.rapidapi.com
 ENABLE_FREE_CRICBUZZ=false
@@ -103,12 +104,17 @@ Create `Frontend/Admin/.env`:
 
 ```env
 VITE_API_URL=http://localhost:5000/api
+VITE_SOCKET_URL=http://localhost:5000
+VITE_GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
 ```
 
 Create `Frontend/User/.env`:
 
 ```env
-VITE_API_URL=/api
+VITE_API_URL=http://localhost:5000/api
+VITE_SOCKET_URL=http://localhost:5000
+VITE_CRICAPI_KEY=your_api_key_here
+VITE_GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
 ```
 
 ### Run Development Servers

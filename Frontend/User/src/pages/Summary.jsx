@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { api } from "../services/api";
+import MatchSummaryCard from "../components/MatchSummaryCard";
 
 export default function Summary() {
   const { matchId } = useParams();
@@ -78,7 +79,7 @@ export default function Summary() {
             <h1 className="text-5xl md:text-7xl font-black font-raj uppercase italic tracking-tighter text-white leading-none">
                 Match <span className="text-[#ff6b35]">Summary</span>
             </h1>
-            <p className="text-slate-500 font-bold mt-4 uppercase tracking-widest">{match.venue} • {new Date(match.startAt).toLocaleDateString()}</p>
+            <p className="text-cric-muted font-bold mt-4 uppercase tracking-widest">{match.venue} • {new Date(match.startAt).toLocaleDateString()}</p>
         </div>
       </div>
 
@@ -117,27 +118,27 @@ export default function Summary() {
                 <h3 className="text-xl font-black font-raj text-white uppercase italic tracking-tight">
                     {match.teams?.[idx]?.name}
                 </h3>
-                <div className="text-sm font-bold text-slate-500 uppercase tracking-widest">{inn.status}</div>
+                <div className="text-sm font-bold text-cric-muted uppercase tracking-widest">{inn.status}</div>
               </div>
               <div className="p-10 space-y-10">
                 <div className="flex justify-between items-end">
                     <div>
                         <div className="text-7xl font-black font-raj text-white leading-none">{inn.runs}/{inn.wickets}</div>
-                        <div className="text-sm font-bold text-slate-500 mt-2 uppercase tracking-widest">{inn.overs}.{inn.balls % 6} Overs</div>
+                        <div className="text-sm font-bold text-cric-muted mt-2 uppercase tracking-widest">{inn.overs}.{inn.balls % 6} Overs</div>
                     </div>
                     <div className="text-right">
-                        <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-1">Innings RR</div>
+                        <div className="text-[10px] font-black text-cric-muted uppercase tracking-widest mb-1">Innings RR</div>
                         <div className="text-3xl font-black font-raj text-[#ffb400] italic">{(inn.runs / (inn.balls/6 || 1)).toFixed(2)}</div>
                     </div>
                 </div>
 
                 {/* Top Batter */}
                 <div className="space-y-4">
-                    <div className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em]">Top Performer</div>
+                    <div className="text-[10px] font-black text-cric-muted uppercase tracking-[0.3em]">Top Performer</div>
                     {inn.batting?.sort((a,b)=>b.runs-a.runs).slice(0, 1).map((b, i) => (
                         <div key={i} className="flex justify-between items-center bg-white/2 p-6 rounded-3xl border border-white/5">
                             <div className="font-black font-raj text-2xl text-white uppercase italic">{b.player?.name}</div>
-                            <div className="text-3xl font-black font-raj text-[#ff6b35]">{b.runs}<span className="text-sm text-slate-500 ml-1">({b.balls})</span></div>
+                            <div className="text-3xl font-black font-raj text-[#ff6b35]">{b.runs}<span className="text-sm text-cric-muted ml-1">({b.balls})</span></div>
                         </div>
                     ))}
                 </div>
@@ -156,19 +157,25 @@ export default function Summary() {
                         <div className="w-12 h-12 bg-purple-500/10 rounded-2xl flex items-center justify-center mx-auto text-purple-500 font-black group-hover:bg-purple-500 group-hover:text-white transition-all">#{idx+1}</div>
                         <div className="font-black font-raj text-xl text-white uppercase italic truncate">{p.playerName}</div>
                         <div className="text-2xl font-black font-raj text-purple-400">{p.points.toFixed(0)}</div>
-                        <div className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">Impact Pts</div>
+                        <div className="text-[9px] font-bold text-cric-muted uppercase tracking-widest">Impact Pts</div>
                     </div>
                 ))}
               </div>
            </div>
         )}
 
+        {/* Match Summary Card */}
+        <div className="bg-[#141b24] rounded-[3rem] border border-white/5 p-8 md:p-12 shadow-2xl">
+          <h3 className="text-[10px] font-black text-[#ff6b35] uppercase tracking-[0.5em] mb-8">Share Match</h3>
+          <MatchSummaryCard match={match} />
+        </div>
+
         {/* Actions */}
-        <div className="flex flex-col sm:flex-row justify-center gap-6 pt-12">
+        <div className="flex flex-col sm:flex-row justify-center gap-6 pt-6">
           <Link to={`/match/${matchId}`} className="px-10 py-5 bg-[#ff6b35] text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-[#ff8c61] transition-all shadow-xl shadow-[#ff6b35]/20 text-center">
             View Live Dashboard
           </Link>
-          <Link to="/" className="px-10 py-5 bg-white/5 text-slate-400 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-white/10 transition-all border border-white/5 text-center">
+          <Link to="/" className="px-10 py-5 bg-white/5 text-cric-muted rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-white/10 transition-all border border-white/5 text-center">
             Return to Tournament
           </Link>
         </div>

@@ -13,13 +13,13 @@ const WinProbabilityChart = ({ winProbHistory = [], currentBattingProb = 50, cur
   return (
     <div className="bg-[#0d1b2a] dark:bg-[#020617] rounded-3xl p-6 border border-slate-800/50">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-[#ff6b35] text-[10px] font-black uppercase tracking-widest">Win Probability</h3>
-        <span className="text-xs text-slate-500">Over {currentOver}</span>
+        <h3 className="text-cric-accent text-[10px] font-black uppercase tracking-widest">Win Probability</h3>
+        <span className="text-xs text-cric-muted">Over {currentOver}</span>
       </div>
 
       <div className="space-y-3 mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-16 text-xs text-slate-400 font-medium">{battingTeamName}</div>
+          <div className="w-16 text-xs text-cric-muted font-medium">{battingTeamName}</div>
           <div className="flex-1 h-6 bg-slate-800 rounded-full overflow-hidden">
             <div 
               className="h-full bg-gradient-to-r from-green-500 to-green-400 transition-all duration-500"
@@ -30,7 +30,7 @@ const WinProbabilityChart = ({ winProbHistory = [], currentBattingProb = 50, cur
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="w-16 text-xs text-slate-400 font-medium">{bowlingTeamName}</div>
+          <div className="w-16 text-xs text-cric-muted font-medium">{bowlingTeamName}</div>
           <div className="flex-1 h-6 bg-slate-800 rounded-full overflow-hidden">
             <div 
               className="h-full bg-gradient-to-r from-red-500 to-red-400 transition-all duration-500"
@@ -50,7 +50,7 @@ const WinProbabilityChart = ({ winProbHistory = [], currentBattingProb = 50, cur
                   className="w-full bg-slate-700 rounded-t transition-all hover:bg-slate-600"
                   style={{ height: `${entry.batting}%` }}
                 />
-                <span className="text-[8px] text-slate-500">{entry.over}</span>
+                <span className="text-[8px] text-cric-muted">{entry.over}</span>
               </div>
             ))}
           </div>

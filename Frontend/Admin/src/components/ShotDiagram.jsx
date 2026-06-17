@@ -1,7 +1,7 @@
 import React from 'react';
 import { SHOT_CATEGORIES, renderShotSvg } from '../data/shotsData';
 
-export default function ShotDiagram({ shot, size = 80 }) {
+export default React.memo(function ShotDiagram({ shot, size = 80 }) {
   if (!shot) return null;
   const cat = SHOT_CATEGORIES[shot.category];
   const color = cat?.color || '#6b7280';
@@ -48,4 +48,4 @@ export default function ShotDiagram({ shot, size = 80 }) {
       )}
     </svg>
   );
-}
+});

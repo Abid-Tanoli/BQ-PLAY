@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import ThemeToggle from "./ThemeToggle";
 
 export default function Header({ user, onShowLogin, onShowRegister, onLogout }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navItems = [
@@ -20,6 +21,14 @@ export default function Header({ user, onShowLogin, onShowRegister, onLogout }) 
   ];
 
   const closeMobile = () => setMobileMenuOpen(false);
+  const openLogin = () => {
+    if (onShowLogin) onShowLogin();
+    else navigate("/login");
+  };
+  const openRegister = () => {
+    if (onShowRegister) onShowRegister();
+    else navigate("/register");
+  };
 
   return (
     <header className="bg-cric-card border-b border-cric-border sticky top-0 z-50 shadow-xl">
@@ -64,11 +73,11 @@ export default function Header({ user, onShowLogin, onShowRegister, onLogout }) 
           ) : (
             <div className="hidden sm:flex items-center gap-3">
               <button
-                onClick={onShowLogin}
+                onClick={openLogin}
                 className="text-cric-muted hover:text-cric-text text-[10px] font-black uppercase tracking-widest px-4 py-2 transition-colors min-h-[44px]"
               >Login</button>
               <button
-                onClick={onShowRegister}
+                onClick={openRegister}
                 className="px-6 py-2.5 bg-cric-accent hover:bg-orange-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg transition-all active:scale-95 min-h-[44px]"
               >Join Now</button>
             </div>
@@ -127,11 +136,11 @@ export default function Header({ user, onShowLogin, onShowRegister, onLogout }) 
               ) : (
                 <div className="flex gap-3">
                   <button
-                    onClick={() => { onShowLogin(); closeMobile(); }}
+                    onClick={() => { openLogin(); closeMobile(); }}
                     className="flex-1 px-4 py-3 border border-cric-border text-cric-muted hover:text-cric-text text-xs font-black uppercase tracking-widest rounded-xl transition-all min-h-[44px]"
                   >Login</button>
                   <button
-                    onClick={() => { onShowRegister(); closeMobile(); }}
+                    onClick={() => { openRegister(); closeMobile(); }}
                     className="flex-1 px-4 py-3 bg-cric-accent hover:bg-orange-600 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all min-h-[44px]"
                   >Join Now</button>
                 </div>

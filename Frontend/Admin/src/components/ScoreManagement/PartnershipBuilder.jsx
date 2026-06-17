@@ -55,7 +55,7 @@ export default function PartnershipBuilder({ batting, ballByBall }) {
             ) : (
               partnerships.map((p, idx) => (
                 <button
-                  key={idx}
+                  key={`${p.runs}-${p.balls}-${idx}`}
                   onClick={() => setSelectedPartnership(idx)}
                   className={`w-full p-3 rounded-lg text-left transition ${
                     selectedPartnership === idx 
@@ -84,7 +84,7 @@ export default function PartnershipBuilder({ batting, ballByBall }) {
             <div className="text-xs text-[#94a3b8] uppercase mb-3">Partnership Distribution</div>
             <div className="space-y-2">
               {partnerships.slice(0, 5).map((p, idx) => (
-                <div key={idx} className="flex items-center gap-3">
+                <div key={`${p.runs}-${p.balls}-dist-${idx}`} className="flex items-center gap-3">
                   <span className="text-xs text-[#94a3b8] w-4">#{idx + 1}</span>
                   <div className="flex-1 h-4 bg-[#334155] rounded-full overflow-hidden">
                     <div 

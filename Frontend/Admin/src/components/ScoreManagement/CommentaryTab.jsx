@@ -1,7 +1,7 @@
 import React from 'react';
 import BallByBallFeed from '../BallByBallFeed';
 
-export default function CommentaryTab({
+export default React.memo(function CommentaryTab({
     formattedHistory,
     oversHistory,
     handleEditBall,
@@ -25,4 +25,4 @@ export default function CommentaryTab({
             />
         </div>
     );
-}
+});

@@ -213,7 +213,10 @@ export const updateScore = async (req, res) => {
     let aiGeneratedCommentary = null;
     let vividCommentary = ball.vividCommentary || null;
 
-    if (!customCommentary || !commentary) {
+    let commentaryIsAi = false;
+
+    // AI commentary generation (only when AI is enabled)
+    if (!customCommentary) {
       const zone = (fieldingZone || (shotPlacement && shotPlacement.position))
         ? fieldPositionMapper.getZoneFromCoordinates(shotPlacement?.x || 50, shotPlacement?.y || 50)
         : { name: "an open area" };
@@ -264,38 +267,41 @@ export const updateScore = async (req, res) => {
         if (aiGeneratedCommentary && aiGeneratedCommentary.short) {
           commentary = aiGeneratedCommentary.short;
           vividCommentary = aiGeneratedCommentary.vivid;
+          commentaryIsAi = true;
         }
       } catch (aiErr) {
         console.error("AI Commentary Error:", aiErr);
       }
+    }
 
-      if (!commentary) {
-        commentary = generateDetailedCommentary({
-          runs: batsmanRuns,
-          isWide,
-          isNoBall,
-          isBye,
-          isLegBye,
-          isWicket: engineWicket,
-          wicketType: engineWicketType,
-          wicketCancelled,
-          freeHitNext,
-          batsmanName: batsmanOnStrike?.name || "Batsman",
-          bowlerName: bowlerPlayer?.name || "Bowler",
-          currentScore: innings.runs || 0,
-          currentWickets: innings.wickets || 0,
-          overNumber: currentOverNumber,
-          ballNumber: ballNumberInOver,
-          extraRuns: runs,
-          isAppeal
-        });
-        vividCommentary = `The delivery was bowled and played toward the ${shotPlacement?.position || fieldingZone || "fielding area"}. ${batsmanOnStrike?.name || "The batsman"} managed to pick up ${runs} run${runs !== 1 ? "s" : ""}.`;
-      }
+    // Fallback template commentary (non-AI) if no commentary was set
+    if (!commentary) {
+      commentary = generateDetailedCommentary({
+        runs: batsmanRuns,
+        isWide,
+        isNoBall,
+        isBye,
+        isLegBye,
+        isWicket: engineWicket,
+        wicketType: engineWicketType,
+        wicketCancelled,
+        freeHitNext,
+        batsmanName: batsmanOnStrike?.name || "Batsman",
+        bowlerName: bowlerPlayer?.name || "Bowler",
+        currentScore: innings.runs || 0,
+        currentWickets: innings.wickets || 0,
+        overNumber: currentOverNumber,
+        ballNumber: ballNumberInOver,
+        extraRuns: runs,
+        isAppeal
+      });
+      vividCommentary = `The delivery was bowled and played toward the ${shotPlacement?.position || fieldingZone || "fielding area"}. ${batsmanOnStrike?.name || "The batsman"} managed to pick up ${runs} run${runs !== 1 ? "s" : ""}.`;
     }
 
     // Set commentary on the ball record
     ball.commentary = commentary;
     ball.vividCommentary = vividCommentary;
+    ball.isAi = commentaryIsAi;
     ball.displayBallNumber = ball.displayBallNumber || ballNumberInOver;
     ball.batsmanName = batsmanOnStrike?.name || "Batsman";
     ball.bowlerName = bowlerPlayer?.name || "Bowler";
@@ -856,7 +862,7 @@ export const resolveTie = async (req, res) => {
       const io = getIO();
       io.to(`match-${matchId}`).emit("match:tieResolved", { matchId, resolution });
       io.emit("match:updated", match);
-    } catch (err) { }
+    } catch (err) { console.error("Socket emit error (tieResolved):", err.message); }
 
     res.status(200).json({ match, message: `Tie resolved as ${resolution}` });
   } catch (error) {
@@ -972,7 +978,7 @@ export const startSuperOverInnings = async (req, res) => {
       const io = getIO();
       io.to(`match-${matchId}`).emit("match:superOverStarted", { matchId, inningsIndex: match.currentInnings, superOverNumber });
       io.emit("match:updated", match);
-    } catch (err) { }
+    } catch (err) { console.error("Socket emit error (superOverStarted):", err.message); }
 
     res.status(200).json({ match, message: `Super Over ${superOverNumber} Innings ${isFirstInnOfSO ? 1 : 2} started` });
   } catch (error) {
@@ -1326,7 +1332,7 @@ export const revertLastBall = async (req, res) => {
       const io = getIO();
       io.to(`match-${matchId}`).emit("match:ballReverted", { matchId, inningsIndex });
       io.emit("match:updated", match);
-    } catch (err) { }
+    } catch (err) { console.error("Socket emit error (ballReverted):", err.message); }
 
     res.status(200).json({ match, message: "Last ball reverted successfully" });
   } catch (error) {
@@ -1354,7 +1360,7 @@ export const setBowler = async (req, res) => {
     try {
       const io = getIO();
       io.to(`match-${matchId}`).emit("match:bowlerSet", { matchId, inningsIndex, bowlerId });
-    } catch (err) { }
+    } catch (err) { console.error("Socket emit error (bowlerSet):", err.message); }
 
     res.status(200).json({ match, message: "Bowler set successfully" });
   } catch (error) {
@@ -1449,7 +1455,7 @@ export const useStrategicTimeout = async (req, res) => {
       const io = getIO();
       io.to(`match-${matchId}`).emit("match:timeout", { matchId, teamId, over: overNumber });
       io.emit("match:updated", match);
-    } catch (err) { }
+    } catch (err) { console.error("Socket emit error (timeout):", err.message); }
 
     res.status(200).json({ match, message: "Strategic Timeout recorded" });
   } catch (error) {
@@ -1487,7 +1493,7 @@ export const recordDRSReview = async (req, res) => {
       const io = getIO();
       io.to(`match-${matchId}`).emit("match:drsUpdate", { matchId, drs: match.drsReviews[match.drsReviews.length - 1] });
       io.emit("match:updated", match);
-    } catch (err) { }
+    } catch (err) { console.error("Socket emit error (drs):", err.message); }
 
     res.status(200).json({ match, message: "DRS Review recorded" });
   } catch (error) {
@@ -1539,7 +1545,7 @@ export const retireBatsman = async (req, res) => {
     try {
       const io = getIO();
       io.emit("match:updated", match);
-    } catch (err) { }
+    } catch (err) { console.error("Socket emit error (retire):", err.message); }
 
     res.status(200).json({ match, message: `Batsman ${type.replace('_', ' ')} successfully` });
   } catch (error) {
@@ -1590,7 +1596,7 @@ export const resetMatch = async (req, res) => {
       const io = getIO();
       io.to(`match-${matchId}`).emit("match:reset", { matchId, isMatchReset: true });
       io.emit("match:updated", match);
-    } catch (err) { }
+    } catch (err) { console.error("Socket emit error (reset):", err.message); }
 
     res.status(200).json({ match, message: "Match reset successfully" });
   } catch (error) {
@@ -1678,7 +1684,7 @@ export const editBall = async (req, res) => {
     await match.save({ validateModifiedOnly: true });
     await populateFullMatch(match);
 
-    try { const io = getIO(); io.to(`match-${matchId}`).emit('match:ballEdited', { matchId, inningsIndex, overNumber, ballNumber }); io.emit('match:updated', match); } catch (err) { }
+    try { const io = getIO(); io.to(`match-${matchId}`).emit('match:ballEdited', { matchId, inningsIndex, overNumber, ballNumber }); io.emit('match:updated', match); } catch (err) { console.error("Socket emit error (ballEdited):", err.message); }
     res.status(200).json({ match, message: 'Ball updated successfully' });
 
     // Fire off async task to regenerate commentary for the edited ball ONLY if not manually provided
@@ -1723,7 +1729,7 @@ export const editBall = async (req, res) => {
                 newVividCommentary: aiComm.vivid
               });
               io.emit("match:updated", m);
-            } catch (e) { }
+            } catch (e) { console.error("Socket emit error (ballEdited async):", e.message); }
           }
         } catch (e) {
           console.error("Async Commentary Regen Error:", e);

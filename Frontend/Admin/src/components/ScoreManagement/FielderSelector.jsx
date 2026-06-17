@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import api from "../../services/api";
 
-export default function FielderSelector({ players, selectedPlayer, onPlayerChange, selectedPosition, onPositionChange }) {
+export default React.memo(function FielderSelector({ players, selectedPlayer, onPlayerChange, selectedPosition, onPositionChange }) {
   const [positions, setPositions] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -61,4 +61,4 @@ export default function FielderSelector({ players, selectedPlayer, onPlayerChang
       </div>
     </div>
   );
-}
+});

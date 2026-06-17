@@ -82,7 +82,7 @@ function yToLength(py) {
     return rel < 0.5 ? "full_toss" : "bouncer";
 }
 
-export default function PitchMap({
+export default React.memo(function PitchMap({
     balls = [],
     currentOver = 0,
     bowlerName = "",
@@ -329,6 +329,6 @@ export default function PitchMap({
             )}
         </div>
     );
-}
+});
 
 export { LINE_ZONES, LENGTH_ZONES, SHOT_TYPES, getDotColor, lineToX, lengthToY };

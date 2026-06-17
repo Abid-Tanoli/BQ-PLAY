@@ -41,31 +41,31 @@ const LiveNavbar = () => {
   const isActive = (path) => location.pathname === path;
 
   return (
-    <div className="sticky top-0 z-50 bg-white shadow-md">
-      <div className="bg-[#031d44] text-white">
+    <div className="sticky top-0 z-50 bg-cric-card shadow-md">
+      <div className="bg-cric-accent text-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
-          <Link to="/" className="text-2xl font-black tracking-tight">BQ PLAY</Link>
+          <Link to="/" className="text-2xl font-black tracking-tight text-white">BQ PLAY</Link>
           <input
             type="text"
             placeholder="Search matches, teams, players..."
-            className="hidden w-64 rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm text-white placeholder-blue-200 outline-none focus:bg-white/20 md:block"
+            className="hidden w-64 rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm text-white placeholder-white/60 outline-none focus:bg-white/20 md:block"
           />
         </div>
       </div>
 
-      <div className="border-b border-slate-200">
+      <div className="border-b border-cric-border">
         <div className="mx-auto flex max-w-7xl items-center gap-1 overflow-x-auto px-4">
           {navItems.map((item) => (
             <Link
               key={item.key}
               to={item.path}
               className={`relative flex items-center gap-2 whitespace-nowrap px-4 py-3 text-xs font-black uppercase tracking-widest transition-all ${
-                isActive(item.path) ? 'text-[#031d44]' : 'text-slate-600 hover:text-slate-900'
+                isActive(item.path) ? 'text-cric-text' : 'text-cric-muted hover:text-cric-text'
               }`}
             >
               <span className={`h-2 w-2 rounded-full ${item.accent}`} />
               <span>{item.label}</span>
-              {isActive(item.path) && <div className="absolute bottom-0 left-0 right-0 h-1 rounded-t bg-[#031d44]" />}
+              {isActive(item.path) && <div className="absolute bottom-0 left-0 right-0 h-1 rounded-t bg-cric-accent" />}
             </Link>
           ))}
 
@@ -75,30 +75,30 @@ const LiveNavbar = () => {
               onMouseEnter={() => setShowSeriesDropdown(true)}
               onMouseLeave={() => setShowSeriesDropdown(false)}
             >
-              <button className="flex items-center gap-2 px-4 py-3 text-xs font-black uppercase tracking-widest text-slate-600 hover:text-slate-900">
+              <button className="flex items-center gap-2 px-4 py-3 text-xs font-black uppercase tracking-widest text-cric-muted hover:text-cric-text">
                 <span className="h-2 w-2 rounded-full bg-orange-500" />
                 <span>{trendingSeries[0]?.name || 'Trending'}</span>
                 <span className="text-[10px]">v</span>
               </button>
 
               {showSeriesDropdown && (
-                <div className="absolute left-0 top-full z-50 w-64 rounded-lg border border-slate-200 bg-white py-2 shadow-xl">
+                <div className="absolute left-0 top-full z-50 w-64 rounded-lg border border-cric-border bg-cric-card py-2 shadow-xl">
                   {trendingSeries.map((series) => (
                     <Link
                       key={series._id}
                       to={`/series/${series._id}`}
-                      className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-slate-50"
+                      className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-cric-bg"
                     >
                       {series.logo ? (
                         <img src={series.logo} alt={series.name} className="h-8 w-8 rounded object-cover" />
                       ) : (
-                        <div className="flex h-8 w-8 items-center justify-center rounded bg-slate-200 text-xs font-bold">
+                        <div className="flex h-8 w-8 items-center justify-center rounded bg-cric-border text-xs font-bold text-cric-text">
                           {series.name?.charAt(0)}
                         </div>
                       )}
                       <div>
-                        <p className="text-sm font-bold text-slate-800">{series.name}</p>
-                        <p className="text-[10px] capitalize text-slate-500">{series.eventType} - {series.status}</p>
+                        <p className="text-sm font-bold text-cric-text">{series.name}</p>
+                        <p className="text-[10px] capitalize text-cric-muted">{series.eventType} - {series.status}</p>
                       </div>
                     </Link>
                   ))}
@@ -110,14 +110,14 @@ const LiveNavbar = () => {
       </div>
 
       {runningSeries.length > 0 && (
-        <div className="border-b border-blue-100 bg-blue-50">
+        <div className="border-b border-cric-border bg-cric-bg">
           <div className="mx-auto flex max-w-7xl items-center gap-4 overflow-x-auto px-4 py-2">
-            <span className="whitespace-nowrap text-xs font-bold uppercase text-blue-700">Live Series:</span>
+            <span className="whitespace-nowrap text-xs font-bold uppercase text-cric-accent">Live Series:</span>
             {runningSeries.map((series) => (
               <Link
                 key={series._id}
                 to={`/series/${series._id}`}
-                className="whitespace-nowrap rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-800 transition-colors hover:bg-blue-200"
+                className="whitespace-nowrap rounded-full border border-cric-border bg-cric-card px-3 py-1 text-xs font-bold text-cric-text transition-colors hover:bg-cric-bg"
               >
                 {series.shortName || series.name}
               </Link>

@@ -5,7 +5,7 @@ import Header from "../components/Header";
 import Login from "../components/Login";
 import Register from "../components/Register";
 import { fetchMatches } from "../store/slices/matchesSlice";
-import { initAuthFromStorage, logout as doLogout, getStoredUser } from "../pages/auth/auth";
+import { logout as doLogout, getStoredUser } from "../pages/auth/auth";
 import BlogGallery from "../components/BlogGallery";
 import { api } from "../services/api";
 import GlobalSearch from "../components/GlobalSearch";

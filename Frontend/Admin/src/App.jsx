@@ -1,55 +1,65 @@
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useSelector } from "react-redux";
-import Dashboard from "./pages/Dashboard";
-import LiveScores from "./pages/LiveScores";
-import ManageEvents from "./pages/ManageEvents";
-import ManagePlayers from "./pages/ManagePlayers";
-import Teams from "./pages/Teams";
-import ManageScore from "./pages/ManageScore";
 import AdminLogin from "./pages/auth/AdminLogin";
 import AdminRegister from "./pages/auth/AdminRegister";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
-import LiveMatchView from "./pages/LiveMatchView";
-import BulkImport from "./pages/BulkImport";
-import Rankings from "./pages/Rankings";
-import PlayerProfile from "./pages/PlayerProfile";
-import TeamDetail from "./components/admin/teams/TeamDetail";
-import TeamEdit from "./pages/TeamEdit";
-import Blogs from "./pages/Blogs";
-import EventDetail from "./pages/EventDetail";
-import SeriesDetail from "./pages/SeriesDetail";
-import AdminInternational from "./pages/AdminInternational";
-import SyncPanel from "./pages/SyncPanel";
+import ErrorBoundary from "../../Shared/components/ErrorBoundary";
+
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const LiveScores = lazy(() => import("./pages/LiveScores"));
+const ManageEvents = lazy(() => import("./pages/ManageEvents"));
+const ManagePlayers = lazy(() => import("./pages/ManagePlayers"));
+const Teams = lazy(() => import("./pages/Teams"));
+const ManageScore = lazy(() => import("./pages/ManageScore"));
+const LiveMatchView = lazy(() => import("./pages/LiveMatchView"));
+const BulkImport = lazy(() => import("./pages/BulkImport"));
+const Rankings = lazy(() => import("./pages/Rankings"));
+const PlayerProfile = lazy(() => import("./pages/PlayerProfile"));
+const TeamDetail = lazy(() => import("./components/admin/teams/TeamDetail"));
+const TeamEdit = lazy(() => import("./pages/TeamEdit"));
+const Blogs = lazy(() => import("./pages/Blogs"));
+const EventDetail = lazy(() => import("./pages/EventDetail"));
+const SeriesDetail = lazy(() => import("./pages/SeriesDetail"));
+const AdminInternational = lazy(() => import("./pages/AdminInternational"));
+const SyncPanel = lazy(() => import("./pages/SyncPanel"));
+
+const PageLoader = () => (
+  <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
+    <div className="w-10 h-10 border-4 border-[#22c55e] border-t-transparent rounded-full animate-spin" />
+  </div>
+);
 
 export default function App() {
   const { token } = useSelector((state) => state.auth);
 
   return (
+    <Suspense fallback={<PageLoader />}>
     <Routes>
       <Route path="/admin/login" element={!token ? <AdminLogin /> : <Navigate to="/admin" />} />
       <Route path="/admin/register" element={!token ? <AdminRegister /> : <Navigate to="/admin" />} />
-      <Route path="/admin" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
-      <Route path="/admin/live" element={<ProtectedRoute><Layout><LiveScores /></Layout></ProtectedRoute>} />
-      <Route path="/admin/events" element={<ProtectedRoute><Layout><ManageEvents /></Layout></ProtectedRoute>} />
-      <Route path="/admin/teams" element={<ProtectedRoute><Layout><Teams /></Layout></ProtectedRoute>} />
-      <Route path="/admin/players" element={<ProtectedRoute><Layout><ManagePlayers /></Layout></ProtectedRoute>} />
-      <Route path="/admin/score" element={<ProtectedRoute><Layout><ManageScore /></Layout></ProtectedRoute>} />
-      <Route path="/admin/score/:matchId" element={<ProtectedRoute><Layout><ManageScore /></Layout></ProtectedRoute>} />
-      <Route path="/admin/score/:matchId/:tabId" element={<ProtectedRoute><Layout><ManageScore /></Layout></ProtectedRoute>} />
-      <Route path="/admin/bulk-import" element={<ProtectedRoute><Layout><BulkImport /></Layout></ProtectedRoute>} />
-      <Route path="/admin/blogs" element={<ProtectedRoute><Layout><Blogs /></Layout></ProtectedRoute>} />
-      <Route path="/admin/rankings" element={<ProtectedRoute><Layout><Rankings /></Layout></ProtectedRoute>} />
-      <Route path="/admin/live/:id" element={<ProtectedRoute><Layout><LiveMatchView /></Layout></ProtectedRoute>} />
-      <Route path="/admin/players/:id" element={<ProtectedRoute><Layout><PlayerProfile /></Layout></ProtectedRoute>} />
-      <Route path="/admin/teams/:id/edit" element={<ProtectedRoute><Layout><TeamEdit /></Layout></ProtectedRoute>} />
-      <Route path="/admin/teams/:id" element={<ProtectedRoute><Layout><TeamDetail /></Layout></ProtectedRoute>} />
-          <Route path="/admin/events/:eventId" element={<ProtectedRoute><Layout><EventDetail /></Layout></ProtectedRoute>} />
-          <Route path="/admin/series/:id" element={<ProtectedRoute><Layout><SeriesDetail /></Layout></ProtectedRoute>} />
-          <Route path="/admin/international" element={<ProtectedRoute><Layout><AdminInternational /></Layout></ProtectedRoute>} />
-          <Route path="/admin/sync" element={<ProtectedRoute><Layout><SyncPanel /></Layout></ProtectedRoute>} />
+      <Route path="/admin" element={<ProtectedRoute><ErrorBoundary><Layout><Dashboard /></Layout></ErrorBoundary></ProtectedRoute>} />
+      <Route path="/admin/live" element={<ProtectedRoute><ErrorBoundary><Layout><LiveScores /></Layout></ErrorBoundary></ProtectedRoute>} />
+      <Route path="/admin/events" element={<ProtectedRoute><ErrorBoundary><Layout><ManageEvents /></Layout></ErrorBoundary></ProtectedRoute>} />
+      <Route path="/admin/teams" element={<ProtectedRoute><ErrorBoundary><Layout><Teams /></Layout></ErrorBoundary></ProtectedRoute>} />
+      <Route path="/admin/players" element={<ProtectedRoute><ErrorBoundary><Layout><ManagePlayers /></Layout></ErrorBoundary></ProtectedRoute>} />
+      <Route path="/admin/score" element={<ProtectedRoute><ErrorBoundary><Layout><ManageScore /></Layout></ErrorBoundary></ProtectedRoute>} />
+      <Route path="/admin/score/:matchId" element={<ProtectedRoute><ErrorBoundary><Layout><ManageScore /></Layout></ErrorBoundary></ProtectedRoute>} />
+      <Route path="/admin/score/:matchId/:tabId" element={<ProtectedRoute><ErrorBoundary><Layout><ManageScore /></Layout></ErrorBoundary></ProtectedRoute>} />
+      <Route path="/admin/bulk-import" element={<ProtectedRoute><ErrorBoundary><Layout><BulkImport /></Layout></ErrorBoundary></ProtectedRoute>} />
+      <Route path="/admin/blogs" element={<ProtectedRoute><ErrorBoundary><Layout><Blogs /></Layout></ErrorBoundary></ProtectedRoute>} />
+      <Route path="/admin/rankings" element={<ProtectedRoute><ErrorBoundary><Layout><Rankings /></Layout></ErrorBoundary></ProtectedRoute>} />
+      <Route path="/admin/live/:id" element={<ProtectedRoute><ErrorBoundary><Layout><LiveMatchView /></Layout></ErrorBoundary></ProtectedRoute>} />
+      <Route path="/admin/players/:id" element={<ProtectedRoute><ErrorBoundary><Layout><PlayerProfile /></Layout></ErrorBoundary></ProtectedRoute>} />
+      <Route path="/admin/teams/:id/edit" element={<ProtectedRoute><ErrorBoundary><Layout><TeamEdit /></Layout></ErrorBoundary></ProtectedRoute>} />
+      <Route path="/admin/teams/:id" element={<ProtectedRoute><ErrorBoundary><Layout><TeamDetail /></Layout></ErrorBoundary></ProtectedRoute>} />
+          <Route path="/admin/events/:eventId" element={<ProtectedRoute><ErrorBoundary><Layout><EventDetail /></Layout></ErrorBoundary></ProtectedRoute>} />
+          <Route path="/admin/series/:id" element={<ProtectedRoute><ErrorBoundary><Layout><SeriesDetail /></Layout></ErrorBoundary></ProtectedRoute>} />
+          <Route path="/admin/international" element={<ProtectedRoute><ErrorBoundary><Layout><AdminInternational /></Layout></ErrorBoundary></ProtectedRoute>} />
+          <Route path="/admin/sync" element={<ProtectedRoute><ErrorBoundary><Layout><SyncPanel /></Layout></ErrorBoundary></ProtectedRoute>} />
       <Route path="/" element={<Navigate to="/admin" />} />
     </Routes>
+    </Suspense>
   );
 }

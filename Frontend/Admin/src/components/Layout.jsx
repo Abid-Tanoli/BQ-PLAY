@@ -3,6 +3,8 @@ import { useLocation } from "react-router-dom";
 import Navbar from "./Navbar";
 import Sidebar from "./Sidebar";
 import { LayoutContext } from "../context/LayoutContext";
+import SocketStatusIndicator from "../../../Shared/components/SocketStatusIndicator";
+import { getSocket } from "../store/socket";
 
 export default function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -13,6 +15,7 @@ export default function Layout({ children }) {
 
   return (
     <LayoutContext.Provider value={{ toggleSidebar, sidebarOpen, isLiveScoring }}>
+      <SocketStatusIndicator getSocket={getSocket} />
       <div className="min-h-screen bg-cric-bg text-cric-text transition-colors duration-300 max-w-full overflow-x-hidden">
         {sidebarOpen && (
           <div

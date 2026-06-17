@@ -1,37 +1,15 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchMatches } from '../store/slices/matchesSlice';
 import { initSocket } from '../store/socket';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import EnhancedScoringPanel from '../components/EnhancedScoringPanel';
-import api from '../services/api';
-import { useToast } from '../components/Toast';
-import ConfirmModal from '../components/ConfirmModal';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export default function LiveScores() {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const { matches, loading: matchesLoading } = useSelector((state) => state.matches);
-    const { token } = useSelector((state) => state.auth);
 
     const [view, setView] = useState('all');
-    const [loading, setLoading] = useState(false);
-
-    // Group matches by series/event
-    const groupedMatches = useMemo(() => {
-        const groups = {};
-        matches.forEach(match => {
-            const key = match.matchSubcategory || match.series || 'Other Matches';
-            if (!groups[key]) {
-                groups[key] = [];
-            }
-            groups[key].push(match);
-        });
-        return groups;
-    }, [matches]);
 
     // Filter matches by date
     const today = new Date();
@@ -114,7 +92,7 @@ export default function LiveScores() {
 
             {/* Content */}
             <div className="max-w-7xl mx-auto px-6 py-8">
-                {matchesLoading || loading ? (
+                {matchesLoading ? (
                     <div className="text-center py-20">
                         <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-[#031d44] border-t-transparent"></div>
                         <p className="mt-4 text-xs font-black text-slate-400 uppercase tracking-widest">Loading matches...</p>
@@ -138,7 +116,7 @@ export default function LiveScores() {
                                             <div className="p-4">
                                                 <div className="flex items-center justify-between mb-3">
                                                     <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                                                        {match.matchSubcategory || match.series} • {formatDate(match.startAt)}
+                                                        {match.matchSubcategory || match.series} &bull; {formatDate(match.startAt)}
                                                     </span>
                                                     <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-[9px] font-bold uppercase">
                                                         Complete
@@ -227,7 +205,7 @@ export default function LiveScores() {
                                                         }}
                                                         className="flex-1 bg-[#031d44] hover:bg-slate-800 text-white py-2 rounded-lg font-black text-xs uppercase tracking-widest"
                                                     >
-                                                        🏏 Score Match
+                                                        Score Match
                                                     </button>
                                                     <button
                                                         onClick={(e) => {
@@ -236,7 +214,7 @@ export default function LiveScores() {
                                                         }}
                                                         className="px-4 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-black text-xs uppercase tracking-widest"
                                                     >
-                                                        👁️ View
+                                                        View
                                                     </button>
                                                 </div>
                                             </div>
@@ -285,13 +263,13 @@ export default function LiveScores() {
                                                         onClick={() => navigate('/admin/score')}
                                                         className="flex-1 bg-[#031d44] hover:bg-slate-800 text-white py-2 rounded-lg font-black text-xs uppercase tracking-widest"
                                                     >
-                                                        ⚙️ Manage Match
+                                                        Manage Match
                                                     </button>
                                                     <button
                                                         onClick={() => navigate('/admin/events')}
                                                         className="px-4 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-black text-xs uppercase tracking-widest"
                                                     >
-                                                        📋 Setup
+                                                        Setup
                                                     </button>
                                                 </div>
                                             </div>
@@ -328,13 +306,13 @@ export default function LiveScores() {
                                                     onClick={() => navigate('/admin/score')}
                                                     className="flex-1 bg-[#031d44] hover:bg-slate-800 text-white py-2 rounded-lg font-black text-xs uppercase tracking-widest"
                                                 >
-                                                    ⚙️ Manage Match
+                                                    Manage Match
                                                 </button>
                                                 <button
                                                     onClick={() => navigate('/admin/events')}
                                                     className="px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-lg font-black text-xs uppercase tracking-widest"
                                                 >
-                                                    📋 Setup
+                                                    Setup
                                                 </button>
                                             </div>
                                         </div>

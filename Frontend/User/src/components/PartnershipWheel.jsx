@@ -28,7 +28,7 @@ const PartnershipWheel = ({ partnerships = [], totalScore = 0 }) => {
 
   return (
     <div className="bg-[#0d1b2a] dark:bg-[#020617] rounded-3xl p-6 border border-slate-800/50">
-      <h3 className="text-[#ff6b35] text-[10px] font-black uppercase tracking-widest mb-4">Partnership Distribution</h3>
+      <h3 className="text-cric-accent text-[10px] font-black uppercase tracking-widest mb-4">Partnership Distribution</h3>
       
       <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
         <div className="relative w-full max-w-[12rem] mx-auto sm:mx-0 sm:w-48 sm:h-48 shrink-0 aspect-square">
@@ -65,9 +65,9 @@ const PartnershipWheel = ({ partnerships = [], totalScore = 0 }) => {
           {segments.map((seg, idx) => (
             <div key={idx} className="flex items-center gap-2 text-xs">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: seg.color }} />
-              <span className="text-slate-400">Wkt {seg.wicketNumber}:</span>
+              <span className="text-cric-muted">Wkt {seg.wicketNumber}:</span>
               <span className="text-white font-medium">{seg.runs} runs</span>
-              <span className="text-slate-500">({seg.percentage.toFixed(1)}%)</span>
+              <span className="text-cric-muted">({seg.percentage.toFixed(1)}%)</span>
             </div>
           ))}
         </div>

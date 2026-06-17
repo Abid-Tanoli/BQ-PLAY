@@ -238,3 +238,69 @@ export const getPlayerRanking = async (req, res) => {
   ranked.sort((a, b) => b.rankingPoints - a.rankingPoints);
   res.json(ranked);
 };
+
+export const getHeadToHead = async (req, res) => {
+  try {
+    const { batsmanId, bowlerId } = req.params;
+
+    const [batsman, bowler] = await Promise.all([
+      Player.findById(batsmanId).select("name playingRole"),
+      Player.findById(bowlerId).select("name playingRole"),
+    ]);
+
+    if (!batsman || !bowler) {
+      return res.status(404).json({ message: "Player not found" });
+    }
+
+    const matches = await Match.find({
+      $and: [
+        { "innings.oversHistory.balls.batsmanOnStrike": batsmanId },
+        { "innings.oversHistory.balls.bowler": bowlerId },
+      ],
+    })
+      .select("title startAt innings.oversHistory.balls")
+      .lean();
+
+    let ballsFaced = 0, runsScored = 0, fours = 0, sixes = 0, dismissals = 0;
+    let dismissalTypes = [];
+
+    for (const match of matches) {
+      for (const inn of match.innings || []) {
+        for (const over of inn.oversHistory || []) {
+          for (const ball of over.balls || []) {
+            const striker = ball.batsmanOnStrike?.toString();
+            const bowler = ball.bowler?.toString();
+            if (striker === batsmanId && bowler === bowlerId) {
+              ballsFaced++;
+              runsScored += ball.runs || 0;
+              if (ball.runs === 4) fours++;
+              if (ball.runs === 6) sixes++;
+              if (ball.isWicket && !ball.wicketCancelled) {
+                dismissals++;
+                if (ball.wicketType && !["run out", "obstructing the field", "retired hurt"].includes(ball.wicketType)) {
+                  dismissalTypes.push(ball.wicketType);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    res.json({
+      batsman: { _id: batsman._id, name: batsman.name, playingRole: batsman.playingRole },
+      bowler: { _id: bowler._id, name: bowler.name, playingRole: bowler.playingRole },
+      ballsFaced,
+      runsScored,
+      fours,
+      sixes,
+      dismissals,
+      dismissalTypes: [...new Set(dismissalTypes)],
+      strikeRate: ballsFaced > 0 ? ((runsScored / ballsFaced) * 100).toFixed(1) : "0.0",
+      average: dismissals > 0 ? (runsScored / dismissals).toFixed(2) : "—",
+      matchesPlayed: matches.length,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching head-to-head data", error: err.message });
+  }
+};

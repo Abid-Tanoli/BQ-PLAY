@@ -1,50 +1,133 @@
-import { io as clientIo } from "socket.io-client";
+import { io } from "socket.io-client";
 
-let socket = null;
+const instances = {};
+const CONFIG = {
+  admin: {
+    key: "__BQ_PLAY_ADMIN_SOCKET__",
+    autoConnect: true,
+  },
+  user: {
+    key: "__BQ_PLAY_USER_SOCKET__",
+    autoConnect: false,
+  },
+};
 
-const SERVER = import.meta.env?.VITE_SOCKET_URL || "http://localhost:5000";
+function getUrl() {
+  return (
+    import.meta.env.VITE_SOCKET_URL ||
+    (import.meta.env.DEV ? "http://localhost:5000" : window.location.origin)
+  );
+}
 
-export function initSocket() {
-  if (socket?.connected) return socket;
+function getInstance(namespace) {
+  if (!namespace) return null;
+  const cfg = CONFIG[namespace];
+  if (!cfg) throw new Error(`Unknown socket namespace: ${namespace}`);
 
-  socket = clientIo(SERVER, {
-    transports: ["websocket", "polling"],
+  if (instances[namespace]) return instances[namespace];
+
+  const global = globalThis[cfg.key];
+  if (global) {
+    instances[namespace] = global;
+    return global;
+  }
+
+  return null;
+}
+
+function setInstance(namespace, socket) {
+  const cfg = CONFIG[namespace];
+  if (!cfg) return;
+  instances[namespace] = socket;
+  globalThis[cfg.key] = socket;
+}
+
+export function getSocket(namespace = "admin") {
+  const inst = getInstance(namespace);
+  return inst || initSocket(namespace);
+}
+
+export function initSocket(namespace = "admin") {
+  const cfg = CONFIG[namespace];
+  if (!cfg) throw new Error(`Unknown socket namespace: ${namespace}`);
+
+  const existing = getInstance(namespace);
+  if (existing?.connected) return existing;
+
+  if (existing) {
+    if (!existing.active) existing.connect();
+    return existing;
+  }
+
+  const socket = io(getUrl(), {
+    transports: ["websocket"],
     reconnection: true,
-    reconnectionAttempts: 5,
-    reconnectionDelay: 1000,
+    reconnectionDelay: 2000,
+    reconnectionDelayMax: 10000,
+    reconnectionAttempts: Infinity,
+    timeout: 30000,
+    autoConnect: cfg.autoConnect,
+    withCredentials: true,
   });
+  setInstance(namespace, socket);
 
   socket.on("connect", () => {
-    console.log("✅ Socket connected:", socket.id);
+    console.log(`[SOCKET:${namespace}] connect    id=${socket.id}`);
   });
-
-  socket.on("connect_error", (err) => {
-    console.warn("❌ Socket connection error:", err.message);
+  socket.on("disconnect", (reason) => {
+    console.log(`[SOCKET:${namespace}] disconnect id=${socket?.id} reason=${reason}`);
+  });
+  socket.on("connect_error", (error) => {
+    if (!socket?.connected) {
+      console.warn(`[SOCKET:${namespace}] error      ${error.message}`);
+    }
+  });
+  socket.on("reconnect", (attemptNumber) => {
+    console.log(`[SOCKET:${namespace}] reconnect  id=${socket.id} after ${attemptNumber} attempts`);
+  });
+  socket.io.on("reconnect_attempt", (attempt) => {
+    console.log(`[SOCKET:${namespace}] reconnect_attempt #${attempt}`);
   });
 
   return socket;
 }
 
-export function getSocket() {
-  return initSocket();
+export function joinMatchRoom(matchId, namespace = "user") {
+  const s = initSocket(namespace);
+  if (matchId) s.emit("join-match", matchId);
 }
 
-export function joinMatchRoom(matchId) {
-  const s = initSocket();
-  s?.emit("join-match", matchId);
+export function leaveMatchRoom(matchId, namespace = "user") {
+  const s = getInstance(namespace);
+  if (s) s.emit("leave-match", matchId);
 }
 
-export function leaveMatchRoom(matchId) {
-  if (socket?.connected) {
-    socket.emit("leave-match", matchId);
+export function disconnectSocket(namespace = "admin") {
+  const s = getInstance(namespace);
+  if (s) {
+    console.log(`[SOCKET:${namespace}] manual disconnect`);
+    s.removeAllListeners();
+    s.disconnect();
+    setInstance(namespace, null);
   }
 }
 
-export function disconnectSocket() {
-  if (socket) {
-    socket.disconnect();
-    socket = null;
-  }
+export function isSocketConnected(namespace = "admin") {
+  const s = getInstance(namespace);
+  return !!(s && s.connected);
 }
 
-export default { initSocket, getSocket, joinMatchRoom, leaveMatchRoom, disconnectSocket };
+export function emitSocket(event, data, namespace = "admin") {
+  const s = getInstance(namespace);
+  if (s && s.connected) {
+    s.emit(event, data);
+    return true;
+  }
+  console.warn(`[SOCKET:${namespace}] cannot emit ${event} — not connected`);
+  return false;
+}
+
+// Keep socket instances stable across hot reloads; components clean up their own listeners.
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {});
+}

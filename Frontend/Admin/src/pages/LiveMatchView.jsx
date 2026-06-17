@@ -184,14 +184,9 @@ export default function LiveMatchView() {
                 
                 <div className="bg-[#0f172a] p-4 rounded-xl border border-[#334155]">
                   <div className="flex justify-between text-xs font-bold mb-2 uppercase">
-                    <span className="text-[#3b82f6]">{team1?.shortName || team1?.name} 50%</span>
-                    <span className="text-white">Win Prob</span>
-                    <span className="text-[#ef4444]">{team2?.shortName || team2?.name} 50%</span>
+                    <span className="text-[#94a3b8]">Win Probability</span>
                   </div>
-                  <div className="w-full h-2 rounded-full overflow-hidden flex">
-                    <div className="bg-[#3b82f6] h-full" style={{ width: '50%' }}></div>
-                    <div className="bg-[#ef4444] h-full" style={{ width: '50%' }}></div>
-                  </div>
+                  <div className="text-center text-[11px] text-[#94a3b8]">Stat not available during live play</div>
                 </div>
                 
                 <div className="text-right text-xs text-[#94a3b8]">
@@ -274,7 +269,7 @@ export default function LiveMatchView() {
                       <div className="flex gap-2 font-rajdhani font-bold flex-wrap">
                         {(!currentOverData || currentOverData.balls.length === 0) && <span className="text-sm text-[#94a3b8] font-inter font-normal">No balls bowled in this over</span>}
                         {(currentOverData?.balls || []).map((ball, idx) => (
-                           <span key={idx} className={`w-7 h-7 flex items-center justify-center rounded-full text-white text-xs shadow-sm ${ball.isWicket ? 'bg-[#ef4444] shadow-[0_0_8px_rgba(239,68,68,0.4)]' : ball.runs === 6 ? 'bg-[#f59e0b]' : ball.runs === 4 ? 'bg-[#3b82f6]' : ball.isWide||ball.isNoBall ? 'bg-[#8b5cf6]' : 'bg-[#1e293b] border border-[#334155]'}`}>
+                           <span key={ball._id || `${currentOverData.overNumber}-${idx}`} className={`w-7 h-7 flex items-center justify-center rounded-full text-white text-xs shadow-sm ${ball.isWicket ? 'bg-[#ef4444] shadow-[0_0_8px_rgba(239,68,68,0.4)]' : ball.runs === 6 ? 'bg-[#f59e0b]' : ball.runs === 4 ? 'bg-[#3b82f6]' : ball.isWide||ball.isNoBall ? 'bg-[#8b5cf6]' : 'bg-[#1e293b] border border-[#334155]'}`}>
                              {ball.isWicket ? 'W' : ball.isWide ? `${ball.runs}wd` : ball.isNoBall ? `${ball.runs}nb` : ball.runs}
                            </span>
                         ))}
@@ -427,14 +422,15 @@ export default function LiveMatchView() {
                         <tbody className="divide-y divide-[#334155] text-sm font-rajdhani">
                           {[...oversHistory].reverse().map((o, idx) => {
                              const bowlerName = (currentInnings.bowling || []).find(b => (b.player?._id || b.player) === o.bowler)?.player?.name || 'Unknown';
+                             const overKey = o._id || o.overNumber || idx;
                              return (
-                               <tr key={idx} className="hover:bg-[#0f172a]/50 transition">
+                               <tr key={overKey} className="hover:bg-[#0f172a]/50 transition">
                                  <td className="px-6 py-5 text-center font-bold text-lg text-white">{o.overNumber}</td>
                                  <td className="px-4 py-5 text-[#f1f5f9] font-inter font-bold">{bowlerName}</td>
                                  <td className="px-6 py-5">
                                     <div className="flex gap-2">
                                         {(o.balls || []).map((ball, bIdx) => (
-                                          <span key={bIdx} className={`w-8 h-8 flex items-center justify-center rounded-full text-white text-xs font-bold font-inter shadow-sm ${ball.isWicket ? 'bg-[#ef4444] shadow-[0_0_8px_rgba(239,68,68,0.4)]' : ball.runs === 6 ? 'bg-[#f59e0b]' : ball.runs === 4 ? 'bg-[#3b82f6]' : ball.isWide||ball.isNoBall ? 'bg-[#8b5cf6]' : 'bg-[#1e293b] border border-[#334155]'}`}>
+                                          <span key={ball._id || `${overKey}-${bIdx}`} className={`w-8 h-8 flex items-center justify-center rounded-full text-white text-xs font-bold font-inter shadow-sm ${ball.isWicket ? 'bg-[#ef4444] shadow-[0_0_8px_rgba(239,68,68,0.4)]' : ball.runs === 6 ? 'bg-[#f59e0b]' : ball.runs === 4 ? 'bg-[#3b82f6]' : ball.isWide||ball.isNoBall ? 'bg-[#8b5cf6]' : 'bg-[#1e293b] border border-[#334155]'}`}>
                                             {ball.isWicket ? 'W' : ball.isWide ? `${ball.runs}wd` : ball.isNoBall ? `${ball.runs}nb` : ball.runs}
                                           </span>
                                         ))}

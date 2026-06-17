@@ -64,13 +64,25 @@ export async function getWagonWheelData(req, res) {
                 const ballBatsmanId = ball.batsmanOnStrike?._id?.toString() || ball.batsmanOnStrike?.toString() || '';
                 if (ballBatsmanId !== batsmanId) return;
               }
-              const pos = (ball.position || '').toLowerCase();
-              const dir = directionMap[pos] ?? (ball.direction ?? (Math.random() * 120 - 60));
-              const dist = distanceMap[pos] ?? distanceMap[ball.distance?.toLowerCase()] ?? ball.distance ?? (ball.runs >= 4 ? 'boundary' : ball.runs >= 1 ? 'outfield' : 'infield');
+              const position = (
+                ball.shotPlacement?.position ||
+                ball.shotDirection ||
+                ball.fieldingZone ||
+                ball.position ||
+                ""
+              );
+              const pos = String(position).toLowerCase().replace(/[\s_]+/g, "-");
+              const rawDirection = ball.shotPlacement?.angle ?? ball.direction ?? directionMap[pos];
+              if (rawDirection == null || Number.isNaN(Number(rawDirection))) return;
+
+              const rawDistance = ball.shotPlacement?.distance ?? ball.distance;
+              const dist = typeof rawDistance === "number"
+                ? rawDistance
+                : distanceMap[pos] ?? distanceMap[String(rawDistance || "").toLowerCase()] ?? (ball.runs >= 4 ? 'boundary' : ball.runs >= 1 ? 'outfield' : 'infield');
               deliveries.push({
                 runsOffBat: ball.runs || 0,
                 extras: 0,
-                shotDirection: dir,
+                shotDirection: Number(rawDirection),
                 shotDistance: dist,
                 overNumber: over.overNumber,
                 ballNumber: ball.ballNumber || 1,

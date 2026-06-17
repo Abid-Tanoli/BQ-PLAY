@@ -29,16 +29,16 @@ export default function CricketNews() {
   const sources = ['all', ...new Set(articles.map(a => a.source))];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-950">
+    <div className="min-h-screen bg-gradient-to-b from-cric-bg to-cric-card dark:from-slate-900 dark:to-slate-950">
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl lg:text-4xl font-black text-[#031d44] dark:text-white">Cricket News</h1>
-            <p className="text-sm text-slate-500 mt-1">Latest cricket updates curated for BQ-PLAY.</p>
+            <h1 className="text-3xl lg:text-4xl font-black text-cric-accent dark:text-white">Cricket News</h1>
+            <p className="text-sm text-cric-muted mt-1">Latest cricket updates curated for BQ-PLAY.</p>
           </div>
           <button
             onClick={fetchNews}
-            className="bg-[#031d44] hover:bg-slate-800 text-white text-[10px] font-black uppercase tracking-widest px-5 py-2.5 rounded-xl transition-all"
+            className="bg-cric-accent hover:bg-cric-text text-white text-[10px] font-black uppercase tracking-widest px-5 py-2.5 rounded-xl transition-all"
           >
             Refresh
           </button>
@@ -51,8 +51,8 @@ export default function CricketNews() {
               onClick={() => setActiveFilter(source)}
               className={`px-5 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${
                 activeFilter === source
-                  ? 'bg-[#031d44] text-white shadow-lg'
-                  : 'bg-white dark:bg-slate-800 text-slate-500 hover:text-[#031d44] border border-slate-200 dark:border-slate-700'
+                  ? 'bg-cric-accent text-white shadow-lg'
+                  : 'bg-cric-card dark:bg-slate-800 text-cric-muted hover:text-cric-accent border border-cric-border dark:border-slate-700'
               }`}
             >
               {source === 'all' ? 'All' : source}
@@ -62,13 +62,13 @@ export default function CricketNews() {
 
         {loading ? (
           <div className="text-center py-20">
-            <div className="inline-block w-8 h-8 border-4 border-[#031d44] border-t-transparent rounded-full animate-spin" />
-            <p className="text-slate-500 mt-4 text-sm font-bold">Loading news...</p>
+            <div className="inline-block w-8 h-8 border-4 border-cric-accent border-t-transparent rounded-full animate-spin" />
+            <p className="text-cric-muted mt-4 text-sm font-bold">Loading news...</p>
           </div>
         ) : (
           <div className="space-y-4">
             {getFilteredArticles().length === 0 ? (
-              <div className="text-center py-16 text-slate-500">
+              <div className="text-center py-16 text-cric-muted">
                 <p className="text-4xl mb-4">📰</p>
                 <p className="text-lg font-bold">No news articles available</p>
               </div>
@@ -79,7 +79,7 @@ export default function CricketNews() {
                   href={article.link}
                   target="_blank"
                   rel="noreferrer"
-                  className="block bg-white dark:bg-slate-800 rounded-2xl shadow border border-slate-200 dark:border-slate-700 overflow-hidden hover:shadow-xl transition-all group"
+                  className="block bg-cric-card dark:bg-slate-800 rounded-2xl shadow border border-cric-border dark:border-slate-700 overflow-hidden hover:shadow-xl transition-all group"
                 >
                   <div className="flex gap-5 p-6">
                     {article.image && (
@@ -96,16 +96,16 @@ export default function CricketNews() {
                           {article.source}
                         </span>
                         {article.pubDate && (
-                          <span className="text-[10px] text-slate-400">
+                          <span className="text-[10px] text-cric-muted">
                             {new Date(article.pubDate).toLocaleDateString()} - {new Date(article.pubDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         )}
                       </div>
-                      <h3 className="text-lg font-bold text-[#031d44] dark:text-white group-hover:text-blue-600 transition-colors line-clamp-2">
+                      <h3 className="text-lg font-bold text-cric-accent dark:text-white group-hover:text-blue-600 transition-colors line-clamp-2">
                         {article.title}
                       </h3>
                       {article.description && (
-                        <p className="text-sm text-slate-500 mt-2 line-clamp-3">{article.description}</p>
+                        <p className="text-sm text-cric-muted mt-2 line-clamp-3">{article.description}</p>
                       )}
                       <span className="text-xs font-bold text-blue-600 mt-3 inline-block group-hover:underline">Read full story</span>
                     </div>

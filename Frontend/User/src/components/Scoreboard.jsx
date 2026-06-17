@@ -21,12 +21,12 @@ export default function Scoreboard({ matchId }) {
     load();
   }, [matchId]);
 
-  if (loading) return <div className="p-8 text-center text-slate-400">Loading scorecard...</div>;
-  if (!match) return <div className="p-8 text-center text-slate-400">Match not found</div>;
+  if (loading) return <div className="p-8 text-center text-cric-muted">Loading scorecard...</div>;
+  if (!match) return <div className="p-8 text-center text-cric-muted">Match not found</div>;
 
   const innings = match.innings || [];
   if (innings.length === 0) {
-    return <div className="p-8 text-center text-slate-400">No innings data yet</div>;
+    return <div className="p-8 text-center text-cric-muted">No innings data yet</div>;
   }
 
   // Group batting stats by player
@@ -112,7 +112,7 @@ export default function Scoreboard({ matchId }) {
   return (
     <div className="space-y-6">
       {/* Match Summary Header */}
-      <div className="bg-[#031d44] text-white p-6 rounded-2xl">
+      <div className="bg-cric-accent text-white p-6 rounded-2xl">
         <h2 className="text-xs font-black uppercase tracking-widest text-blue-300 mb-4">Match Summary</h2>
 
         {/* Innings Summary */}
@@ -149,8 +149,8 @@ export default function Scoreboard({ matchId }) {
       </div>
 
       {/* Batting Scorecard */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="bg-[#031d44] px-6 py-4">
+      <div className="bg-cric-card rounded-2xl shadow-sm border border-cric-border overflow-hidden">
+        <div className="bg-cric-accent px-6 py-4">
           <h3 className="text-lg font-black text-white uppercase tracking-tight">
             {match.teams.find(t => (t._id || t) === battingTeamId)?.name || `Innings ${activeInnings + 1}`} - Batting
           </h3>
@@ -159,7 +159,7 @@ export default function Scoreboard({ matchId }) {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-400">
+              <tr className="bg-cric-bg text-[10px] font-black uppercase tracking-widest text-cric-muted">
                 <th className="py-3 px-4 text-left">Batter</th>
                 <th className="py-3 px-2 text-center">R</th>
                 <th className="py-3 px-2 text-center">B</th>
@@ -169,30 +169,30 @@ export default function Scoreboard({ matchId }) {
                 <th className="py-3 px-4 text-right">SR</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-cric-border">
               {battingStats.length > 0 ? (
                 battingStats.map((b, i) => (
-                  <tr key={i} className="hover:bg-slate-50">
+                  <tr key={i} className="hover:bg-cric-bg">
                     <td className="py-3 px-4">
-                      <Link to={`/players/${b.player?._id}`} className="font-bold text-[#031d44] hover:text-blue-600 hover:underline">
+                      <Link to={`/players/${b.player?._id}`} className="font-bold text-cric-accent hover:text-cric-accent hover:underline">
                         {b.player?.name || 'Unknown'}
                       </Link>
                       {b.isOut ? (
-                        <span className="block text-[9px] text-slate-400 uppercase mt-0.5">{b.dismissalType || 'out'}</span>
+                        <span className="block text-[9px] text-cric-muted uppercase mt-0.5">{b.dismissalType || 'out'}</span>
                       ) : (
                         <span className="block text-[9px] text-green-600 uppercase mt-0.5 font-bold">not out</span>
                       )}
                     </td>
-                    <td className="py-3 px-2 text-center font-black text-[#031d44]">{b.runs}</td>
-                    <td className="py-3 px-2 text-center text-slate-500">{b.balls}</td>
-                    <td className="py-3 px-2 text-center text-slate-400">{b.fours}</td>
-                    <td className="py-3 px-2 text-center text-slate-400">{b.sixes}</td>
-                    <td className="py-3 px-2 text-center text-slate-400">{b.dotBalls || 0}</td>
-                    <td className="py-3 px-4 text-right text-slate-500 text-xs">{b.strikeRate}</td>
+                    <td className="py-3 px-2 text-center font-black text-cric-accent">{b.runs}</td>
+                    <td className="py-3 px-2 text-center text-cric-muted">{b.balls}</td>
+                    <td className="py-3 px-2 text-center text-cric-muted">{b.fours}</td>
+                    <td className="py-3 px-2 text-center text-cric-muted">{b.sixes}</td>
+                    <td className="py-3 px-2 text-center text-cric-muted">{b.dotBalls || 0}</td>
+                    <td className="py-3 px-4 text-right text-cric-muted text-xs">{b.strikeRate}</td>
                   </tr>
                 ))
               ) : (
-                <tr><td colSpan={7} className="py-8 text-center text-slate-400">Batting yet to start</td></tr>
+                <tr><td colSpan={7} className="py-8 text-center text-cric-muted">Batting yet to start</td></tr>
               )}
             </tbody>
           </table>
@@ -200,9 +200,9 @@ export default function Scoreboard({ matchId }) {
 
         {/* Extras */}
         {currentInnings.extras && (
-          <div className="px-6 py-3 bg-slate-50 border-t border-slate-100 text-sm">
-            <span className="font-bold text-slate-600">Extras: {currentInnings.extras.total || 0}</span>
-            <span className="text-slate-500 ml-2">
+          <div className="px-6 py-3 bg-cric-bg border-t border-cric-border text-sm">
+            <span className="font-bold text-cric-muted">Extras: {currentInnings.extras.total || 0}</span>
+            <span className="text-cric-muted ml-2">
               (b {currentInnings.extras.byes || 0}, lb {currentInnings.extras.legByes || 0},
               wd {currentInnings.extras.wides || 0}, nb {currentInnings.extras.noBalls || 0})
             </span>
@@ -211,8 +211,8 @@ export default function Scoreboard({ matchId }) {
 
         {/* Yet to Bat / Did not bat */}
         {yetToBat.length > 0 && (
-          <div className="px-6 py-4 border-t border-slate-100">
-            <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">
+          <div className="px-6 py-4 border-t border-cric-border">
+            <p className="text-[10px] font-black uppercase text-cric-muted tracking-widest mb-2">
               {isMatchCompleted ? 'Did not bat' : 'Yet to bat'}
             </p>
             <div className="flex flex-wrap gap-2">
@@ -220,7 +220,7 @@ export default function Scoreboard({ matchId }) {
                 <Link
                   key={p._id}
                   to={`/players/${p._id}`}
-                  className="px-3 py-1.5 bg-slate-100 rounded-full text-xs font-bold text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                  className="px-3 py-1.5 bg-cric-bg rounded-full text-xs font-bold text-cric-muted hover:bg-cric-card hover:text-cric-accent transition-colors"
                 >
                   {p.name}
                 </Link>
@@ -231,7 +231,7 @@ export default function Scoreboard({ matchId }) {
 
         {/* Fall of Wickets */}
         {currentInnings.fallOfWickets?.length > 0 && (
-          <div className="px-6 py-4 border-t border-slate-100 bg-red-50">
+          <div className="px-6 py-4 border-t border-cric-border bg-red-50">
             <p className="text-[10px] font-black uppercase text-red-400 tracking-widest mb-2">Fall of Wickets</p>
             <div className="flex flex-wrap gap-2">
               {currentInnings.fallOfWickets.map((fow, idx) => (
@@ -245,15 +245,15 @@ export default function Scoreboard({ matchId }) {
       </div>
 
       {/* Bowling Scorecard */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="bg-[#031d44] px-6 py-4">
+      <div className="bg-cric-card rounded-2xl shadow-sm border border-cric-border overflow-hidden">
+        <div className="bg-cric-accent px-6 py-4">
           <h3 className="text-lg font-black text-white uppercase tracking-tight">Bowling</h3>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-400">
+              <tr className="bg-cric-bg text-[10px] font-black uppercase tracking-widest text-cric-muted">
                 <th className="py-3 px-4 text-left">Bowler</th>
                 <th className="py-3 px-2 text-center">O</th>
                 <th className="py-3 px-2 text-center">M</th>
@@ -265,27 +265,27 @@ export default function Scoreboard({ matchId }) {
                 <th className="py-3 px-4 text-right">ECON</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-cric-border">
               {bowlingStats.length > 0 ? (
                 bowlingStats.map((b, i) => (
-                  <tr key={i} className="hover:bg-slate-50">
+                  <tr key={i} className="hover:bg-cric-bg">
                     <td className="py-3 px-4">
-                      <Link to={`/players/${b.player?._id}`} className="font-bold text-[#031d44] hover:text-blue-600 hover:underline">
+                      <Link to={`/players/${b.player?._id}`} className="font-bold text-cric-accent hover:text-cric-accent hover:underline">
                         {b.player?.name || 'Unknown'}
                       </Link>
                     </td>
-                    <td className="py-3 px-2 text-center text-slate-500">{b.oversStr}</td>
-                    <td className="py-3 px-2 text-center text-slate-400">{b.maidens}</td>
-                    <td className="py-3 px-2 text-center text-slate-500">{b.runs}</td>
+                    <td className="py-3 px-2 text-center text-cric-muted">{b.oversStr}</td>
+                    <td className="py-3 px-2 text-center text-cric-muted">{b.maidens}</td>
+                    <td className="py-3 px-2 text-center text-cric-muted">{b.runs}</td>
                     <td className="py-3 px-2 text-center font-black text-red-600">{b.wickets}</td>
-                    <td className="py-3 px-2 text-center text-slate-400">{b.dotBalls || 0}</td>
-                    <td className="py-3 px-2 text-center text-slate-400">{b.wides}</td>
-                    <td className="py-3 px-2 text-center text-slate-400">{b.noBalls}</td>
-                    <td className="py-3 px-4 text-right text-slate-500 text-xs">{b.economy}</td>
+                    <td className="py-3 px-2 text-center text-cric-muted">{b.dotBalls || 0}</td>
+                    <td className="py-3 px-2 text-center text-cric-muted">{b.wides}</td>
+                    <td className="py-3 px-2 text-center text-cric-muted">{b.noBalls}</td>
+                    <td className="py-3 px-4 text-right text-cric-muted text-xs">{b.economy}</td>
                   </tr>
                 ))
               ) : (
-                <tr><td colSpan={9} className="py-8 text-center text-slate-400">Bowling yet to start</td></tr>
+                <tr><td colSpan={9} className="py-8 text-center text-cric-muted">Bowling yet to start</td></tr>
               )}
             </tbody>
           </table>
@@ -293,14 +293,14 @@ export default function Scoreboard({ matchId }) {
 
         {/* Bowling XI - Who can bowl */}
         {match.bowlingXI?.find(xi => (xi.team?._id || xi.team) !== battingTeamId)?.players?.length > 0 && (
-          <div className="px-6 py-4 border-t border-slate-100 bg-blue-50">
-            <p className="text-[10px] font-black uppercase text-blue-400 tracking-widest mb-2">Bowling Options</p>
+          <div className="px-6 py-4 border-t border-cric-border bg-cric-bg">
+            <p className="text-[10px] font-black uppercase text-cric-accent tracking-widest mb-2">Bowling Options</p>
             <div className="flex flex-wrap gap-2">
               {match.bowlingXI.find(xi => (xi.team?._id || xi.team) !== battingTeamId).players.map(p => (
                 <Link
                   key={p._id}
                   to={`/players/${p._id}`}
-                  className="px-3 py-1.5 bg-white rounded-full text-xs font-bold text-blue-600 border border-blue-200 hover:bg-blue-100 transition-colors"
+                  className="px-3 py-1.5 bg-cric-card rounded-full text-xs font-bold text-cric-accent border border-cric-border hover:bg-cric-bg transition-colors"
                 >
                   {p.name}
                 </Link>

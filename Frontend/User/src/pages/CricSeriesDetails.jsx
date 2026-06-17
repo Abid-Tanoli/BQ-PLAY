@@ -39,10 +39,10 @@ export default function CricSeriesDetails() {
   const upcomingMatches = matches.filter((match) => !match.matchStarted && !match.matchEnded);
 
   return (
-    <div className="min-h-screen bg-[#f0f2f5]">
+    <div className="min-h-screen bg-cric-bg">
       <Header />
 
-      <section className="bg-gradient-to-r from-[#031d44] via-[#0a2d5e] to-[#031d44] py-8 text-white">
+      <section className="bg-gradient-to-r from-cric-accent via-cric-accent to-cric-accent py-8 text-white">
         <div className="mx-auto max-w-7xl px-4">
           <Link to="/series" className="text-xs font-black uppercase tracking-widest text-blue-200 hover:text-white">Back to series</Link>
           <h1 className="mt-4 text-3xl font-black uppercase tracking-tight">{series?.name || "Series Details"}</h1>
@@ -63,15 +63,15 @@ export default function CricSeriesDetails() {
         ) : error ? (
           <ErrorState message={error} onRetry={loadSeries} />
         ) : matches.length === 0 ? (
-          <div className="rounded-2xl bg-white p-12 text-center shadow-sm ring-1 ring-slate-200">
-            <h2 className="text-xl font-black uppercase text-[#031d44]">No matches found</h2>
-            <p className="mt-2 text-sm font-semibold text-slate-500">The live data provider did not return fixtures for this series yet.</p>
+          <div className="rounded-2xl bg-cric-card p-12 text-center shadow-sm ring-1 ring-cric-border">
+            <h2 className="text-xl font-black uppercase text-cric-accent">No matches found</h2>
+            <p className="mt-2 text-sm font-semibold text-cric-muted">The live data provider did not return fixtures for this series yet.</p>
           </div>
         ) : (
           <>
             {liveMatches.length > 0 && (
               <section>
-                <h2 className="mb-4 flex items-center gap-2 text-xl font-black uppercase tracking-tight text-[#031d44]">
+                <h2 className="mb-4 flex items-center gap-2 text-xl font-black uppercase tracking-tight text-cric-accent">
                   <span className="h-6 w-2 rounded-full bg-red-600" />
                   Live Matches
                 </h2>
@@ -82,7 +82,7 @@ export default function CricSeriesDetails() {
             )}
 
             <section>
-              <h2 className="mb-4 text-xl font-black uppercase tracking-tight text-[#031d44]">All Series Matches</h2>
+              <h2 className="mb-4 text-xl font-black uppercase tracking-tight text-cric-accent">All Series Matches</h2>
               <div className="grid gap-4 md:grid-cols-2">
                 {matches.map((match) => <MatchCard key={match.id} match={match} />)}
               </div>
@@ -90,7 +90,7 @@ export default function CricSeriesDetails() {
 
             {completedMatches.length > 0 && (
               <section>
-                <h2 className="mb-4 text-xl font-black uppercase tracking-tight text-[#031d44]">Results</h2>
+                <h2 className="mb-4 text-xl font-black uppercase tracking-tight text-cric-accent">Results</h2>
                 <div className="grid gap-4 md:grid-cols-2">
                   {completedMatches.map((match) => <MatchCard key={`result-${match.id}`} match={match} />)}
                 </div>
@@ -99,7 +99,7 @@ export default function CricSeriesDetails() {
 
             {upcomingMatches.length > 0 && (
               <section>
-                <h2 className="mb-4 text-xl font-black uppercase tracking-tight text-[#031d44]">Upcoming Fixtures</h2>
+                <h2 className="mb-4 text-xl font-black uppercase tracking-tight text-cric-accent">Upcoming Fixtures</h2>
                 <div className="grid gap-4 md:grid-cols-2">
                   {upcomingMatches.map((match) => <MatchCard key={`upcoming-${match.id}`} match={match} />)}
                 </div>

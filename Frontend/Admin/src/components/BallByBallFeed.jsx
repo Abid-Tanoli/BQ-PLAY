@@ -306,7 +306,7 @@ function EditBallModal({ ball, overNum, ballNum, displayBallNum, onSave, onClose
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 
-export default function BallByBallFeed({ history = [], overs = [], onEdit, onSwitchTab, compact = false }) {
+const BallByBallFeed = React.memo(function BallByBallFeed({ history = [], overs = [], onEdit, onSwitchTab, compact = false }) {
     const scrollRef = useRef(null);
     const [editingBall, setEditingBall] = useState(null);
 
@@ -381,4 +381,6 @@ export default function BallByBallFeed({ history = [], overs = [], onEdit, onSwi
             )}
         </div>
     );
-}
+});
+
+export default BallByBallFeed;

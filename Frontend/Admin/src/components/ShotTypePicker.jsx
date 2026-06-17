@@ -4,7 +4,7 @@ import { SHOTS, SHOT_CATEGORIES } from "../data/shotsData";
 
 const CATEGORY_ORDER = ["front_foot", "back_foot", "leg_side", "unorthodox", "power", "defensive"];
 
-export default function ShotTypePicker({ isOpen, onClose, onSelect, currentShot }) {
+export default React.memo(function ShotTypePicker({ isOpen, onClose, onSelect, currentShot }) {
   const [activeTab, setActiveTab] = useState("front_foot");
 
   useEffect(() => {
@@ -96,4 +96,4 @@ export default function ShotTypePicker({ isOpen, onClose, onSelect, currentShot 
       </div>
     </div>
   );
-}
+});

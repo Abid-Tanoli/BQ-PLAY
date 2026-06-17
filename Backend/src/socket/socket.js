@@ -1,4 +1,5 @@
 import { Server } from "socket.io";
+import log from "../utils/logger.js";
 
 let io;
 
@@ -29,21 +30,22 @@ export const initSocket = (server) => {
   });
 
   io.on("connection", (socket) => {
+    const slog = log.child({ socketId: socket.id });
     const clientIp = socket.handshake.address;
     if (shouldLogSocket()) {
-      console.log(`[SOCKET] connect  id=${socket.id} ip=${clientIp} transport=${socket.conn.transport.name}`);
+      slog.info({ ip: clientIp, transport: socket.conn.transport.name }, "socket connect");
     }
 
     socket.conn.on("upgrade", (transport) => {
       if (shouldLogSocket()) {
-        console.log(`[SOCKET] upgrade  id=${socket.id} transport=${transport.name}`);
+        slog.info({ transport: transport.name }, "socket upgrade");
       }
     });
 
     socket.on("joinRoom", (roomId) => {
       socket.join(roomId);
       if (shouldLogSocket()) {
-        console.log(`[SOCKET] join     id=${socket.id} room=${roomId}`);
+        slog.info({ room: roomId }, "socket join room");
       }
     });
 
@@ -53,7 +55,9 @@ export const initSocket = (server) => {
 
     const joinAllMatchRooms = (matchId) => {
       if (!matchId) return;
+      // Canonical room: match-${matchId}
       socket.join(matchRoom(matchId));
+      // Legacy aliases (kept for backward compat with existing clients)
       socket.join(String(matchId));
       socket.join(`imatch_${matchId}`);
       socket.join(`m_${matchId}`);
@@ -67,44 +71,30 @@ export const initSocket = (server) => {
       socket.leave(`m_${matchId}`);
     };
 
+    // ── Canonical join/leave (preferred) ───────────────────────
     socket.on("join-match", (matchId) => {
       joinAllMatchRooms(matchId);
       if (shouldLogSocket()) {
-        console.log(`[SOCKET] join     id=${socket.id} match=${matchId}`);
+        slog.info({ matchId }, "socket join match");
       }
     });
-
     socket.on("leave-match", (matchId) => {
       leaveAllMatchRooms(matchId);
+    });
+
+    // ── Legacy aliases (migrate clients to "join-match") ───────
+    const legacyJoinHandlers = ["JOIN_IMATCH", "JOIN_MATCH", "JOIN"];
+    const legacyLeaveHandlers = ["LEAVE_IMATCH", "LEAVE_MATCH", "LEAVE"];
+    legacyJoinHandlers.forEach((ev) => {
+      socket.on(ev, ({ matchId, id } = {}) => joinAllMatchRooms(matchId || id));
+    });
+    legacyLeaveHandlers.forEach((ev) => {
+      socket.on(ev, ({ matchId, id } = {}) => leaveAllMatchRooms(matchId || id));
     });
 
     socket.on("join-teams", () => { socket.join("teams"); });
     socket.on("join-players", () => { socket.join("players"); });
     socket.on("join-cricket-live", () => { socket.join("cricket-live"); });
-
-    socket.on("JOIN_IMATCH", ({ matchId, id } = {}) => {
-      joinAllMatchRooms(matchId || id);
-    });
-
-    socket.on("LEAVE_IMATCH", ({ matchId, id } = {}) => {
-      leaveAllMatchRooms(matchId || id);
-    });
-
-    socket.on("JOIN_MATCH", ({ matchId, id } = {}) => {
-      joinAllMatchRooms(matchId || id);
-    });
-
-    socket.on("LEAVE_MATCH", ({ matchId, id } = {}) => {
-      leaveAllMatchRooms(matchId || id);
-    });
-
-    socket.on("JOIN", ({ matchId, id } = {}) => {
-      joinAllMatchRooms(matchId || id);
-    });
-
-    socket.on("LEAVE", ({ matchId, id } = {}) => {
-      leaveAllMatchRooms(matchId || id);
-    });
 
     socket.on("match:updateList", () => {
       io.emit("match:updateList");
@@ -112,12 +102,12 @@ export const initSocket = (server) => {
 
     socket.on("disconnect", (reason) => {
       if (shouldLogSocket()) {
-        console.log(`[SOCKET] disconnect id=${socket.id} reason=${reason}`);
+        slog.info({ reason }, "socket disconnect");
       }
     });
   });
 
-  console.log("Socket.IO initialized successfully (websocket-only)");
+  log.info("Socket.IO initialized successfully (websocket-only)");
   return io;
 };
 
@@ -137,7 +127,7 @@ export function emitBallRecorded(matchId, data) {
   io.emit("match:ballUpdate", payload);
   io.emit("match:updated", { matchId });
   if (shouldLogSocket()) {
-    console.log(`[SOCKET] emit     match=${matchId} event=ball:recorded striker=${data.strikerId} runs=${data.runs}`);
+    log.info({ matchId, event: "ball:recorded", strikerId: data.strikerId, runs: data.runs }, "socket emit ball:recorded");
   }
 }
 
@@ -153,7 +143,7 @@ export function emitStrikeChanged(matchId, data) {
   if (!io) return;
   io.to(matchRoom(matchId)).to(String(matchId)).emit("strike:changed", { matchId, ...data });
   if (shouldLogSocket()) {
-    console.log(`[SOCKET] emit     match=${matchId} event=strike:changed striker=${data.strikerId} nonStriker=${data.nonStrikerId}`);
+    log.info({ matchId, event: "strike:changed", strikerId: data.strikerId, nonStrikerId: data.nonStrikerId }, "socket emit strike:changed");
   }
 }
 
@@ -161,7 +151,7 @@ export function emitOverCompleted(matchId, data) {
   if (!io) return;
   io.to(matchRoom(matchId)).to(String(matchId)).emit("over:completed", { matchId, ...data });
   if (shouldLogSocket()) {
-    console.log(`[SOCKET] emit     match=${matchId} event=over:completed over=${data.overNumber}`);
+    log.info({ matchId, event: "over:completed", overNumber: data.overNumber }, "socket emit over:completed");
   }
 }
 

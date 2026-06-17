@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from '../components/Toast';
 import { getTabIdFromRoute, getScoreTabPath, FIELD_POSITIONS, WICKET_TYPES } from '../components/ScoreManagement/constants';
+import { getSocket, joinMatchRoom, leaveMatchRoom } from '../store/socket';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 const isIllegalDelivery = (ball) => !!(ball?.isWide || ball?.isNoBall);
@@ -33,15 +34,49 @@ export default function useMatchScoring() {
     const [loadingCommentary, setLoadingCommentary] = useState(false);
     const [toast, setToast] = useState('');
     const { showToast } = useToast();
-    const     reloadMatch = useCallback(async () => {
+    const reloadMatch = useCallback(async (targetMatchId = matchId) => {
+        if (!targetMatchId) return;
         try {
             const headers = token ? { Authorization: `Bearer ${token}` } : {};
-            const res = await axios.get(`${API_URL}/matches/${selectedMatch?._id || matchId}`, { headers });
+            const res = await axios.get(`${API_URL}/matches/${targetMatchId}`, { headers });
             setSelectedMatch(res.data);
         } catch (err) {
             console.error("Failed to reload match:", err);
         }
-    }, [selectedMatch, matchId, token]);
+    }, [matchId, token]);
+
+    // Socket-based real-time updates for wagon wheel, scores, etc.
+    useEffect(() => {
+        const socket = getSocket();
+        if (!socket || !matchId) return;
+        const mid = String(matchId);
+        const payloadMatchId = (payload = {}) => payload.matchId || payload.match?._id || payload._id;
+        const shouldHandle = (payload) => {
+            const incomingId = payloadMatchId(payload);
+            return !incomingId || String(incomingId) === mid;
+        };
+        const onMatchEvent = (payload) => {
+            if (shouldHandle(payload)) reloadMatch(matchId);
+        };
+
+        joinMatchRoom(matchId);
+
+        socket.on("score:update", onMatchEvent);
+        socket.on("ball:recorded", onMatchEvent);
+        socket.on("strike:changed", onMatchEvent);
+        socket.on("over:completed", onMatchEvent);
+        socket.on("match:updated", onMatchEvent);
+
+        return () => {
+            leaveMatchRoom(matchId);
+            socket.off("score:update", onMatchEvent);
+            socket.off("ball:recorded", onMatchEvent);
+            socket.off("strike:changed", onMatchEvent);
+            socket.off("over:completed", onMatchEvent);
+            socket.off("match:updated", onMatchEvent);
+        };
+    }, [matchId, reloadMatch]);
+
     const [confirmModal, setConfirmModal] = useState({ open: false, title: '', message: '', onConfirm: null, variant: 'danger' });
     const [isDRSModalOpen, setIsDRSModalOpen] = useState(false);
     const [drsData, setDrsData] = useState({ result: 'upheld', type: 'lbw' });
@@ -330,29 +365,31 @@ export default function useMatchScoring() {
             isLegBye: selectedExtra === 'LEG BYE',
             isWicket: !!selectedWicket,
             wicketType: selectedWicket,
-            fielderId: setupState.wicketFielder || undefined,
+            fielderId: setupState.wicketFielder || fieldedById || undefined,
             batsmanOnStrikeId: batsmanOnStrike,
             batsmanNonStrikeId: batsmanNonStrike,
             bowlerId: curInn.currentBowler?._id || curInn.currentBowler,
-            fieldingZone: activeGroundZone?.direction || FIELD_POSITIONS.find(p => p.id === fieldPos)?.name || fieldPos,
-            shotPlacement: activeGroundZone ? { x: activeGroundZone.x, y: activeGroundZone.y, angle: activeGroundZone.angle, distance: activeGroundZone.distance, position: activeGroundZone.direction } : null,
-            shotType: pitchMapShot || activeGroundZone?.shotName || '',
-            pitchZone: (pitchMapLength || '').replace(/_/g, '-'),
-            ballMovement,
-            ballOutcome,
-            pitchLine: pitchMapLine || '',
-            pitchLength: pitchMapLength || '',
-            pitchShotType: pitchMapShot || '',
-            pitchX: pitchMapClickPos ? Math.round(((pitchMapClickPos.x - 60) / 140) * 100) : null,
-            pitchY: pitchMapClickPos ? Math.round(((pitchMapClickPos.y - 40) / 440) * 100) : null,
+            ...(useAICommentary ? {
+                fieldingZone: activeGroundZone?.direction || FIELD_POSITIONS.find(p => p.id === fieldPos)?.name || fieldPos,
+                shotPlacement: activeGroundZone ? { x: activeGroundZone.x, y: activeGroundZone.y, angle: activeGroundZone.angle, distance: activeGroundZone.distance, position: activeGroundZone.direction } : null,
+                shotType: pitchMapShot || activeGroundZone?.shotName || '',
+                pitchZone: (pitchMapLength || '').replace(/_/g, '-'),
+                ballMovement,
+                ballOutcome,
+                pitchLine: pitchMapLine || '',
+                pitchLength: pitchMapLength || '',
+                pitchShotType: pitchMapShot || '',
+                pitchX: pitchMapClickPos ? Math.round(((pitchMapClickPos.x - 60) / 140) * 100) : null,
+                pitchY: pitchMapClickPos ? Math.round(((pitchMapClickPos.y - 40) / 440) * 100) : null,
+                groundZone: activeGroundZone?.shotName || activeGroundZone?.nearestPosition || '',
+                fieldedByPosition: fieldedByPosition,
+                fieldedById: fieldedById,
+                shotTypeName: pitchMapShot || ''
+            } : {}),
             commentaryText: useAICommentary ? manualCommentary : (manualCommentary || ""),
             customCommentary: !useAICommentary,
             nextBatsmanId: setupState.wicketNewBatter || undefined,
             didCross: setupState.wicketDidCross,
-            groundZone: activeGroundZone?.shotName || activeGroundZone?.nearestPosition || '',
-            fieldedByPosition: fieldedByPosition,
-            fieldedById: fieldedById,
-            shotTypeName: pitchMapShot || ''
         };
 
         try {

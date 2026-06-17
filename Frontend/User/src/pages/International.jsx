@@ -116,13 +116,13 @@ export default function International() {
   const renderApiOverview = () => {
     const topMatch = groupedMatches.live[0] || groupedMatches.upcoming[0] || groupedMatches.results[0];
     return (
-      <section className="mb-8 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
-        <div className="bg-[#031d44] px-5 py-4 text-white">
+      <section className="mb-8 overflow-hidden rounded-2xl border border-cric-border bg-cric-card shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <div className="bg-cric-accent px-5 py-4 text-white">
           <p className="text-[10px] font-black uppercase tracking-[0.25em] text-blue-200">{providerLabel}</p>
           <h2 className="mt-1 text-2xl font-black uppercase tracking-tight">Real cricket data</h2>
         </div>
         <div className="grid gap-0 lg:grid-cols-[1fr_1.2fr]">
-          <div className="grid grid-cols-2 gap-3 border-b border-slate-100 p-5 dark:border-slate-700 lg:border-b-0 lg:border-r">
+          <div className="grid grid-cols-2 gap-3 border-b border-cric-border p-5 dark:border-slate-700 lg:border-b-0 lg:border-r">
             {[
               ['Matches', matches.length],
               ['Live', groupedMatches.live.length],
@@ -131,23 +131,23 @@ export default function International() {
               ['Series/Tournaments', series.length],
               ['Highlights', highlights.length],
             ].map(([label, value]) => (
-              <div key={label} className="rounded-xl bg-slate-50 p-4 dark:bg-slate-700">
-                <p className="text-2xl font-black text-[#031d44] dark:text-white">{value}</p>
-                <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-slate-400">{label}</p>
+              <div key={label} className="rounded-xl bg-cric-bg p-4 dark:bg-slate-700">
+                <p className="text-2xl font-black text-cric-accent dark:text-white">{value}</p>
+                <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-cric-muted">{label}</p>
               </div>
             ))}
           </div>
           <div className="p-5">
             {topMatch ? (
-              <Link to={`/international/match/${getMatchId(topMatch)}`} className="block rounded-xl border border-slate-100 p-4 transition hover:border-blue-300 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-700">
-                <p className="text-[10px] font-black uppercase tracking-widest text-blue-600">{getMatchState(topMatch)} match</p>
-                <h3 className="mt-2 text-xl font-black text-[#031d44] dark:text-white">{topMatch.name}</h3>
-                <p className="mt-2 text-sm font-bold text-slate-500">{topMatch.series?.name || topMatch.description || providerLabel}</p>
-                <p className="mt-2 text-sm font-semibold text-slate-600 dark:text-slate-300">{topMatch.status}</p>
-                <p className="mt-1 text-xs font-semibold text-slate-400">{formatDate(topMatch.dateTimeGMT || topMatch.date)}{topMatch.venue ? ` - ${topMatch.venue}` : ''}</p>
+              <Link to={`/international/match/${getMatchId(topMatch)}`} className="block rounded-xl border border-cric-border p-4 transition hover:border-blue-300 hover:bg-cric-bg dark:border-slate-700 dark:hover:bg-slate-700">
+                <p className="text-[10px] font-black uppercase tracking-widest text-cric-accent">{getMatchState(topMatch)} match</p>
+                <h3 className="mt-2 text-xl font-black text-cric-accent dark:text-white">{topMatch.name}</h3>
+                <p className="mt-2 text-sm font-bold text-cric-muted">{topMatch.series?.name || topMatch.description || providerLabel}</p>
+                <p className="mt-2 text-sm font-semibold text-cric-muted dark:text-slate-300">{topMatch.status}</p>
+                <p className="mt-1 text-xs font-semibold text-cric-muted">{formatDate(topMatch.dateTimeGMT || topMatch.date)}{topMatch.venue ? ` - ${topMatch.venue}` : ''}</p>
               </Link>
             ) : (
-              <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm font-bold text-slate-500">
+              <div className="rounded-xl border border-dashed border-cric-border p-8 text-center text-sm font-bold text-cric-muted">
                 Waiting for cricket data from the configured provider.
               </div>
             )}
@@ -160,7 +160,7 @@ export default function International() {
   const renderMatchGrid = (matchList, emptyTitle, emptySubtitle) => (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
       {matchList.length === 0 ? (
-        <div className="col-span-full rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center text-slate-500 dark:border-slate-700 dark:bg-slate-800">
+        <div className="col-span-full rounded-2xl border border-dashed border-cric-border bg-cric-card px-6 py-16 text-center text-cric-muted dark:border-slate-700 dark:bg-slate-800">
           <p className="text-lg font-black">{emptyTitle}</p>
           {apiWarning ? (
             <div className="mx-auto mt-4 max-w-2xl rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
@@ -175,7 +175,7 @@ export default function International() {
           <Link
             key={getMatchId(match)}
             to={`/international/match/${getMatchId(match)}`}
-            className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-xl dark:border-slate-700 dark:bg-slate-800"
+            className="group rounded-2xl border border-cric-border bg-cric-card p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-xl dark:border-slate-700 dark:bg-slate-800"
           >
             <div className="mb-3 flex items-center justify-between gap-3">
               <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest ${
@@ -187,20 +187,20 @@ export default function International() {
               }`}>
                 {getMatchState(match)}
               </span>
-              <span className="text-[10px] font-bold uppercase text-slate-400">{match.matchType || match.type || 'Match'}</span>
+              <span className="text-[10px] font-bold uppercase text-cric-muted">{match.matchType || match.type || 'Match'}</span>
             </div>
-            <h3 className="mb-3 line-clamp-2 text-lg font-black text-[#031d44] transition-colors group-hover:text-blue-600 dark:text-white">
+            <h3 className="mb-3 line-clamp-2 text-lg font-black text-cric-accent transition-colors group-hover:text-cric-accent dark:text-white">
               {match.name}
             </h3>
             {asArray(match.score).map((score, index) => (
-              <div key={`${scoreTeam(score)}-${index}`} className="flex justify-between border-b border-slate-100 py-1 text-sm last:border-0 dark:border-slate-700">
-                <span className="font-bold text-slate-700 dark:text-slate-300">{scoreTeam(score)}</span>
-                <span className="font-black text-[#031d44] dark:text-white">{scoreLine(score)}</span>
+              <div key={`${scoreTeam(score)}-${index}`} className="flex justify-between border-b border-cric-border py-1 text-sm last:border-0 dark:border-slate-700">
+                <span className="font-bold text-cric-text dark:text-slate-300">{scoreTeam(score)}</span>
+                <span className="font-black text-cric-accent dark:text-white">{scoreLine(score)}</span>
               </div>
             ))}
-            <p className="mt-3 text-xs font-semibold text-slate-500">{formatDate(match.dateTimeGMT || match.date)}</p>
-            {match.status && <p className="mt-1 text-xs font-bold text-slate-500">{match.status}</p>}
-            {match.venue && <p className="mt-1 text-xs text-slate-400">{match.venue}</p>}
+            <p className="mt-3 text-xs font-semibold text-cric-muted">{formatDate(match.dateTimeGMT || match.date)}</p>
+            {match.status && <p className="mt-1 text-xs font-bold text-cric-muted">{match.status}</p>}
+            {match.venue && <p className="mt-1 text-xs text-cric-muted">{match.venue}</p>}
           </Link>
         ))
       )}
@@ -210,7 +210,7 @@ export default function International() {
   const renderSeries = () => (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
       {series.length === 0 ? (
-        <div className="col-span-full rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center text-slate-500 dark:border-slate-700 dark:bg-slate-800">
+        <div className="col-span-full rounded-2xl border border-dashed border-cric-border bg-cric-card px-6 py-16 text-center text-cric-muted dark:border-slate-700 dark:bg-slate-800">
           <p className="text-lg font-black">No series data available</p>
           <p className="mt-1 text-sm">Add a supported live cricket API key to load live series.</p>
         </div>
@@ -221,14 +221,14 @@ export default function International() {
             <Link
               key={item.id}
               to={`/international/series/${item.id}`}
-              className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-xl dark:border-slate-700 dark:bg-slate-800"
+              className="group rounded-2xl border border-cric-border bg-cric-card p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-xl dark:border-slate-700 dark:bg-slate-800"
             >
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Series/Tournament</p>
-              <h3 className="mt-2 line-clamp-2 text-lg font-black text-[#031d44] transition-colors group-hover:text-blue-600 dark:text-white">{item.name}</h3>
-              <p className="mt-3 text-xs font-semibold text-slate-500">
+              <p className="text-[10px] font-black uppercase tracking-widest text-cric-muted">Series/Tournament</p>
+              <h3 className="mt-2 line-clamp-2 text-lg font-black text-cric-accent transition-colors group-hover:text-cric-accent dark:text-white">{item.name}</h3>
+              <p className="mt-3 text-xs font-semibold text-cric-muted">
                 {formatSeriesDate(item, 'startDate')} - {formatSeriesDate(item, 'endDate')}
               </p>
-              <p className="mt-1 text-xs font-bold text-slate-400">{[item.category, `${matchCount} matches`].filter(Boolean).join(' - ')}</p>
+              <p className="mt-1 text-xs font-bold text-cric-muted">{[item.category, `${matchCount} matches`].filter(Boolean).join(' - ')}</p>
             </Link>
           );
         })
@@ -239,7 +239,7 @@ export default function International() {
   const renderHighlights = () => (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
       {highlights.length === 0 ? (
-        <div className="col-span-full rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center text-slate-500 dark:border-slate-700 dark:bg-slate-800">
+        <div className="col-span-full rounded-2xl border border-dashed border-cric-border bg-cric-card px-6 py-16 text-center text-cric-muted dark:border-slate-700 dark:bg-slate-800">
           <p className="text-lg font-black">No highlights available</p>
         </div>
       ) : (
@@ -249,19 +249,19 @@ export default function International() {
             href={video.watchUrl}
             target="_blank"
             rel="noreferrer"
-            className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-xl dark:border-slate-700 dark:bg-slate-800"
+            className="group overflow-hidden rounded-2xl border border-cric-border bg-cric-card shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-xl dark:border-slate-700 dark:bg-slate-800"
           >
             {video.thumbnail ? (
               <img src={video.thumbnail} alt={video.title} className="h-44 w-full object-cover" />
             ) : (
-              <div className="flex h-44 items-center justify-center bg-[#031d44] px-5 text-center text-white">
+              <div className="flex h-44 items-center justify-center bg-cric-accent px-5 text-center text-white">
                 <span className="text-sm font-black uppercase tracking-widest">Open highlights</span>
               </div>
             )}
             <div className="p-4">
-              <h4 className="line-clamp-2 text-sm font-black text-[#031d44] group-hover:text-blue-600 dark:text-white">{video.title}</h4>
-              <p className="mt-1 text-xs font-semibold text-slate-500">{video.matchName || video.channelName}</p>
-              {video.matchDate && <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">{formatDate(video.matchDate)}</p>}
+              <h4 className="line-clamp-2 text-sm font-black text-cric-accent group-hover:text-cric-accent dark:text-white">{video.title}</h4>
+              <p className="mt-1 text-xs font-semibold text-cric-muted">{video.matchName || video.channelName}</p>
+              {video.matchDate && <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-cric-muted">{formatDate(video.matchDate)}</p>}
             </div>
           </a>
         ))
@@ -272,7 +272,7 @@ export default function International() {
   const renderNews = () => (
     <div className="space-y-4">
       {news.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center text-slate-500 dark:border-slate-700 dark:bg-slate-800">
+        <div className="rounded-2xl border border-dashed border-cric-border bg-cric-card px-6 py-16 text-center text-cric-muted dark:border-slate-700 dark:bg-slate-800">
           <p className="text-lg font-black">No news available</p>
         </div>
       ) : (
@@ -282,13 +282,13 @@ export default function International() {
             href={article.link}
             target="_blank"
             rel="noreferrer"
-            className="flex gap-4 overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:shadow-lg dark:border-slate-700 dark:bg-slate-800"
+            className="flex gap-4 overflow-hidden rounded-2xl border border-cric-border bg-cric-card p-5 shadow-sm transition-all hover:shadow-lg dark:border-slate-700 dark:bg-slate-800"
           >
             {article.image && <img src={article.image} alt="" className="h-24 w-24 flex-shrink-0 rounded-xl object-cover" />}
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-black uppercase tracking-widest text-blue-600">{article.source}</p>
-              <h4 className="mt-1 line-clamp-2 text-base font-black text-[#031d44] dark:text-white">{article.title}</h4>
-              <p className="mt-1 line-clamp-2 text-sm text-slate-500">{article.description}</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-cric-accent">{article.source}</p>
+              <h4 className="mt-1 line-clamp-2 text-base font-black text-cric-accent dark:text-white">{article.title}</h4>
+              <p className="mt-1 line-clamp-2 text-sm text-cric-muted">{article.description}</p>
             </div>
           </a>
         ))
@@ -297,17 +297,17 @@ export default function International() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-950">
+    <div className="min-h-screen bg-gradient-to-b from-cric-bg to-white dark:from-slate-900 dark:to-slate-950">
       <Header />
       <main className="mx-auto max-w-7xl px-4 py-8">
         <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-black text-[#031d44] dark:text-white lg:text-4xl">International Cricket</h1>
-            <p className="mt-1 text-sm font-semibold text-slate-500">Live scores, ODI fixtures, series, highlights and cricket news.</p>
+            <h1 className="text-3xl font-black text-cric-accent dark:text-white lg:text-4xl">International Cricket</h1>
+            <p className="mt-1 text-sm font-semibold text-cric-muted">Live scores, ODI fixtures, series, highlights and cricket news.</p>
           </div>
           <button
             onClick={fetchData}
-            className="rounded-xl bg-[#031d44] px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-slate-800"
+            className="rounded-xl bg-cric-accent px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-slate-800"
           >
             Refresh
           </button>
@@ -330,8 +330,8 @@ export default function International() {
               onClick={() => setActiveTab(tab.id)}
               className={`whitespace-nowrap rounded-xl px-5 py-2.5 text-[11px] font-black uppercase tracking-widest transition-all ${
                 activeTab === tab.id
-                  ? 'bg-[#031d44] text-white shadow-lg'
-                  : 'border border-slate-200 bg-white text-slate-500 hover:text-[#031d44] dark:border-slate-700 dark:bg-slate-800'
+                  ? 'bg-cric-accent text-white shadow-lg'
+                  : 'border border-cric-border bg-cric-card text-cric-muted hover:text-cric-accent dark:border-slate-700 dark:bg-slate-800'
               }`}
             >
               {tab.label}
@@ -341,8 +341,8 @@ export default function International() {
 
         {loading ? (
           <div className="py-20 text-center">
-            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-[#031d44] border-t-transparent" />
-            <p className="mt-4 text-sm font-bold text-slate-500">Loading...</p>
+            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-cric-accent border-t-transparent" />
+            <p className="mt-4 text-sm font-bold text-cric-muted">Loading...</p>
           </div>
         ) : (
           <>

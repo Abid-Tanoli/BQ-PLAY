@@ -84,8 +84,8 @@ export default function LiveCommentary({ matchId, match }) {
   }, [feed.length]);
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-      <div className="bg-[#031d44] px-6 py-4 flex items-center gap-3">
+    <div className="bg-cric-card rounded-xl shadow-sm border border-cric-border overflow-hidden">
+      <div className="bg-cric-accent px-6 py-4 flex items-center gap-3">
         <span className="text-2xl">🎙️</span>
         <div>
           <h3 className="text-white font-black uppercase tracking-wider text-sm">LIVE COMMENTARY</h3>
@@ -99,7 +99,7 @@ export default function LiveCommentary({ matchId, match }) {
         {feed.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-4xl mb-3">🎙️</div>
-            <p className="text-slate-400 font-bold uppercase tracking-wider text-xs">Waiting for first ball...</p>
+            <p className="text-cric-muted font-bold uppercase tracking-wider text-xs">Waiting for first ball...</p>
           </div>
         ) : (
           feed.slice(0, 30).map((item, idx) => {
@@ -114,11 +114,11 @@ export default function LiveCommentary({ matchId, match }) {
                       ? "bg-purple-50 border-purple-200"
                       : item.runs === 4
                         ? "bg-blue-50 border-blue-200"
-                        : "bg-slate-50 border-slate-200"
+                        : "bg-cric-bg border-cric-border"
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">
+                  <span className="text-[11px] font-black text-cric-muted uppercase tracking-widest">
                     {item.over}
                   </span>
                   <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-black text-white ${badge.class}`}>
@@ -126,22 +126,22 @@ export default function LiveCommentary({ matchId, match }) {
                   </span>
                 </div>
 
-                <p className="text-sm font-bold text-slate-800 mb-1">
+                <p className="text-sm font-bold text-cric-text mb-1">
                   {item.bowlerName} to {item.batsmanName}
                 </p>
 
                 {item.commentary ? (
-                  <p className="text-sm text-slate-600 leading-relaxed">
+                  <p className="text-sm text-cric-muted leading-relaxed">
                     {item.commentary}
                   </p>
                 ) : (
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-cric-muted">
                     {item.isWicket ? "WICKET!" : `${item.runs} run${item.runs !== 1 ? "s" : ""}`}
                   </p>
                 )}
 
                 {item.fielderName && (
-                  <p className="text-xs text-slate-500 mt-1">
+                  <p className="text-xs text-cric-muted mt-1">
                     🧤 {item.fielderName}{item.fieldedByPosition ? ` at ${item.fieldedByPosition}` : ""} gives chase
                   </p>
                 )}

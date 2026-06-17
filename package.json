@@ -4,9 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "npm --prefix Frontend/User install && npm --prefix Backend install && npm --prefix Frontend/User run build",
+    "build": "npm --prefix Backend install && npm --prefix Frontend/User install && npm --prefix Frontend/Admin install && npm --prefix Frontend/User run build && npm --prefix Frontend/Admin run build",
     "build:user": "npm --prefix Frontend/User run build",
     "build:admin": "npm --prefix Frontend/Admin run build",
+    "build:backend": "npm --prefix Backend install",
     "start": "npm --prefix Backend start",
     "dev:backend": "npm --prefix Backend run dev",
     "dev:user": "npm --prefix Frontend/User run dev",

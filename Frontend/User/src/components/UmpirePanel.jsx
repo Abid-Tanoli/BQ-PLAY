@@ -14,7 +14,7 @@ const UmpireSignalPanel = ({ onSignal, disabled }) => {
 
   return (
     <div className="bg-[#0d1b2a] dark:bg-[#020617] rounded-3xl p-6 border border-slate-800/50">
-      <h3 className="text-[#ff6b35] text-[10px] font-black uppercase tracking-widest mb-4">Umpire Signals</h3>
+      <h3 className="text-cric-accent text-[10px] font-black uppercase tracking-widest mb-4">Umpire Signals</h3>
       
       <div className="grid grid-cols-4 gap-3">
         {signals.map((signal) => (
@@ -36,11 +36,11 @@ const UmpireSignalPanel = ({ onSignal, disabled }) => {
 const DRSReviewPanel = ({ reviewsRemaining = { batting: 2, bowling: 2 }, onReview, disabled }) => {
   return (
     <div className="bg-[#0d1b2a] dark:bg-[#020617] rounded-3xl p-6 border border-slate-800/50">
-      <h3 className="text-[#ff6b35] text-[10px] font-black uppercase tracking-widest mb-4">DRS Reviews</h3>
+      <h3 className="text-cric-accent text-[10px] font-black uppercase tracking-widest mb-4">DRS Reviews</h3>
       
       <div className="space-y-4">
         <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl">
-          <span className="text-sm text-slate-400 font-medium">Batting Team</span>
+          <span className="text-sm text-cric-muted font-medium">Batting Team</span>
           <div className="flex gap-1">
             {[1, 2].map((i) => (
               <div 
@@ -52,7 +52,7 @@ const DRSReviewPanel = ({ reviewsRemaining = { batting: 2, bowling: 2 }, onRevie
         </div>
         
         <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl">
-          <span className="text-sm text-slate-400 font-medium">Bowling Team</span>
+          <span className="text-sm text-cric-muted font-medium">Bowling Team</span>
           <div className="flex gap-1">
             {[1, 2].map((i) => (
               <div 
@@ -85,11 +85,11 @@ const MatchRefereePanel = ({ matchStatus, onStatusChange, onAwardMOM }) => {
 
   return (
     <div className="bg-[#0d1b2a] dark:bg-[#020617] rounded-3xl p-6 border border-slate-800/50">
-      <h3 className="text-[#ff6b35] text-[10px] font-black uppercase tracking-widest mb-4">Match Referee</h3>
+      <h3 className="text-cric-accent text-[10px] font-black uppercase tracking-widest mb-4">Match Referee</h3>
       
       <div className="space-y-4">
         <div>
-          <label className="text-xs text-slate-500 font-black uppercase mb-2 block">Match Status</label>
+          <label className="text-xs text-cric-muted font-black uppercase mb-2 block">Match Status</label>
           <div className="grid grid-cols-2 gap-2">
             {statusOptions.map((opt) => (
               <button

@@ -88,15 +88,15 @@ export default function SeriesLiveCommentary({ seriesId }) {
 
   if (!isLive) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 text-center">
-        <p className="text-slate-400 font-bold uppercase tracking-wider text-xs">Match not live</p>
+      <div className="bg-cric-card rounded-xl shadow-sm border border-cric-border p-6 text-center">
+        <p className="text-cric-muted font-bold uppercase tracking-wider text-xs">Match not live</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-      <div className="bg-[#031d44] px-6 py-4 flex items-center gap-3">
+    <div className="bg-cric-card rounded-xl shadow-sm border border-cric-border overflow-hidden">
+      <div className="bg-cric-accent px-6 py-4 flex items-center gap-3">
         <span className="relative flex h-3 w-3">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
           <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500" />
@@ -106,7 +106,7 @@ export default function SeriesLiveCommentary({ seriesId }) {
 
       <div className="p-4 space-y-3">
         {feed.length === 0 ? (
-          <p className="text-slate-400 text-xs font-bold uppercase tracking-wider text-center py-4">
+          <p className="text-cric-muted text-xs font-bold uppercase tracking-wider text-center py-4">
             Waiting for first ball...
           </p>
         ) : (
@@ -116,22 +116,22 @@ export default function SeriesLiveCommentary({ seriesId }) {
               <div
                 key={item.id || idx}
                 className={`p-3 rounded-lg border text-sm ${
-                  item.isWicket ? "bg-red-50 border-red-200" : "bg-slate-50 border-slate-200"
+                  item.isWicket ? "bg-red-50 border-red-200" : "bg-cric-bg border-cric-border"
                 }`}
               >
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                  <span className="text-[10px] font-bold text-cric-muted uppercase tracking-wider">
                     {item.over}
                   </span>
                   <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-black text-white ${badge.class}`}>
                     {badge.marker} {badge.label}
                   </span>
                 </div>
-                <p className="text-xs font-bold text-slate-700">
+                <p className="text-xs font-bold text-cric-text">
                   {item.bowlerName} to {item.batsmanName}
                 </p>
                 {item.commentary && (
-                  <p className="text-xs text-slate-500 mt-0.5">{item.commentary}</p>
+                  <p className="text-xs text-cric-muted mt-0.5">{item.commentary}</p>
                 )}
               </div>
             );

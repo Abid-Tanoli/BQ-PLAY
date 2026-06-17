@@ -25,7 +25,7 @@ import {
   getCricketNewsVideos
 } from '../services/youtubeService.js';
 import { getCricketNews } from '../services/rssNewsService.js';
-import { generateMatchSummary } from '../services/aiCommentaryService.js';
+import { generateMatchSummary } from '../services/aiCommentary.js';
 
 const router = express.Router();
 const asArray = (value) => Array.isArray(value) ? value : [];

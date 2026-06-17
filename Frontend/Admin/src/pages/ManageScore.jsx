@@ -34,12 +34,6 @@ export default function ManageScore() {
         setSelectedWicket,
         manualCommentary,
         setManualCommentary,
-        fieldPos,
-        setFieldPos,
-        isWicketDropdownOpen,
-        setIsWicketDropdownOpen,
-        loadingCommentary,
-        setLoadingCommentary,
         toast,
         confirmModal,
         setConfirmModal,
@@ -65,8 +59,6 @@ export default function ManageScore() {
         setPitchMapViewMode,
         ballMovement,
         setBallMovement,
-        ballOutcome,
-        setBallOutcome,
         setupState,
         setSetupState,
         wizardStep,
@@ -91,10 +83,8 @@ export default function ManageScore() {
         strikerStats,
         nonStrikerStats,
         activeBowlerStats,
-        currentPartnership,
         formattedHistory,
         pitchMapBalls,
-        fetchMatches,
         handleSelectMatch,
         submitBall,
         handleEndInnings,
@@ -111,14 +101,11 @@ export default function ManageScore() {
         handleSaveToss,
         handleSaveOpeners,
         reverting,
-        handleTimeout,
-        handleDRSReview,
         handleResolveTie,
         handleStartSuperOver,
         handleDeleteMatch,
         getPlayingXI,
         getSquad,
-        getSquadMeta,
         showToast,
         reloadMatch,
         fieldedById,
@@ -329,7 +316,7 @@ export default function ManageScore() {
                     )}
                     <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-8 mb-6 sm:mb-8">
                         {(selectedMatch.innings || []).map((inn, idx) => (
-                            <div key={idx} className="bg-cric-bg rounded-2xl p-4 sm:p-6 border border-cric-border text-center min-w-0 sm:min-w-[180px]">
+                            <div key={inn._id || idx} className="bg-cric-bg rounded-2xl p-4 sm:p-6 border border-cric-border text-center min-w-0 sm:min-w-[180px]">
                                 <p className="text-[9px] font-black text-cric-muted uppercase tracking-widest mb-2">
                                     {selectedMatch.teams?.find(t => String(t._id) === String(inn.team?._id || inn.team))?.name || `Team ${idx + 1}`}
                                 </p>
@@ -480,7 +467,7 @@ export default function ManageScore() {
                                     <div className="bg-slate-100 dark:bg-slate-800 rounded-lg px-3 py-1.5">
                                         <span className="text-xs font-bold text-slate-500">1st Innings:</span>
                                         <span className="text-sm font-black text-[#031d44] dark:text-white ml-2">
-                                            {selectedMatch.teams?.find(t => String(t._id) === String(firstInn.team?._id || firstInn.team))?.shortName || 'Team 1'} {firstInn.runs}/{firstInn.wickets} ({formatOvers(firstInn.balls)})
+                                            {selectedMatch.teams?.find(t => String(t._id) === String(firstInn.team?._id || firstInn.team))?.shortName || 'Team A'} {firstInn.runs}/{firstInn.wickets} ({formatOvers(firstInn.balls)})
                                         </span>
                                     </div>
                                     <div className="bg-[#ff6b35]/10 rounded-lg px-3 py-1.5">
@@ -566,7 +553,13 @@ export default function ManageScore() {
                     )}
 
                     {activeTab === 'stats' && (
-                        <StatsTab />
+                        <StatsTab
+                            innings={curInn}
+                            strikerStats={strikerStats}
+                            nonStrikerStats={nonStrikerStats}
+                            activeBowlerStats={activeBowlerStats}
+                            totalOvers={selectedMatch?.totalOvers}
+                        />
                     )}
 
                     {activeTab === 'overs' && (
@@ -575,8 +568,9 @@ export default function ManageScore() {
                             {(curInn?.oversHistory || []).slice().reverse().map((over, idx) => {
                                 const overRuns = over.balls.reduce((s, b) => s + (b.runs || 0) + (b.isWide ? 1 : 0) + (b.isNoBall ? 1 : 0), 0);
                                 const overWkts = over.balls.filter(b => b.isWicket).length;
+                                const overKey = over._id || (over.overNumber ?? idx);
                                 return (
-                                    <div key={idx} className="bg-black/[0.03] dark:bg-white/[0.03] rounded-2xl p-5 border border-cric-border/50">
+                                    <div key={overKey} className="bg-black/[0.03] dark:bg-white/[0.03] rounded-2xl p-5 border border-cric-border/50">
                                         <div className="flex justify-between items-center mb-3">
                                             <div className="flex items-center gap-3">
                                                 <span className="text-cric-accent font-black text-base">Over {over.overNumber + 1}</span>
@@ -597,7 +591,7 @@ export default function ManageScore() {
                                                 const is6 = b.runs === 6 && !b.isWide && !b.isNoBall && !b.isWicket;
                                                 const notation = isW ? 'W' : b.isWide ? `${b.runs}wd` : b.isNoBall ? `${b.runs}nb` : b.isBye ? `${b.runs}b` : b.isLegBye ? `${b.runs}lb` : b.runs === 0 ? '\u2022' : String(b.runs);
                                                 return (
-                                                    <div key={bi} className={`w-9 h-9 rounded-lg flex items-center justify-center text-xs font-black shrink-0 shadow-sm ${
+                                                    <div key={b._id || `${overKey}-${bi}`} className={`w-9 h-9 rounded-lg flex items-center justify-center text-xs font-black shrink-0 shadow-sm ${
                                                         isW ? 'bg-red-600 text-white' :
                                                         is6 ? 'bg-purple-600 text-white' :
                                                         is4 ? 'bg-blue-600 text-white' :
@@ -639,7 +633,7 @@ export default function ManageScore() {
                                             const ov = formatOvers(inn.balls);
                                             const rr = inn.runRate?.toFixed(2) || (inn.balls > 0 ? (inn.runs / (inn.balls / 6)).toFixed(2) : '0.00');
                                             return (
-                                                <tr key={idx} className={`border-b border-cric-border/50 ${idx === selectedMatch.currentInnings ? 'bg-cric-accent/5' : ''}`}>
+                                                <tr key={inn._id || idx} className={`border-b border-cric-border/50 ${idx === selectedMatch.currentInnings ? 'bg-cric-accent/5' : ''}`}>
                                                     <td className="py-4 pl-4 font-bold text-sm text-cric-text">
                                                         {teamName}
                                                         {idx === selectedMatch.currentInnings && <span className="ml-2 text-[9px] bg-cric-accent/20 text-cric-accent px-2 py-0.5 rounded-full font-black uppercase">Batting</span>}
@@ -741,6 +735,8 @@ export default function ManageScore() {
                 setBallMovement={setBallMovement}
                 useAICommentary={useAICommentary}
                 setUseAICommentary={setUseAICommentary}
+                manualCommentary={manualCommentary}
+                setManualCommentary={setManualCommentary}
                 fieldedById={fieldedById}
                 setFieldedById={setFieldedById}
                 fieldedByPosition={fieldedByPosition}
@@ -785,34 +781,34 @@ export default function ManageScore() {
 
             {/* Selection Modals */}
             {showSelectionModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/50 dark:bg-black/90 backdrop-blur-sm">
-                    <div className="bg-cric-card w-full max-w-4xl rounded-[2rem] sm:rounded-[3.5rem] border border-cric-border shadow-2xl overflow-hidden animate-zoomIn">
+                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 dark:bg-black/90 backdrop-blur-sm">
+                    <div className="bg-cric-card w-full max-w-4xl max-h-[92vh] rounded-t-2xl sm:rounded-[2rem] lg:rounded-[3.5rem] border border-cric-border shadow-2xl overflow-y-auto animate-zoomIn">
                         <div className="p-4 sm:p-8 md:p-12">
-                            <div className="flex justify-between items-center mb-4 sm:mb-8 md:mb-12">
-                                <h3 className="text-4xl font-black font-raj italic uppercase tracking-tighter text-cric-text">
+                            <div className="flex justify-between items-start gap-3 mb-4 sm:mb-8 md:mb-12">
+                                <h3 className="text-2xl sm:text-3xl md:text-4xl font-black font-raj italic uppercase tracking-tighter text-cric-text leading-none break-words">
                                     {showSelectionModal === 'wicket' ? 'DISMISSAL DETAILS' :
                                         showSelectionModal === 'striker' ? 'SELECT NEW STRIKER' :
                                             showSelectionModal === 'nonStriker' ? 'SELECT NEW NON-STRIKER' :
                                                 showSelectionModal === 'bowler' ? 'CHANGE BOWLER' : 'SELECTION'}
                                 </h3>
-                                <button onClick={() => setShowSelectionModal('')} className="w-12 h-12 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center hover:bg-red-500 transition-all text-cric-text hover:text-white">
+                                <button onClick={() => setShowSelectionModal('')} className="score-touch-btn w-11 h-11 sm:w-12 sm:h-12 shrink-0 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center hover:bg-red-500 transition-all text-cric-text hover:text-white">
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M18 6L6 18M6 6l12 12" /></svg>
                                 </button>
                             </div>
 
                             {showSelectionModal === 'wicket' && (
                                 <div className="space-y-8">
-                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-4">
                                         {WICKET_TYPES.map(type => (
-                                            <button key={type} onClick={() => setSelectedWicket(type)} className={`p-4 sm:p-6 rounded-2xl sm:rounded-3xl border-2 font-black uppercase text-[9px] sm:text-xs tracking-widest transition-all ${selectedWicket === type ? 'bg-red-600 border-red-400 text-white shadow-lg' : 'bg-black/5 dark:bg-white/2 border-cric-border text-slate-500 hover:border-cric-border/80'}`}>
+                                            <button key={type} onClick={() => setSelectedWicket(type)} className={`score-touch-btn p-3 sm:p-6 rounded-2xl sm:rounded-3xl border-2 font-black uppercase text-[9px] sm:text-xs tracking-widest transition-all ${selectedWicket === type ? 'bg-red-600 border-red-400 text-white shadow-lg' : 'bg-black/5 dark:bg-white/2 border-cric-border text-slate-500 hover:border-cric-border/80'}`}>
                                                 {type}
                                             </button>
                                         ))}
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8">
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest pl-2">Next Batsman</label>
-                                            <select value={setupState.wicketNewBatter} onChange={(e) => setSetupState(s => ({ ...s, wicketNewBatter: e.target.value }))} className="w-full p-4 sm:p-6 bg-cric-bg border border-cric-border rounded-2xl sm:rounded-3xl text-cric-text font-black outline-none focus:border-red-500">
+                                            <select value={setupState.wicketNewBatter} onChange={(e) => setSetupState(s => ({ ...s, wicketNewBatter: e.target.value }))} className="w-full p-3 sm:p-6 bg-cric-bg border border-cric-border rounded-2xl sm:rounded-3xl text-cric-text font-black outline-none focus:border-red-500">
                                                 <option value="">Select Next In...</option>
                                                 {battingXI.filter(p => {
                                                     const pId = p._id || p;
@@ -827,7 +823,7 @@ export default function ManageScore() {
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest pl-2">Fielder Involved</label>
-                                            <select value={setupState.wicketFielder} onChange={(e) => setSetupState(s => ({ ...s, wicketFielder: e.target.value }))} className="w-full p-4 sm:p-6 bg-cric-bg border border-cric-border rounded-2xl sm:rounded-3xl text-cric-text font-black outline-none focus:border-red-500">
+                                            <select value={setupState.wicketFielder} onChange={(e) => setSetupState(s => ({ ...s, wicketFielder: e.target.value }))} className="w-full p-3 sm:p-6 bg-cric-bg border border-cric-border rounded-2xl sm:rounded-3xl text-cric-text font-black outline-none focus:border-red-500">
                                                 <option value="">Select Fielder...</option>
                                                 {bowlingXI.map(p => (
                                                     <option key={p._id} value={p._id}>{p.name}</option>
@@ -843,7 +839,7 @@ export default function ManageScore() {
                                             }
                                             setShowSelectionModal('');
                                         }} 
-                                        className="w-full py-5 sm:py-8 rounded-[2rem] bg-red-600 text-white font-black font-raj text-lg sm:text-2xl italic tracking-tighter uppercase shadow-xl hover:scale-105 transition-all mt-6 sm:mt-8"
+                                        className="score-touch-btn w-full py-4 sm:py-8 rounded-2xl sm:rounded-[2rem] bg-red-600 text-white font-black font-raj text-base sm:text-2xl italic tracking-tighter uppercase shadow-xl hover:scale-105 transition-all mt-4 sm:mt-8"
                                     >
                                         Confirm Wicket Details
                                     </button>
@@ -851,14 +847,14 @@ export default function ManageScore() {
                             )}
 
                             {(showSelectionModal === 'striker' || showSelectionModal === 'nonStriker') && (
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
                                     {battingXI.filter(p => {
                                         const pId = p._id || p;
                                         const stats = curInn?.batting?.find(b => String(b.player?._id || b.player) === String(pId));
                                         const isOut = stats?.isOut || stats?.isRetired;
                                         return (!stats || stats.isRetiredHurt) && !isOut;
                                     }).map(p => (
-                                        <button key={p._id} onClick={() => setRole(p._id, showSelectionModal)} className="p-4 sm:p-8 rounded-2xl sm:rounded-[2rem] bg-black/5 dark:bg-white/5 border border-cric-border hover:border-cric-accent hover:bg-cric-accent/5 transition-all text-left">
+                                        <button key={p._id} onClick={() => setRole(p._id, showSelectionModal)} className="score-touch-btn p-4 sm:p-8 rounded-2xl sm:rounded-[2rem] bg-black/5 dark:bg-white/5 border border-cric-border hover:border-cric-accent hover:bg-cric-accent/5 transition-all text-left min-w-0">
                                             <div className="text-base sm:text-xl font-black text-cric-text">{p.name}</div>
                                             <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-2 select-none">
                                                 {curInn?.batting?.find(b => String(b.player?._id || b.player) === String(p._id))?.isRetiredHurt ? 'Return Retired Hurt' : 'Select Batter'}
@@ -883,9 +879,9 @@ export default function ManageScore() {
                                                 {mainBowlers.length > 0 && (
                                                     <div>
                                                         <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-4 pl-2">Main Bowlers</h4>
-                                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
                                                             {mainBowlers.map(p => (
-                                                                <button key={p._id} onClick={() => setRole(p._id, 'bowler')} className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] bg-black/5 dark:bg-white/5 border border-cric-border hover:border-blue-500 hover:bg-blue-500/5 transition-all text-left">
+                                                                <button key={p._id} onClick={() => setRole(p._id, 'bowler')} className="score-touch-btn p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] bg-black/5 dark:bg-white/5 border border-cric-border hover:border-blue-500 hover:bg-blue-500/5 transition-all text-left min-w-0">
                                                                     <div className="text-sm sm:text-lg font-black text-cric-text">{p.name}</div>
                                                                     <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-2 select-none">
                                                                         {p.bowlingStyle && p.bowlingStyle !== 'Not Applicable' ? p.bowlingStyle : 'BOWLER'}
@@ -899,9 +895,9 @@ export default function ManageScore() {
                                                 {partTimers.length > 0 && (
                                                     <div className="pt-4 border-t border-cric-border/30">
                                                         <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-4 pl-2">Part-timer Bowlers</h4>
-                                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
                                                             {partTimers.map(p => (
-                                                                <button key={p._id} onClick={() => setRole(p._id, 'bowler')} className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] bg-black/5 dark:bg-white/5 border border-cric-border hover:border-blue-500 hover:bg-blue-500/5 transition-all text-left">
+                                                                <button key={p._id} onClick={() => setRole(p._id, 'bowler')} className="score-touch-btn p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] bg-black/5 dark:bg-white/5 border border-cric-border hover:border-blue-500 hover:bg-blue-500/5 transition-all text-left min-w-0">
                                                                     <div className="text-sm sm:text-lg font-black text-cric-text">{p.name}</div>
                                                                     <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-2 select-none">
                                                                         {p.bowlingStyle && p.bowlingStyle !== 'Not Applicable' ? p.bowlingStyle : 'PART-TIMER'}

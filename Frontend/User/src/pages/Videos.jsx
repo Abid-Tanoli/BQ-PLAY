@@ -22,7 +22,7 @@ export default function Videos() {
   }, []);
 
   return (
-    <div className="bg-[#031d44] min-h-screen">
+    <div className="bg-cric-accent min-h-screen">
       <div className="pt-32 pb-20 px-4 text-center">
         <h1 className="text-6xl md:text-8xl font-black text-white italic uppercase tracking-tighter leading-none mb-4">
           BQ <span className="text-red-600">TV</span>

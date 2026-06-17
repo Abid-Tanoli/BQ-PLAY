@@ -34,16 +34,16 @@ const WagonWheel = ({ shots = [], playerName = "Batsman" }) => {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4 sm:mb-8">
                 <div>
-                    <h3 className="text-[#ff6b35] text-[10px] font-black uppercase tracking-[0.4em] mb-1">
+                    <h3 className="text-cric-accent text-[10px] font-black uppercase tracking-[0.4em] mb-1">
                         Statistical Analysis
                     </h3>
                     <h2 className="text-white text-2xl font-black italic tracking-tighter uppercase">
-                        Wagon Wheel <span className="text-slate-500 font-normal not-italic mx-2">—</span> {playerName}
+                        Wagon Wheel <span className="text-cric-muted font-normal not-italic mx-2">—</span> {playerName}
                     </h2>
                 </div>
                 <div className="text-right">
                     <div className="text-3xl font-black text-white italic tracking-tighter">
-                        {stats.totalRuns} <span className="text-xs text-slate-500 font-bold not-italic tracking-normal">RUNS</span>
+                        {stats.totalRuns} <span className="text-xs text-cric-muted font-bold not-italic tracking-normal">RUNS</span>
                     </div>
                 </div>
             </div>
@@ -143,7 +143,7 @@ const WagonWheel = ({ shots = [], playerName = "Batsman" }) => {
                 <div className="space-y-8">
                     <div className="grid grid-cols-2 gap-4">
                         <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
-                            <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Off Side</div>
+                            <div className="text-[10px] font-black text-cric-muted uppercase tracking-widest mb-1">Off Side</div>
                             <div className="text-2xl font-black text-white italic">{stats.offSide} <span className="text-xs text-blue-400 not-italic">runs</span></div>
                             <div className="w-full h-1 bg-slate-800 rounded-full mt-2">
                                 <div 
@@ -153,7 +153,7 @@ const WagonWheel = ({ shots = [], playerName = "Batsman" }) => {
                             </div>
                         </div>
                         <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
-                            <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Leg Side</div>
+                            <div className="text-[10px] font-black text-cric-muted uppercase tracking-widest mb-1">Leg Side</div>
                             <div className="text-2xl font-black text-white italic">{stats.legSide} <span className="text-xs text-purple-400 not-italic">runs</span></div>
                             <div className="w-full h-1 bg-slate-800 rounded-full mt-2">
                                 <div 
@@ -189,7 +189,7 @@ const WagonWheel = ({ shots = [], playerName = "Batsman" }) => {
                     </div>
 
                     <div className="pt-6 border-t border-white/5">
-                        <p className="text-[10px] text-slate-500 leading-relaxed font-medium uppercase tracking-wider">
+                        <p className="text-[10px] text-cric-muted leading-relaxed font-medium uppercase tracking-wider">
                             Visualization based on precise shot placement data collected via Scorer Pro Admin. Lines represent strike trajectory from pitch to field zone.
                         </p>
                     </div>

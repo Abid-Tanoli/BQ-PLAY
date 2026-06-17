@@ -86,10 +86,10 @@ function FlagBox({ code }) {
 
 function Panel({ title, action, children }) {
   return (
-    <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-        <h2 className="text-sm font-black text-slate-900">{title}</h2>
-        {action && <span className="text-[11px] font-bold text-blue-700">{action}</span>}
+    <section className="rounded-lg border border-cric-border bg-cric-card shadow-sm">
+      <div className="flex items-center justify-between border-b border-cric-border px-4 py-3">
+        <h2 className="text-sm font-black text-cric-text">{title}</h2>
+        {action && <span className="text-[11px] font-bold text-cric-accent">{action}</span>}
       </div>
       {children}
     </section>
@@ -98,9 +98,9 @@ function Panel({ title, action, children }) {
 
 function ResultCard({ match, seriesName }) {
   return (
-    <Link to={`/international/match/${getMatchId(match)}`} className="block border-b border-slate-100 px-4 py-4 last:border-0 hover:bg-slate-50">
-      <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Result</p>
-      <p className="mt-1 line-clamp-2 text-xs font-semibold text-slate-500">{matchDescription(match, seriesName)}</p>
+    <Link to={`/international/match/${getMatchId(match)}`} className="block border-b border-cric-border px-4 py-4 last:border-0 hover:bg-cric-bg">
+      <p className="text-[10px] font-black uppercase tracking-widest text-cric-muted">Result</p>
+      <p className="mt-1 line-clamp-2 text-xs font-semibold text-cric-muted">{matchDescription(match, seriesName)}</p>
       <div className="mt-4 space-y-3">
         {asArray(match.score).map((score, index) => {
           const code = teamCode(score, match, index);
@@ -108,14 +108,14 @@ function ResultCard({ match, seriesName }) {
             <div key={`${code}-${index}`} className="flex items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-2">
                 <FlagBox code={code} />
-                <span className="text-sm font-black text-slate-900">{String(code).toUpperCase()}</span>
+                <span className="text-sm font-black text-cric-text">{String(code).toUpperCase()}</span>
               </div>
-              <span className="text-right text-base font-black text-slate-900">{scoreLine(score)}</span>
+              <span className="text-right text-base font-black text-cric-text">{scoreLine(score)}</span>
             </div>
           );
         })}
       </div>
-      <p className="mt-4 text-sm font-bold text-slate-800">{match.status}</p>
+      <p className="mt-4 text-sm font-bold text-cric-text">{match.status}</p>
     </Link>
   );
 }
@@ -123,38 +123,38 @@ function ResultCard({ match, seriesName }) {
 function FixtureCard({ match, seriesName }) {
   const teams = asArray(match.teamInfo).length ? match.teamInfo : asArray(match.teams).map(team => ({ shortname: team, name: team }));
   return (
-    <Link to={`/international/match/${getMatchId(match)}`} className="block border-b border-slate-100 px-4 py-4 last:border-0 hover:bg-slate-50">
-      <p className="text-xs font-black text-slate-700">{match.startLabel || formatDate(match.dateTimeGMT || match.date, { hour: undefined })}</p>
-      <p className="mt-1 line-clamp-2 text-xs font-semibold text-slate-500">{matchDescription(match, seriesName)}</p>
+    <Link to={`/international/match/${getMatchId(match)}`} className="block border-b border-cric-border px-4 py-4 last:border-0 hover:bg-cric-bg">
+      <p className="text-xs font-black text-cric-text">{match.startLabel || formatDate(match.dateTimeGMT || match.date, { hour: undefined })}</p>
+      <p className="mt-1 line-clamp-2 text-xs font-semibold text-cric-muted">{matchDescription(match, seriesName)}</p>
       <div className="mt-4 space-y-3">
         {teams.map((team, index) => {
           const code = team.shortname || team.name || team;
           return (
             <div key={`${code}-${index}`} className="flex items-center gap-2">
               <FlagBox code={code} />
-              <span className="text-sm font-black text-slate-900">{String(code).slice(0, 3).toUpperCase()}</span>
+              <span className="text-sm font-black text-cric-text">{String(code).slice(0, 3).toUpperCase()}</span>
             </div>
           );
         })}
       </div>
-      <p className="mt-4 text-sm font-bold text-slate-800">Match yet to begin</p>
+      <p className="mt-4 text-sm font-bold text-cric-text">Match yet to begin</p>
     </Link>
   );
 }
 
 function EmptyPanelMessage({ children }) {
-  return <div className="px-4 py-8 text-sm font-bold text-slate-500">{children}</div>;
+  return <div className="px-4 py-8 text-sm font-bold text-cric-muted">{children}</div>;
 }
 
 function StatsPanel({ seriesName }) {
   return (
     <Panel title="Stats & Records" action="See All">
       <div className="px-4 py-4">
-        <p className="text-[11px] font-black uppercase leading-5 tracking-widest text-slate-900">{seriesName || 'Series records'}</p>
+        <p className="text-[11px] font-black uppercase leading-5 tracking-widest text-cric-text">{seriesName || 'Series records'}</p>
         <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3">
           {statsLinks.map(item => (
-            <button key={item} className="text-left text-xs font-bold text-slate-700 hover:text-blue-700">
-              <span className="mr-2 text-blue-700">&gt;</span>{item}
+            <button key={item} className="text-left text-xs font-bold text-cric-text hover:text-cric-accent">
+              <span className="mr-2 text-cric-accent">&gt;</span>{item}
             </button>
           ))}
         </div>
@@ -166,17 +166,17 @@ function StatsPanel({ seriesName }) {
 function LeaderPanel({ title, rows }) {
   return (
     <Panel title={title} action="View full list">
-      <div className="divide-y divide-slate-100">
+      <div className="divide-y divide-cric-border">
         {rows.length ? rows.map((row, index) => (
           <div key={`${row.name}-${index}`} className="flex items-center gap-3 px-4 py-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-xs font-black text-slate-500">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-cric-bg text-xs font-black text-cric-muted">
               {row.name.split(' ').map(part => part[0]).join('').slice(0, 2)}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-black text-slate-900">{row.name} <span className="text-xs font-semibold text-slate-500">{row.team}</span></p>
-              <p className="mt-1 text-[11px] font-semibold text-slate-500">{row.detail}</p>
+              <p className="truncate text-sm font-black text-cric-text">{row.name} <span className="text-xs font-semibold text-cric-muted">{row.team}</span></p>
+              <p className="mt-1 text-[11px] font-semibold text-cric-muted">{row.detail}</p>
             </div>
-            <span className="text-2xl font-black text-slate-900">{row.value || row.rating}</span>
+            <span className="text-2xl font-black text-cric-text">{row.value || row.rating}</span>
           </div>
         )) : <EmptyPanelMessage>No leaderboard data available from the live provider yet.</EmptyPanelMessage>}
       </div>
@@ -187,7 +187,7 @@ function LeaderPanel({ title, rows }) {
 function FanRatingsPanel() {
   return (
     <Panel title="Tournament Fan Ratings">
-      <div className="divide-y divide-slate-100">
+      <div className="divide-y divide-cric-border">
         <EmptyPanelMessage>Fan ratings will appear after users rate this series.</EmptyPanelMessage>
       </div>
     </Panel>
@@ -206,7 +206,7 @@ function HeroVideo({ highlights }) {
   const href = first.watchUrl || first.embedUrl || '#';
   return (
     <a href={href} target="_blank" rel="noreferrer" className="group block overflow-hidden rounded-lg bg-slate-950 text-white shadow-sm">
-      <div className="relative min-h-[260px] bg-gradient-to-br from-[#031d44] via-blue-900 to-slate-950 p-6">
+      <div className="relative min-h-[260px] bg-gradient-to-br from-cric-accent via-blue-900 to-slate-950 p-6">
         {first.thumbnail ? <img src={first.thumbnail} alt={first.title} className="absolute inset-0 h-full w-full object-cover opacity-70" /> : null}
         <div className="absolute bottom-5 left-5 flex h-16 w-16 items-center justify-center rounded-full bg-blue-500 text-xs font-black uppercase tracking-widest transition group-hover:scale-105">Play</div>
       </div>
@@ -223,11 +223,11 @@ function StoryList({ highlights }) {
   return (
     <div className="space-y-4">
       {searchLinks.length ? searchLinks.map(item => (
-        <a key={item.watchUrl} href={item.watchUrl} target="_blank" rel="noreferrer" className="flex gap-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm hover:bg-slate-50">
-          <div className="flex h-24 w-36 flex-shrink-0 items-center justify-center rounded bg-[#031d44] px-3 text-center text-xs font-black uppercase tracking-widest text-white">Highlights</div>
+        <a key={item.watchUrl} href={item.watchUrl} target="_blank" rel="noreferrer" className="flex gap-4 rounded-lg border border-cric-border bg-cric-card p-4 shadow-sm hover:bg-cric-bg">
+          <div className="flex h-24 w-36 flex-shrink-0 items-center justify-center rounded bg-cric-accent px-3 text-center text-xs font-black uppercase tracking-widest text-white">Highlights</div>
           <div>
-            <h3 className="line-clamp-2 text-base font-black text-slate-900">{item.title}</h3>
-            <p className="mt-2 text-sm font-semibold text-slate-500">{formatDate(item.matchDate || item.publishedAt)} - Open video</p>
+            <h3 className="line-clamp-2 text-base font-black text-cric-text">{item.title}</h3>
+            <p className="mt-2 text-sm font-semibold text-cric-muted">{formatDate(item.matchDate || item.publishedAt)} - Open video</p>
           </div>
         </a>
       )) : (
@@ -285,16 +285,16 @@ export default function InternationalSeriesDetail() {
   const renderFixturesAndResults = () => (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
       <Panel title="Fixtures" action="View All Fixtures">
-        <div className="divide-y divide-slate-100">
+        <div className="divide-y divide-cric-border">
           {fixtures.length ? fixtures.map(match => <FixtureCard key={getMatchId(match)} match={match} seriesName={info.name} />) : (
-            <div className="px-4 py-8 text-sm font-bold text-slate-500">No upcoming fixtures.</div>
+            <div className="px-4 py-8 text-sm font-bold text-cric-muted">No upcoming fixtures.</div>
           )}
         </div>
       </Panel>
       <Panel title="Results" action="View All Results">
-        <div className="divide-y divide-slate-100">
+        <div className="divide-y divide-cric-border">
           {results.length ? results.map(match => <ResultCard key={getMatchId(match)} match={match} seriesName={info.name} />) : (
-            <div className="px-4 py-8 text-sm font-bold text-slate-500">No results yet.</div>
+            <div className="px-4 py-8 text-sm font-bold text-cric-muted">No results yet.</div>
           )}
         </div>
       </Panel>
@@ -322,9 +322,9 @@ export default function InternationalSeriesDetail() {
         <Panel key={team.teamName || team.name} title={team.teamName || team.name || 'Squad'}>
           <div className="grid grid-cols-1 gap-2 px-4 py-4 sm:grid-cols-2">
             {asArray(team.players || team.squad).map(player => (
-              <div key={player.name || player} className="rounded bg-slate-50 px-3 py-2 text-sm font-bold text-slate-800">
+              <div key={player.name || player} className="rounded bg-cric-bg px-3 py-2 text-sm font-bold text-cric-text">
                 {player.name || player}
-                {player.role && <span className="ml-2 text-xs font-semibold text-slate-400">{player.role}</span>}
+                {player.role && <span className="ml-2 text-xs font-semibold text-cric-muted">{player.role}</span>}
               </div>
             ))}
           </div>
@@ -345,8 +345,8 @@ export default function InternationalSeriesDetail() {
             <div className="flex items-center gap-3">
               <FlagBox code={team.teamName || team.name} />
               <div>
-                <h2 className="text-xl font-black text-slate-900">{team.teamName || team.name}</h2>
-                <p className="text-sm font-semibold text-slate-500">{asArray(team.players || team.squad).length} players in squad</p>
+                <h2 className="text-xl font-black text-cric-text">{team.teamName || team.name}</h2>
+                <p className="text-sm font-semibold text-cric-muted">{asArray(team.players || team.squad).length} players in squad</p>
               </div>
             </div>
           </div>
@@ -372,7 +372,7 @@ export default function InternationalSeriesDetail() {
       <FanRatingsPanel />
       <Panel title="Rate the series">
         <div className="px-4 py-8">
-          <p className="text-sm font-semibold text-slate-500">Fan rating controls can be connected to user accounts later.</p>
+          <p className="text-sm font-semibold text-cric-muted">Fan rating controls can be connected to user accounts later.</p>
         </div>
       </Panel>
     </div>
@@ -391,12 +391,12 @@ export default function InternationalSeriesDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen bg-cric-bg">
         <Header />
         <div className="flex min-h-[70vh] items-center justify-center">
           <div className="text-center">
-            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-[#031d44] border-t-transparent" />
-            <p className="mt-4 text-sm font-bold text-slate-500">Loading series...</p>
+            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-cric-accent border-t-transparent" />
+            <p className="mt-4 text-sm font-bold text-cric-muted">Loading series...</p>
           </div>
         </div>
       </div>
@@ -407,13 +407,13 @@ export default function InternationalSeriesDetail() {
     const title = liveProviderMessage ? 'Live data unavailable' : 'Series not found';
     const body = liveProviderMessage || 'BQ-PLAY could not find this series from the current live data source.';
     return (
-      <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen bg-cric-bg">
         <Header />
         <div className="flex min-h-[70vh] items-center justify-center">
           <div className="mx-auto max-w-lg px-4 text-center">
-            <p className="text-lg font-black text-slate-700">{title}</p>
-            <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">{body}</p>
-            <Link to="/international" className="mt-4 inline-block rounded-md bg-[#031d44] px-4 py-2 text-xs font-black uppercase tracking-widest text-white">Back to International</Link>
+            <p className="text-lg font-black text-cric-text">{title}</p>
+            <p className="mt-2 text-sm font-semibold leading-6 text-cric-muted">{body}</p>
+            <Link to="/international" className="mt-4 inline-block rounded-md bg-cric-accent px-4 py-2 text-xs font-black uppercase tracking-widest text-white">Back to International</Link>
           </div>
         </div>
       </div>
@@ -421,16 +421,16 @@ export default function InternationalSeriesDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f7f8fa] text-slate-900">
+    <div className="min-h-screen bg-cric-bg text-cric-text">
       <Header />
 
-      <div className="border-b border-slate-200 bg-white">
+      <div className="border-b border-cric-border bg-cric-card">
         <div className="mx-auto flex max-w-7xl gap-6 overflow-x-auto px-4 py-3">
           {navItems.map(item => (
             <button
               key={item}
               onClick={() => setActiveSection(item)}
-              className={`whitespace-nowrap text-xs font-bold ${activeSection === item ? 'text-blue-700' : 'text-slate-500 hover:text-slate-900'}`}
+              className={`whitespace-nowrap text-xs font-bold ${activeSection === item ? 'text-cric-accent' : 'text-cric-muted hover:text-cric-text'}`}
             >
               {item}
             </button>
@@ -439,16 +439,16 @@ export default function InternationalSeriesDetail() {
       </div>
 
       <main className="mx-auto max-w-7xl px-4 py-6">
-        <div className="mb-5 text-xs font-semibold text-slate-500">
-          <Link to="/international" className="hover:text-blue-700">International</Link>
+        <div className="mb-5 text-xs font-semibold text-cric-muted">
+          <Link to="/international" className="hover:text-cric-accent">International</Link>
           <span className="px-2">&gt;</span>
           <span>{info.name || 'Series detail'}</span>
         </div>
 
-        <div className="mb-6 rounded-lg border border-slate-200 bg-white px-4 py-3">
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Series Status</p>
-          <h1 className="mt-1 text-lg font-black text-slate-900">{info.name?.replace(' ODI Series', '') || 'Series detail'}</h1>
-          <p className="mt-1 text-sm font-semibold text-slate-600">{seriesSummary(matches, info)}</p>
+        <div className="mb-6 rounded-lg border border-cric-border bg-cric-card px-4 py-3">
+          <p className="text-[10px] font-black uppercase tracking-widest text-cric-muted">Series Status</p>
+          <h1 className="mt-1 text-lg font-black text-cric-text">{info.name?.replace(' ODI Series', '') || 'Series detail'}</h1>
+          <p className="mt-1 text-sm font-semibold text-cric-muted">{seriesSummary(matches, info)}</p>
         </div>
 
         {(liveProviderMessage || !matches.length) && (
@@ -464,21 +464,21 @@ export default function InternationalSeriesDetail() {
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[290px_1fr_320px]">
           <aside className="space-y-5">
             <Panel title="Fixtures">
-              <div className="divide-y divide-slate-100">
+              <div className="divide-y divide-cric-border">
                 {fixtures.length ? fixtures.map(match => <FixtureCard key={getMatchId(match)} match={match} seriesName={info.name} />) : (
                   <EmptyPanelMessage>No fixtures available from the live provider yet.</EmptyPanelMessage>
                 )}
               </div>
-              <div className="px-4 py-3 text-center text-xs font-bold text-blue-700">View All Fixtures</div>
+              <div className="px-4 py-3 text-center text-xs font-bold text-cric-accent">View All Fixtures</div>
             </Panel>
 
             <Panel title="Results">
-              <div className="divide-y divide-slate-100">
+              <div className="divide-y divide-cric-border">
                 {results.length ? results.map(match => <ResultCard key={getMatchId(match)} match={match} seriesName={info.name} />) : (
                   <EmptyPanelMessage>No results available from the live provider yet.</EmptyPanelMessage>
                 )}
               </div>
-              <div className="px-4 py-3 text-center text-xs font-bold text-blue-700">View All Results</div>
+              <div className="px-4 py-3 text-center text-xs font-bold text-cric-accent">View All Results</div>
             </Panel>
 
             <StatsPanel seriesName={info.name} />
@@ -498,10 +498,10 @@ export default function InternationalSeriesDetail() {
               <div className="space-y-4 px-4 py-4">
                 {squad.length ? squad.map(team => (
                   <div key={team.teamName || team.name}>
-                    <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400">{team.teamName || team.name}</p>
+                    <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-cric-muted">{team.teamName || team.name}</p>
                     <div className="flex flex-wrap gap-2">
                       {asArray(team.players || team.squad).slice(0, 8).map(player => (
-                        <span key={player.name || player} className="rounded bg-slate-100 px-2 py-1 text-[11px] font-bold text-slate-700">{player.name || player}</span>
+                        <span key={player.name || player} className="rounded bg-cric-bg px-2 py-1 text-[11px] font-bold text-cric-text">{player.name || player}</span>
                       ))}
                     </div>
                   </div>
@@ -511,11 +511,11 @@ export default function InternationalSeriesDetail() {
 
             {points.length > 0 && (
               <Panel title="Series Table">
-                <div className="divide-y divide-slate-100">
+                <div className="divide-y divide-cric-border">
                   {points.map(row => (
                     <div key={row.teamName || row.team} className="flex justify-between px-4 py-3 text-sm">
                       <span className="font-black">{row.teamName || row.team}</span>
-                      <span className="font-bold text-slate-500">{row.wins || row.won || 0}-{row.losses || row.lost || 0}</span>
+                      <span className="font-bold text-cric-muted">{row.wins || row.won || 0}-{row.losses || row.lost || 0}</span>
                     </div>
                   ))}
                 </div>

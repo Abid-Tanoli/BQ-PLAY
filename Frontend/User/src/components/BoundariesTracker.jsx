@@ -8,17 +8,17 @@ const BoundariesTracker = ({ inning1 = {}, inning2 = {}, total = {} }) => {
 
   return (
     <div className="bg-[#0d1b2a] dark:bg-[#020617] rounded-3xl p-6 border border-slate-800/50">
-      <h3 className="text-[#ff6b35] text-[10px] font-black uppercase tracking-widest mb-4">Match Boundaries</h3>
+      <h3 className="text-cric-accent text-[10px] font-black uppercase tracking-widest mb-4">Match Boundaries</h3>
       
       <div className="space-y-4">
         {/* 1st Innings */}
         <div className="p-4 bg-slate-800/30 rounded-2xl">
-          <div className="text-xs text-slate-500 font-black uppercase mb-3">1st Innings</div>
+          <div className="text-xs text-cric-muted font-black uppercase mb-3">1st Innings</div>
           
           <div className="space-y-3">
             <div>
               <div className="flex justify-between text-sm mb-1">
-                <span className="text-slate-400">Fours</span>
+                <span className="text-cric-muted">Fours</span>
                 <span className="text-blue-400 font-medium">{inning1.fours || 0}</span>
               </div>
               <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
@@ -28,7 +28,7 @@ const BoundariesTracker = ({ inning1 = {}, inning2 = {}, total = {} }) => {
             
             <div>
               <div className="flex justify-between text-sm mb-1">
-                <span className="text-slate-400">Sixes</span>
+                <span className="text-cric-muted">Sixes</span>
                 <span className="text-purple-400 font-medium">{inning1.sixes || 0}</span>
               </div>
               <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
@@ -38,7 +38,7 @@ const BoundariesTracker = ({ inning1 = {}, inning2 = {}, total = {} }) => {
             
             <div className="pt-2 border-t border-slate-700">
               <div className="flex justify-between text-sm">
-                <span className="text-slate-500">Boundary Runs</span>
+                <span className="text-cric-muted">Boundary Runs</span>
                 <span className="text-white font-medium">
                   {inning1.boundaryRuns || 0} / {inning1.totalRuns || 0} ({formatPercent(inning1.boundaryRuns, inning1.totalRuns)})
                 </span>
@@ -50,12 +50,12 @@ const BoundariesTracker = ({ inning1 = {}, inning2 = {}, total = {} }) => {
         {/* 2nd Innings */}
         {inning2.totalRuns > 0 && (
           <div className="p-4 bg-slate-800/30 rounded-2xl">
-            <div className="text-xs text-slate-500 font-black uppercase mb-3">2nd Innings</div>
+            <div className="text-xs text-cric-muted font-black uppercase mb-3">2nd Innings</div>
             
             <div className="space-y-3">
               <div>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-slate-400">Fours</span>
+                  <span className="text-cric-muted">Fours</span>
                   <span className="text-blue-400 font-medium">{inning2.fours || 0}</span>
                 </div>
                 <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
@@ -65,7 +65,7 @@ const BoundariesTracker = ({ inning1 = {}, inning2 = {}, total = {} }) => {
               
               <div>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-slate-400">Sixes</span>
+                  <span className="text-cric-muted">Sixes</span>
                   <span className="text-purple-400 font-medium">{inning2.sixes || 0}</span>
                 </div>
                 <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
@@ -75,7 +75,7 @@ const BoundariesTracker = ({ inning1 = {}, inning2 = {}, total = {} }) => {
               
               <div className="pt-2 border-t border-slate-700">
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Boundary Runs</span>
+                  <span className="text-cric-muted">Boundary Runs</span>
                   <span className="text-white font-medium">
                     {inning2.boundaryRuns || 0} / {inning2.totalRuns || 0} ({formatPercent(inning2.boundaryRuns, inning2.totalRuns)})
                   </span>
@@ -91,13 +91,13 @@ const BoundariesTracker = ({ inning1 = {}, inning2 = {}, total = {} }) => {
             <span className="text-xs text-amber-500 font-black uppercase">Total Match</span>
             <div className="text-right">
               <span className="text-white font-black">{total.fours || 0} Fours</span>
-              <span className="text-slate-500 mx-2">|</span>
+              <span className="text-cric-muted mx-2">|</span>
               <span className="text-purple-400 font-black">{total.sixes || 0} Sixes</span>
             </div>
           </div>
           <div className="mt-2 text-center">
             <span className="text-2xl font-black text-amber-400">{total.boundaryRuns || 0}</span>
-            <span className="text-xs text-slate-500 ml-2">Total Boundary Runs</span>
+            <span className="text-xs text-cric-muted ml-2">Total Boundary Runs</span>
           </div>
         </div>
       </div>

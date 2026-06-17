@@ -2,11 +2,12 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Header from "../components/Header";
 import { api } from "../services/api";
-import { initAuthFromStorage, getStoredUser, logout as doLogout } from "../pages/auth/auth";
+import { getStoredUser, logout as doLogout } from "../pages/auth/auth";
 
 export default function IncubationTeams() {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [authUser, setAuthUser] = useState(null);
 
   useEffect(() => {
@@ -16,12 +17,14 @@ export default function IncubationTeams() {
   }, []);
 
   const fetchGroups = async () => {
+    setLoading(true);
+    setError(null);
     try {
       const res = await api.get("/categories/incubation");
       setGroups(res.data);
-      setLoading(false);
     } catch (err) {
-      console.error("Failed to fetch incubation groups:", err);
+      setError(err.response?.data?.message || err.message || "Failed to load incubation teams");
+    } finally {
       setLoading(false);
     }
   };
@@ -29,7 +32,7 @@ export default function IncubationTeams() {
   const handleLogout = () => { doLogout(); setAuthUser(null); };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] dark:bg-slate-900 text-slate-900 dark:text-white font-sans">
+    <div className="min-h-screen bg-cric-bg dark:bg-slate-900 text-cric-text dark:text-white font-sans">
       <Header user={authUser} onLogout={handleLogout} />
 
       {/* Hero */}
@@ -49,16 +52,25 @@ export default function IncubationTeams() {
           <div className="flex justify-center py-20">
             <div className="w-12 h-12 border-4 border-purple-600 border-t-transparent rounded-full animate-spin" />
           </div>
+        ) : error ? (
+          <div className="text-center py-20">
+            <div className="text-5xl mb-4">⚠️</div>
+            <p className="text-lg font-black text-red-500 mb-2">Failed to load incubation teams</p>
+            <p className="text-cric-muted text-sm mb-4">{error}</p>
+            <button onClick={fetchGroups} className="px-6 py-3 bg-purple-600 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-purple-700 transition-all">
+              Try Again
+            </button>
+          </div>
         ) : groups.length === 0 ? (
-          <div className="text-center py-20 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
+          <div className="text-center py-20 bg-cric-card dark:bg-slate-800 rounded-2xl border border-cric-border dark:border-slate-700">
             <div className="text-6xl mb-4">🚀</div>
-            <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">No Incubation Groups</h3>
-            <p className="text-slate-400 text-sm mt-2">Internal training teams will appear here once added</p>
+            <h3 className="text-xl font-black text-cric-text dark:text-white uppercase tracking-tighter">No Incubation Groups</h3>
+            <p className="text-cric-muted text-sm mt-2">Internal training teams will appear here once added</p>
           </div>
         ) : (
           <div className="space-y-8">
             {groups.map((group) => (
-              <div key={group._id} className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-purple-100 dark:border-purple-900 overflow-hidden">
+              <div key={group._id} className="bg-cric-card dark:bg-slate-800 rounded-2xl shadow-lg border border-purple-100 dark:border-purple-900 overflow-hidden">
                 {/* Group Header */}
                 <div className="bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 p-6 border-b border-purple-200 dark:border-purple-700">
                   <div className="flex items-center gap-4">
@@ -84,14 +96,14 @@ export default function IncubationTeams() {
 
                 {/* Teams Grid */}
                 <div className="p-6">
-                  <h3 className="font-bold text-sm text-slate-600 dark:text-slate-400 mb-4 uppercase tracking-widest">Teams ({group.teams?.length || 0})</h3>
+                  <h3 className="font-bold text-sm text-cric-muted dark:text-slate-400 mb-4 uppercase tracking-widest">Teams ({group.teams?.length || 0})</h3>
                   
                   {group.teams?.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {group.teams.map((team) => (
                         <div key={team._id} className="group bg-purple-50 dark:bg-purple-900/20 rounded-xl border-2 border-purple-200 dark:border-purple-700 hover:border-purple-400 dark:hover:border-purple-500 transition-all p-4">
                           <div className="flex items-center gap-3 mb-3">
-                            <div className="w-12 h-12 bg-white dark:bg-slate-700 rounded-lg flex items-center justify-center p-2 group-hover:scale-110 transition-transform">
+                            <div className="w-12 h-12 bg-cric-card dark:bg-slate-700 rounded-lg flex items-center justify-center p-2 group-hover:scale-110 transition-transform">
                               {team.logo ? (
                                 <img src={team.logo} alt={team.name} className="w-full h-full object-contain" />
                               ) : (
@@ -122,7 +134,7 @@ export default function IncubationTeams() {
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-12 text-slate-400">
+                    <div className="text-center py-12 text-cric-muted">
                       <p className="font-black uppercase tracking-widest text-xs">No teams in this incubation group yet</p>
                     </div>
                   )}

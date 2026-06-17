@@ -222,7 +222,7 @@ export default function SeriesDetail() {
                                 {match.teams?.[0]?.name?.charAt(0) || 'T'}
                               </div>
                             )}
-                            <span className="font-bold text-white">{match.teams?.[0]?.name || 'Team 1'}</span>
+                            <span className="font-bold text-white">{match.teams?.[0]?.name || 'Team A'}</span>
                           </div>
                           <span className="text-[#94a3b8] text-sm">vs</span>
                           <div className="flex items-center gap-2">
@@ -233,7 +233,7 @@ export default function SeriesDetail() {
                                 {match.teams?.[1]?.name?.charAt(0) || 'T'}
                               </div>
                             )}
-                            <span className="font-bold text-white">{match.teams?.[1]?.name || 'Team 2'}</span>
+                            <span className="font-bold text-white">{match.teams?.[1]?.name || 'Team B'}</span>
                           </div>
                         </div>
                         <div className="text-sm text-[#94a3b8]">

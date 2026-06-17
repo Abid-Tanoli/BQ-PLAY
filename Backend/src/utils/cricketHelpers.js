@@ -16,14 +16,20 @@ export const normalizeBallRunText = (matchOrMatches) => {
 
   matches.forEach((match) => {
     match?.innings?.forEach((innings) => {
+      const ballByBall = [];
       innings?.oversHistory?.forEach((over) => {
         over?.balls?.forEach((ball) => {
           ball.runs = Number(ball.runs || 0);
           if (!ball.runText) {
             ball.runText = getBallRunText(ball);
           }
+          ballByBall.push({
+            ...ball,
+            overNumber: over.overNumber,
+          });
         });
       });
+      innings.ballByBall = ballByBall;
     });
   });
 

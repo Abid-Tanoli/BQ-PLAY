@@ -145,11 +145,6 @@ export default function ManageEvents() {
     };
 
     const openSquadForm = async (ev, teamId) => {
-        console.log('=== OPENING SQUAD FORM ===');
-        console.log('Event:', ev);
-        console.log('Event ID:', ev._id);
-        console.log('Team ID:', teamId);
-        console.log('Navigation URL:', `/admin/events/${ev._id}/squad/${teamId}`);
         navigate(`/admin/events/${ev._id}/squad/${teamId}`);
     };
 

@@ -4,7 +4,7 @@ import { login, loginWithGoogle } from '../pages/auth/auth';
 
 const hasGoogleClientId = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID && import.meta.env.VITE_GOOGLE_CLIENT_ID !== 'your_google_client_id.apps.googleusercontent.com');
 
-export default function Login({ onSuccess, onCancel }) {
+export default function Login({ onSuccess, onCancel, embedded = false }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [err, setErr] = useState(null);
@@ -38,17 +38,19 @@ export default function Login({ onSuccess, onCancel }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-cric-text/70 px-4 backdrop-blur-sm">
+    <div className={embedded ? "w-full" : "fixed inset-0 z-[80] flex items-center justify-center bg-cric-text/70 px-4 backdrop-blur-sm"}>
       <div className="w-full max-w-md bg-cric-card rounded-xl border border-cric-border shadow-xl p-6">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-xl font-black text-cric-text uppercase tracking-tight">Login</h3>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="rounded-lg bg-cric-bg px-3 py-2 text-[10px] font-black uppercase tracking-widest text-cric-muted hover:bg-cric-border"
-          >
-            Close
-          </button>
+          {onCancel && (
+            <button
+              type="button"
+              onClick={onCancel}
+              className="rounded-lg bg-cric-bg px-3 py-2 text-[10px] font-black uppercase tracking-widest text-cric-muted hover:bg-cric-border"
+            >
+              Close
+            </button>
+          )}
         </div>
 
         {err && <p className="text-red-500 mb-4 text-sm font-bold">{err}</p>}
@@ -107,13 +109,15 @@ export default function Login({ onSuccess, onCancel }) {
             >
               {loading ? 'Logging in...' : 'Login'}
             </button>
-            <button
-              type="button"
-              onClick={onCancel}
-              className="px-4 py-3 bg-cric-bg hover:bg-cric-border text-cric-text font-black text-xs uppercase tracking-widest rounded-xl transition-all"
-            >
-              Cancel
-            </button>
+            {onCancel && (
+              <button
+                type="button"
+                onClick={onCancel}
+                className="px-4 py-3 bg-cric-bg hover:bg-cric-border text-cric-text font-black text-xs uppercase tracking-widest rounded-xl transition-all"
+              >
+                Cancel
+              </button>
+            )}
           </div>
         </form>
       </div>

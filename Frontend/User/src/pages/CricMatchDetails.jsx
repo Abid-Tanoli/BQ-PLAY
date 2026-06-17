@@ -70,10 +70,10 @@ export default function CricMatchDetails() {
   const pointsRows = useMemo(() => Array.isArray(points?.points) ? points.points : [], [points]);
 
   return (
-    <div className="min-h-screen bg-[#f0f2f5]">
+    <div className="min-h-screen bg-cric-bg">
       <Header />
 
-      <section className="bg-gradient-to-r from-[#031d44] via-[#0a2d5e] to-[#031d44] py-8 text-white">
+      <section className="bg-gradient-to-r from-cric-accent via-cric-accent to-cric-accent py-8 text-white">
         <div className="mx-auto max-w-7xl px-4">
           <Link to="/series" className="text-xs font-black uppercase tracking-widest text-blue-200 hover:text-white">Back to series</Link>
           <h1 className="mt-4 text-3xl font-black uppercase tracking-tight">{match?.name || "Match Details"}</h1>
@@ -85,14 +85,14 @@ export default function CricMatchDetails() {
         </div>
       </section>
 
-      <nav className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+      <nav className="sticky top-0 z-30 border-b border-cric-border bg-cric-card/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl gap-2 overflow-x-auto px-4 py-2">
           {TABS.map((tab) => (
             <button
               key={tab}
               type="button"
               onClick={() => setActiveTab(tab)}
-              className={`whitespace-nowrap rounded-xl px-4 py-2 text-xs font-black uppercase tracking-widest ${activeTab === tab ? "bg-[#ff6b35] text-white" : "text-slate-600 hover:bg-slate-100"}`}
+              className={`whitespace-nowrap rounded-xl px-4 py-2 text-xs font-black uppercase tracking-widest ${activeTab === tab ? "bg-cric-accent text-white" : "text-cric-muted hover:bg-cric-bg"}`}
             >
               {tab}
             </button>
@@ -115,15 +115,15 @@ export default function CricMatchDetails() {
                   <InfoTile label="Date" value={match?.date ? new Date(match.date).toLocaleString() : "TBC"} />
                   <InfoTile label="Venue" value={match?.venue || "Venue TBA"} />
                 </div>
-                <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-                  <h2 className="mb-3 text-xs font-black uppercase tracking-widest text-slate-500">Scores</h2>
+                <div className="rounded-2xl bg-cric-card p-5 shadow-sm ring-1 ring-cric-border">
+                  <h2 className="mb-3 text-xs font-black uppercase tracking-widest text-cric-muted">Scores</h2>
                   <div className="space-y-2">
                     {scoreRows.length ? scoreRows.map((score, index) => (
-                      <div key={`${score.team}-${index}`} className="flex justify-between rounded-xl bg-slate-50 px-4 py-3">
-                        <span className="font-black text-slate-700">{score.team || `Innings ${index + 1}`}</span>
-                        <span className="font-black text-slate-900">{score.runs}/{score.wickets} ({score.overs})</span>
+                      <div key={`${score.team}-${index}`} className="flex justify-between rounded-xl bg-cric-bg px-4 py-3">
+                        <span className="font-black text-cric-text">{score.team || `Innings ${index + 1}`}</span>
+                        <span className="font-black text-cric-text">{score.runs}/{score.wickets} ({score.overs})</span>
                       </div>
-                    )) : <p className="text-sm font-bold text-slate-500">No score available yet.</p>}
+                    )) : <p className="text-sm font-bold text-cric-muted">No score available yet.</p>}
                   </div>
                 </div>
               </div>
@@ -133,35 +133,35 @@ export default function CricMatchDetails() {
             {activeTab === "squads" && <SquadList squads={squads?.squads || []} />}
 
             {activeTab === "points" && (
-              <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-                <h2 className="mb-4 text-xs font-black uppercase tracking-widest text-slate-500">Fantasy / Match Points</h2>
+              <div className="rounded-2xl bg-cric-card p-5 shadow-sm ring-1 ring-cric-border">
+                <h2 className="mb-4 text-xs font-black uppercase tracking-widest text-cric-muted">Fantasy / Match Points</h2>
                 {pointsRows.length ? (
                   <div className="overflow-x-auto">
-                    <pre className="rounded-xl bg-slate-50 p-4 text-xs text-slate-700">{JSON.stringify(pointsRows, null, 2)}</pre>
+                    <pre className="rounded-xl bg-cric-bg p-4 text-xs text-cric-text">{JSON.stringify(pointsRows, null, 2)}</pre>
                   </div>
                 ) : (
-                  <p className="text-sm font-bold text-slate-500">Points are not available for this match.</p>
+                  <p className="text-sm font-bold text-cric-muted">Points are not available for this match.</p>
                 )}
               </div>
             )}
 
             {activeTab === "players" && (
-              <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-                <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-slate-400">Player Search</label>
+              <div className="rounded-2xl bg-cric-card p-5 shadow-sm ring-1 ring-cric-border">
+                <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-cric-muted">Player Search</label>
                 <input
                   value={playerSearch}
                   onChange={(event) => setPlayerSearch(event.target.value)}
                   placeholder="Search player name..."
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold outline-none focus:border-blue-500"
+                  className="w-full rounded-xl border border-cric-border bg-cric-bg px-4 py-3 text-sm font-bold outline-none focus:border-cric-accent"
                 />
-                <div className="mt-4 divide-y divide-slate-100">
+                <div className="mt-4 divide-y divide-cric-border">
                   {players.map((player) => (
                     <div key={player.id || player.name} className="flex justify-between py-3">
-                      <span className="font-black text-slate-800">{player.name}</span>
-                      <span className="text-xs font-bold text-slate-500">{player.country || "BQ-PLAY"}</span>
+                      <span className="font-black text-cric-text">{player.name}</span>
+                      <span className="text-xs font-bold text-cric-muted">{player.country || "BQ-PLAY"}</span>
                     </div>
                   ))}
-                  {playerSearch && players.length === 0 && <p className="py-4 text-sm font-bold text-slate-500">No players found.</p>}
+                  {playerSearch && players.length === 0 && <p className="py-4 text-sm font-bold text-cric-muted">No players found.</p>}
                 </div>
               </div>
             )}
@@ -174,9 +174,9 @@ export default function CricMatchDetails() {
 
 function InfoTile({ label, value }) {
   return (
-    <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{label}</p>
-      <p className="mt-2 text-sm font-black text-[#031d44]">{value}</p>
+    <div className="rounded-2xl bg-cric-card p-5 shadow-sm ring-1 ring-cric-border">
+      <p className="text-[10px] font-black uppercase tracking-widest text-cric-muted">{label}</p>
+      <p className="mt-2 text-sm font-black text-cric-accent">{value}</p>
     </div>
   );
 }

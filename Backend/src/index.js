@@ -13,6 +13,8 @@ import matchRoutes from "./routes/matchRoutes.js";
 import teamRoutes from "./routes/teamRoutes.js";
 import liveMatchRoutes from "./routes/liveMatchRoutes.js";
 import errorHandler from "./middleware/errorHandler.js";
+import log from "./utils/logger.js";
+import { initSentry, sentryMiddleware, captureException } from "./utils/sentry.js";
 import tournamentRoutes from "./routes/tournamentRoutes.js";
 import eventRoutes from "./routes/eventRoutes.js";
 import bulkImportRoutes from "./routes/bulkImportRoutes.js";
@@ -34,6 +36,8 @@ import syncRoutes from "./routes/syncRoutes.js";
 import { startSyncScheduler } from "./services/syncScheduler.js";
 
 dotenv.config();
+
+initSentry();
 
 const app = express();
 
@@ -73,7 +77,7 @@ app.use((req, res, next) => {
 
 app.use((req, res, next) => {
   if (process.env.LOG_REQUESTS === "true") {
-    console.log(`${req.method} ${req.originalUrl}`);
+    log.info({ method: req.method, url: req.originalUrl }, `${req.method} ${req.originalUrl}`);
   }
   next();
 });
@@ -211,6 +215,7 @@ app.get("/", (req, res) => {
   });
 });
 
+app.use(sentryMiddleware);
 app.use(errorHandler);
 
 app.use((req, res) => {
@@ -251,31 +256,31 @@ import { seedFieldingPositions } from "./seed/fieldingPositions.js";
 
 if (shouldListen) {
   server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`Socket.IO ready for connections`);
-    console.log(`CORS enabled for configured origins`);
+    log.info({ port: PORT }, `Server running on port ${PORT}`);
+    log.info('Socket.IO ready for connections');
+    log.info('CORS enabled for configured origins');
 
     // Start cricket polling if API key is configured (OPTIONAL)
     if (hasCricApiKey()) {
       cricketPolling.start();
-      console.log(`External cricket API polling started`);
+      log.info('External cricket API polling started');
     }
 
     // Start international live score poller
     if (hasExternalCricketProvider()) {
       startInternationalPoller(io);
-      console.log(`International live score poller started`);
+      log.info('International live score poller started');
     } else {
-      console.log('International live score poller disabled (add RAPIDAPI_KEY or CRICKET_API_KEY to enable)');
+      log.info('International live score poller disabled (add RAPIDAPI_KEY or CRICKET_API_KEY to enable)');
     }
 
     // Start external sync scheduler only when explicitly enabled.
     // It is optional and requires outbound internet/DNS access.
     if (externalSyncEnabled) {
       startSyncScheduler();
-      console.log(`External sync scheduler started`);
+      log.info('External sync scheduler started');
     } else {
-      console.log(`External sync scheduler disabled (set ENABLE_EXTERNAL_SYNC=true to enable)`);
+      log.info(`External sync scheduler disabled (set ENABLE_EXTERNAL_SYNC=true to enable)`);
     }
 
     // No warning - external API is completely optional
@@ -283,7 +288,7 @@ if (shouldListen) {
 }
 
 server.on("error", (error) => {
-  console.error("Server error:", error);
+  log.error(error, "Server error");
   process.exit(1);
 });
 
@@ -298,19 +303,21 @@ server.on('upgrade', (req, socket, head) => {
 });
 
 process.on("SIGTERM", () => {
-  console.log("SIGTERM signal received: closing HTTP server");
+  log.info("SIGTERM signal received: closing HTTP server");
   server.close(() => {
-    console.log("HTTP server closed");
+    log.info("HTTP server closed");
     process.exit(0);
   });
 });
 
-process.on("unhandledRejection", (reason, promise) => {
-  console.error("Unhandled Rejection at:", promise, "reason:", reason);
+process.on("unhandledRejection", (reason) => {
+  log.error({ reason }, "Unhandled Rejection");
+  captureException(reason instanceof Error ? reason : new Error(String(reason)));
 });
 
 process.on("uncaughtException", (error) => {
-  console.error("Uncaught Exception:", error);
+  log.error(error, "Uncaught Exception");
+  captureException(error);
   process.exit(1);
 });
 

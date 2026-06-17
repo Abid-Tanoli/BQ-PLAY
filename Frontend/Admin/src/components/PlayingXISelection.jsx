@@ -19,23 +19,13 @@ const PlayingXISelection = ({ match, team, eventSquad, onClose, onSuccess }) => 
     }, [team?._id]);
 
     const loadSquadAndXI = async () => {
-        console.log('=== PLAYING XI SELECTION ===');
-        console.log('Team:', team);
-        console.log('Event Squad Prop:', eventSquad);
-        console.log('Match:', match);
-
         try {
             // Priority 1: Use event squad if provided
             if (eventSquad) {
-                console.log('Event Squad detected:', eventSquad);
-                console.log('Event Squad players:', eventSquad.players);
-                console.log('Event Squad players count:', eventSquad.players?.length);
-
                 let players = eventSquad.players || [];
 
                 // If players are not populated (just ObjectIds), fetch them
                 if (players.length > 0 && typeof players[0] === 'string') {
-                    console.log('Players are ObjectIds, fetching details...');
                     // Fetch player details for all IDs
                     const playerPromises = players.map(async (id) => {
                         try {
@@ -47,11 +37,9 @@ const PlayingXISelection = ({ match, team, eventSquad, onClose, onSuccess }) => 
                         }
                     });
                     players = await Promise.all(playerPromises);
-                    console.log('Fetched players:', players);
                 }
 
                 if (players.length > 0) {
-                    console.log('Using EVENT SQUAD with', players.length, 'players');
                     setSquadPlayers(players);
                     setCaptain(eventSquad.captain?._id || eventSquad.captain || '');
                     setViceCaptain(eventSquad.viceCaptain?._id || eventSquad.viceCaptain || '');
@@ -69,8 +57,6 @@ const PlayingXISelection = ({ match, team, eventSquad, onClose, onSuccess }) => 
 
                     setLoading(false);
                     return;
-                } else {
-                    console.log('Event Squad has no players, falling back to match squad15');
                 }
             }
 

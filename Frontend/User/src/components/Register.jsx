@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { register } from '../pages/auth/auth';
-import PlayerForm from '@shared/components/PlayerForm';
+import PlayerForm from './PlayerForm';
 
 const accountTypes = [
   {
@@ -33,7 +33,7 @@ const organizationCategories = [
   'Other',
 ];
 
-export default function Register({ onSuccess, onCancel }) {
+export default function Register({ onSuccess, onCancel, embedded = false }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -96,7 +96,7 @@ export default function Register({ onSuccess, onCancel }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-cric-text/70 px-4 py-8 backdrop-blur-sm">
+    <div className={embedded ? "w-full" : "fixed inset-0 z-[80] flex items-center justify-center bg-cric-text/70 px-4 py-8 backdrop-blur-sm"}>
       <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-xl border border-cric-border bg-cric-card shadow-sm">
         <div className="bg-cric-accent px-6 py-5 text-white">
           <div className="flex items-start justify-between gap-4">
@@ -107,13 +107,15 @@ export default function Register({ onSuccess, onCancel }) {
                 BQ-PLAY provides the platform. Local cricket handlers manage their own teams, playing XI, squads, matches and tournaments.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={onCancel}
-              className="rounded-lg bg-white/10 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white hover:bg-white/20"
-            >
-              Close
-            </button>
+            {onCancel && (
+              <button
+                type="button"
+                onClick={onCancel}
+                className="rounded-lg bg-white/10 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white hover:bg-white/20"
+              >
+                Close
+              </button>
+            )}
           </div>
         </div>
 
@@ -127,7 +129,7 @@ export default function Register({ onSuccess, onCancel }) {
                 className={`rounded-lg border p-4 text-left transition-all ${
                   accountType === item.value
                     ? 'border-cric-accent bg-cric-accent text-white shadow-sm'
-                    : 'border-[#e0e0e0] bg-cric-card text-cric-muted hover:border-cric-accent/30'
+                    : 'border-cric-border bg-cric-card text-cric-muted hover:border-cric-accent/30'
                 }`}
               >
                 <span className="block text-sm font-black uppercase tracking-wide">{item.label}</span>
@@ -156,7 +158,7 @@ export default function Register({ onSuccess, onCancel }) {
                 placeholder="Full name"
                 value={name}
                 onChange={e => setName(e.target.value)}
-                className="w-full rounded-lg border border-[#e0e0e0] px-3 py-3 text-sm font-semibold text-cric-text bg-cric-card focus:outline-none focus:ring-2 focus:ring-cric-accent/30 focus:border-cric-accent"
+                className="w-full rounded-lg border border-cric-border px-3 py-3 text-sm font-semibold text-cric-text bg-cric-card focus:outline-none focus:ring-2 focus:ring-cric-accent/30 focus:border-cric-accent"
               />
 
               <label className="text-[10px] font-black uppercase tracking-widest text-cric-muted">Email</label>
@@ -165,7 +167,7 @@ export default function Register({ onSuccess, onCancel }) {
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                className="w-full rounded-lg border border-[#e0e0e0] px-3 py-3 text-sm font-semibold text-cric-text bg-cric-card focus:outline-none focus:ring-2 focus:ring-cric-accent/30 focus:border-cric-accent"
+                className="w-full rounded-lg border border-cric-border px-3 py-3 text-sm font-semibold text-cric-text bg-cric-card focus:outline-none focus:ring-2 focus:ring-cric-accent/30 focus:border-cric-accent"
               />
 
               <label className="text-[10px] font-black uppercase tracking-widest text-cric-muted">Password</label>
@@ -174,7 +176,7 @@ export default function Register({ onSuccess, onCancel }) {
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="w-full rounded-lg border border-[#e0e0e0] px-3 py-3 text-sm font-semibold text-cric-text bg-cric-card focus:outline-none focus:ring-2 focus:ring-cric-accent/30 focus:border-cric-accent"
+                className="w-full rounded-lg border border-cric-border px-3 py-3 text-sm font-semibold text-cric-text bg-cric-card focus:outline-none focus:ring-2 focus:ring-cric-accent/30 focus:border-cric-accent"
               />
 
               <div className="rounded-xl border border-cric-border bg-cric-bg p-4">
@@ -183,7 +185,7 @@ export default function Register({ onSuccess, onCancel }) {
                   <select
                     value={organizationCategory}
                     onChange={e => setOrganizationCategory(e.target.value)}
-                    className="w-full rounded-lg border border-[#e0e0e0] bg-cric-card px-3 py-3 text-sm font-bold text-cric-text focus:outline-none focus:ring-2 focus:ring-cric-accent/30 focus:border-cric-accent"
+                    className="w-full rounded-lg border border-cric-border bg-cric-card px-3 py-3 text-sm font-bold text-cric-text focus:outline-none focus:ring-2 focus:ring-cric-accent/30 focus:border-cric-accent"
                   >
                     {organizationCategories.map(category => (
                       <option key={category} value={category}>{category}</option>
@@ -193,7 +195,7 @@ export default function Register({ onSuccess, onCancel }) {
                     placeholder="Organization, school, college, club or league name"
                     value={organizationName}
                     onChange={e => setOrganizationName(e.target.value)}
-                    className="w-full rounded-lg border border-[#e0e0e0] bg-cric-card px-3 py-3 text-sm font-semibold text-cric-text focus:outline-none focus:ring-2 focus:ring-cric-accent/30 focus:border-cric-accent"
+                    className="w-full rounded-lg border border-cric-border bg-cric-card px-3 py-3 text-sm font-semibold text-cric-text focus:outline-none focus:ring-2 focus:ring-cric-accent/30 focus:border-cric-accent"
                   />
                 </div>
                 <div className="mt-4 grid gap-4 md:grid-cols-2">
@@ -201,13 +203,13 @@ export default function Register({ onSuccess, onCancel }) {
                     placeholder="Phone (optional)"
                     value={phone}
                     onChange={e => setPhone(e.target.value)}
-                    className="w-full rounded-lg border border-[#e0e0e0] bg-cric-card px-3 py-3 text-sm font-semibold text-cric-text focus:outline-none focus:ring-2 focus:ring-cric-accent/30 focus:border-cric-accent"
+                    className="w-full rounded-lg border border-cric-border bg-cric-card px-3 py-3 text-sm font-semibold text-cric-text focus:outline-none focus:ring-2 focus:ring-cric-accent/30 focus:border-cric-accent"
                   />
                   <input
                     placeholder="What will you manage? e.g. school league, club tournament"
                     value={joinIntent}
                     onChange={e => setJoinIntent(e.target.value)}
-                    className="w-full rounded-lg border border-[#e0e0e0] bg-cric-card px-3 py-3 text-sm font-semibold text-cric-text focus:outline-none focus:ring-2 focus:ring-cric-accent/30 focus:border-cric-accent"
+                    className="w-full rounded-lg border border-cric-border bg-cric-card px-3 py-3 text-sm font-semibold text-cric-text focus:outline-none focus:ring-2 focus:ring-cric-accent/30 focus:border-cric-accent"
                   />
                 </div>
               </div>
