@@ -3,16 +3,28 @@ import api from "../../services/api";
 
 const initialState = {
   user: JSON.parse(localStorage.getItem("bq_user")) || null,
-  token: localStorage.getItem("token") || null,
+  token: localStorage.getItem("token") || localStorage.getItem("bq_token") || null,
   loading: false,
   error: null,
 };
+
+function persistToken(token, user) {
+  localStorage.setItem("token", token);
+  localStorage.setItem("bq_token", token);
+  localStorage.setItem("bq_user", JSON.stringify(user));
+}
+
+function clearAllAuth() {
+  localStorage.removeItem("token");
+  localStorage.removeItem("bq_token");
+  localStorage.removeItem("bq_user");
+}
 
 export const login = createAsyncThunk(
   "auth/login",
   async ({ email, password }, thunkAPI) => {
     try {
-      const res = await api.post("/auth/login", { email, password });
+      const res = await api.post("/admin/login", { email, password });
       return res.data;
     } catch (err) {
       return thunkAPI.rejectWithValue(
@@ -26,7 +38,7 @@ export const register = createAsyncThunk(
   "auth/register",
   async ({ name, email, password }, thunkAPI) => {
     try {
-      const res = await api.post("/auth/register", { name, email, password });
+      const res = await api.post("/admin/register", { name, email, password });
       return res.data;
     } catch (err) {
       return thunkAPI.rejectWithValue(
@@ -43,8 +55,7 @@ const authSlice = createSlice({
     logout(state) {
       state.user = null;
       state.token = null;
-      localStorage.removeItem("token");
-      localStorage.removeItem("bq_user");
+      clearAllAuth();
     },
     clearError(state) {
       state.error = null;
@@ -52,36 +63,34 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Login
       .addCase(login.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(login.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload.user || null;
+        const userData = action.payload.admin || action.payload.user || null;
+        state.user = userData;
         state.token = action.payload.token;
         if (action.payload.token) {
-          localStorage.setItem("token", action.payload.token);
-          localStorage.setItem("bq_user", JSON.stringify(action.payload.user));
+          persistToken(action.payload.token, userData);
         }
       })
       .addCase(login.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || "Login failed";
       })
-      // Register
       .addCase(register.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(register.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload.user || null;
+        const userData = action.payload.admin || action.payload.user || null;
+        state.user = userData;
         state.token = action.payload.token;
         if (action.payload.token) {
-          localStorage.setItem("token", action.payload.token);
-          localStorage.setItem("bq_user", JSON.stringify(action.payload.user));
+          persistToken(action.payload.token, userData);
         }
       })
       .addCase(register.rejected, (state, action) => {

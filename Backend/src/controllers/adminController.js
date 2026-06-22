@@ -14,7 +14,7 @@ export const registerAdmin = async (req, res) => {
     const admin = await Admin.create({ name, email, password });
     const token = generateToken(admin);
 
-    res.status(201).json({ token, admin: { _id: admin._id, name: admin.name, email: admin.email, role: admin.role } });
+    res.status(201).json({ token, user: { _id: admin._id, name: admin.name, email: admin.email, role: admin.role } });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -34,7 +34,7 @@ export const loginAdmin = async (req, res) => {
 
     const token = generateToken(admin);
 
-    res.json({ token, admin: { _id: admin._id, name: admin.name, email: admin.email, role: admin.role } });
+    res.json({ token, user: { _id: admin._id, name: admin.name, email: admin.email, role: admin.role } });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

@@ -145,6 +145,58 @@ npm --prefix Frontend/Admin run dev
 - Public user app has `/login` and `/register` routes; users can also **Continue as Guest** for read-only browsing.
 - Admin console uses `ProtectedRoute` components; unauthenticated requests redirect to `/admin/login`.
 - Guest users cannot access admin scoring or match control pages.
+- Token is stored in `localStorage` under both `bq_token` and `token` keys for cross-app compatibility.
+- On 401/403 responses, auth state is cleared and user is redirected to login.
+
+### API Endpoints
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/api/auth/login` | Public | User login (returns JWT) |
+| POST | `/api/auth/register` | Public | User registration |
+| POST | `/api/auth/logout` | Public | Logout (clears server-side state) |
+| GET | `/api/auth/profile` | JWT | Get authenticated user profile |
+| POST | `/api/admin/login` | Public | Admin login (returns JWT) |
+| POST | `/api/admin/register` | Public | Admin registration |
+| GET | `/api/admin/profile` | JWT+Admin | Get admin profile |
+
+### Auth Troubleshooting
+
+| Symptom | Likely Cause | Fix |
+|---------|-------------|-----|
+| Admin login returns "Invalid credentials" | Logging in through wrong endpoint | Ensure admin login uses `/api/admin/login` (not `/api/auth/login`) |
+| "Not authorized, no token" after login | Token not sent in request header | Check `Authorization: Bearer <token>` header is present |
+| Page stays blank after 401/403 | Response interceptor not handling error | Check API interceptor redirects to login page |
+| CORS error in browser console | Backend origin not whitelisted | Add frontend URL to `CORS_ORIGINS` in `Backend/.env` |
+| Token lost on page refresh | Redux store not synced to localStorage | Ensure auth reducer initializes from `localStorage` |
+| "Admin role required" 403 | User token used on admin route | Admin routes require admin role; log in via `/admin/login` |
+| Socket.IO connection failed | CORS mismatch on WebSocket | Same `CORS_ORIGINS` env var controls both HTTP and Socket.IO CORS |
+
+### Environment Variables Reference
+
+**Backend (`Backend/.env`)**:
+```
+PORT=5000                          # API server port
+MONGO_URL=...                      # MongoDB connection string
+JWT_SECRET=...                     # JWT signing secret (REQUIRED)
+CORS_ORIGINS=http://localhost:5173,http://localhost:5174  # Allowed frontend origins
+NODE_ENV=development               # Environment mode
+```
+
+**Admin Frontend (`Frontend/Admin/.env`)**:
+```
+VITE_API_URL=http://localhost:5000/api    # Backend API URL
+VITE_SOCKET_URL=http://localhost:5000     # WebSocket server URL
+VITE_GOOGLE_CLIENT_ID=...                 # Google OAuth client ID (optional)
+```
+
+**User Frontend (`Frontend/User/.env`)**:
+```
+VITE_API_URL=http://localhost:5000/api    # Backend API URL (or "/api" for proxy)
+VITE_SOCKET_URL=http://localhost:5000     # WebSocket server URL
+VITE_CRICAPI_KEY=...                      # CricAPI key (optional)
+VITE_GOOGLE_CLIENT_ID=...                 # Google OAuth client ID (optional)
+```
 
 ### User App Routes
 

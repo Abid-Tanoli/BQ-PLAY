@@ -121,6 +121,10 @@ export const loginUser = async (req, res) => {
   }
 };
 
+export const logoutUser = async (req, res) => {
+  res.json({ message: "Logged out successfully" });
+};
+
 export const getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
