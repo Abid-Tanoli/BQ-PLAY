@@ -367,7 +367,7 @@ export default function ManageEvents() {
             {/* Events List */}
             <div className="space-y-4">
                 {loading && events.length === 0 ? (
-                    <div className="flex justify-center py-20"><div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" /></div>
+                    <div className="flex justify-center py-20"><div className="w-10 h-10 border-4 border-cric-accent border-t-transparent rounded-full animate-spin" /></div>
                 ) : filtered.length === 0 ? (
                     <div className="bg-white rounded-2xl shadow-xl p-16 text-center border border-slate-200">
                         <span className="text-5xl block mb-4">🏏</span>

@@ -27,7 +27,7 @@ const SyncPanel = lazy(() => import("./pages/SyncPanel"));
 
 const PageLoader = () => (
   <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
-    <div className="w-10 h-10 border-4 border-[#22c55e] border-t-transparent rounded-full animate-spin" />
+    <div className="w-10 h-10 border-4 border-cric-accent border-t-transparent rounded-full animate-spin" />
   </div>
 );
 

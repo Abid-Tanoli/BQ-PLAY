@@ -2,7 +2,7 @@ import React, { Suspense, lazy } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "./context/ThemeContext";
 import Footer from "./components/Footer";
-import ErrorBoundary from "./components/ErrorBoundary";
+import ErrorBoundary from "../../Shared/components/ErrorBoundary";
 import SocketStatusIndicator from "../../Shared/components/SocketStatusIndicator";
 import { getSocket } from "./services/socket";
 
@@ -40,7 +40,7 @@ function App() {
       <Router>
         <div className="flex flex-col min-h-screen">
         <SocketStatusIndicator getSocket={getSocket} />
-        <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-white"><div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" /></div>}>
+        <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-cric-bg"><div className="w-10 h-10 border-4 border-cric-accent border-t-transparent rounded-full animate-spin" /></div>}>
         <Routes>
           <Route path="/" element={<ErrorBoundary><Home /></ErrorBoundary>} />
           <Route path="/login" element={<ErrorBoundary><AuthPage initialMode="login" /></ErrorBoundary>} />

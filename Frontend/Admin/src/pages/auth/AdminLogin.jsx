@@ -56,16 +56,16 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 to-slate-900 p-6">
+    <div className="min-h-screen flex items-center justify-center bg-cric-bg p-6">
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8">
+        <div className="bg-cric-card rounded-2xl shadow-xl p-6 sm:p-8 border border-cric-border">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-black text-[#031d44]">BQ-PLAY ADMIN</h1>
-            <p className="text-slate-500 mt-2">Sign in to your account</p>
+            <h1 className="text-3xl font-black text-cric-text">BQ-PLAY ADMIN</h1>
+            <p className="text-cric-muted mt-2">Sign in to your account</p>
           </div>
 
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-700 dark:text-red-400 text-sm">
               {error}
             </div>
           )}
@@ -86,10 +86,10 @@ export default function AdminLogin() {
 
               <div className="relative mb-6">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-slate-200" />
+                  <div className="w-full border-t border-cric-border" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-4 text-slate-400 font-bold">or continue with email</span>
+                  <span className="bg-cric-card px-4 text-cric-muted font-bold">or continue with email</span>
                 </div>
               </div>
             </>
@@ -97,47 +97,47 @@ export default function AdminLogin() {
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div>
-              <label className="block text-xs font-bold uppercase text-slate-600 mb-2">
+              <label className="block text-xs font-bold uppercase text-cric-muted mb-2">
                 Email Address
               </label>
               <input
                 {...register("email")}
                 type="email"
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-800"
+                className="w-full px-4 py-3 bg-cric-bg border border-cric-border rounded-xl focus:ring-2 focus:ring-cric-accent outline-none font-bold text-cric-text"
                 placeholder="admin@bqplay.com"
               />
               {errors.email && (
-                <p className="mt-2 text-xs text-red-600 font-bold">{errors.email.message}</p>
+                <p className="mt-2 text-xs text-red-500 font-bold">{errors.email.message}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase text-slate-600 mb-2">
+              <label className="block text-xs font-bold uppercase text-cric-muted mb-2">
                 Password
               </label>
               <input
                 {...register("password")}
                 type="password"
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-800"
+                className="w-full px-4 py-3 bg-cric-bg border border-cric-border rounded-xl focus:ring-2 focus:ring-cric-accent outline-none font-bold text-cric-text"
                 placeholder="••••••••"
               />
               {errors.password && (
-                <p className="mt-2 text-xs text-red-600 font-bold">{errors.password.message}</p>
+                <p className="mt-2 text-xs text-red-500 font-bold">{errors.password.message}</p>
               )}
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-[#031d44] hover:bg-slate-800 disabled:opacity-50 text-white font-black text-sm uppercase tracking-widest rounded-xl transition-all shadow-lg"
+              className="w-full py-3 bg-cric-accent hover:bg-orange-600 disabled:opacity-50 text-white font-black text-sm uppercase tracking-widest rounded-xl transition-all shadow-lg"
             >
               {loading ? "Signing in..." : "Sign In"}
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-slate-500">
+          <p className="mt-6 text-center text-sm text-cric-muted">
             Don't have an account?{" "}
-            <Link to="/admin/register" className="text-blue-600 font-bold hover:underline">
+            <Link to="/admin/register" className="text-cric-accent font-bold hover:underline">
               Register here
             </Link>
           </p>
