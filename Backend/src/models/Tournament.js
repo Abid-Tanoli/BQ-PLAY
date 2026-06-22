@@ -37,6 +37,10 @@ const tournamentSchema = new mongoose.Schema(
       type: String,
       default: ""
     },
+    slug: { type: String, default: "" },
+    espnSeriesId: { type: String, default: "" },
+    season: { type: String, default: "" },
+    longName: { type: String, default: "" },
     status: {
       type: String,
       enum: ["upcoming", "live", "completed"],
@@ -105,7 +109,21 @@ const tournamentSchema = new mongoose.Schema(
       type: String,
       enum: ["T20", "ODI", "Test", "T10", "6 Overs", "8 Overs"],
       default: "T20"
-    }
+    },
+    // Tournament/Series Squad: 11-20 players per team
+    tournamentSquads: [{
+      team: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Team"
+      },
+      players: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Player"
+      }],
+      captain: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
+      viceCaptain: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
+      wicketKeepers: [{ type: mongoose.Schema.Types.ObjectId, ref: "Player" }]
+    }]
   },
   {
     timestamps: true,

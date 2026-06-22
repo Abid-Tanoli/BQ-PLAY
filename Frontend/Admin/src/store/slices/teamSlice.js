@@ -65,9 +65,9 @@ export const deleteTeam = createAsyncThunk(
 
 export const addPlayersToTeam = createAsyncThunk(
   "teams/addPlayers",
-  async ({ id, playerIds }, thunkAPI) => {
+  async ({ teamId, playerIds }, thunkAPI) => {
     try {
-      const res = await api.put(`/teams/${id}`, { players: playerIds });
+      const res = await api.post(`/teams/${teamId}/players`, { playerIds });
       return res.data;
     } catch (err) {
       return thunkAPI.rejectWithValue(
@@ -81,7 +81,9 @@ export const removePlayersFromTeam = createAsyncThunk(
   "teams/removePlayers",
   async ({ id, playerIds }, thunkAPI) => {
     try {
-      const res = await api.delete(`/teams/${id}/players`, { data: { playerIds } });
+      const res = await api.delete(`/teams/${id}/players`, {
+        data: { playerIds },
+      });
       return res.data;
     } catch (err) {
       return thunkAPI.rejectWithValue(
@@ -115,7 +117,6 @@ const teamsSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
       .addCase(createTeam.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -131,7 +132,6 @@ const teamsSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
       .addCase(updateTeam.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -150,7 +150,6 @@ const teamsSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
       .addCase(deleteTeam.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -163,7 +162,6 @@ const teamsSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
       .addCase(addPlayersToTeam.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -182,7 +180,6 @@ const teamsSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
       .addCase(removePlayersFromTeam.fulfilled, (state, action) => {
         const updated = action.payload?.team || action.payload;
         if (updated) {

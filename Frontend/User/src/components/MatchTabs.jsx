@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import Commentary from "./Commentary";
 import LiveStats from "./LiveStats";
 import Overs from "./Overs";
@@ -22,9 +22,10 @@ const TABS = [
   { key: "live", label: "Live" },
   { key: "scorecard", label: "Scorecard" },
   { key: "commentary", label: "Commentary" },
-  { key: "livestats", label: "Match Info" },
+  { key: "livestats", label: "Live Stats" },
   { key: "overs", label: "Overs" },
   { key: "playingxi", label: "Playing XI" },
+  { key: "table", label: "Table" },
 ];
 
 export default function MatchTabs({ matchId, match }) {
@@ -69,12 +70,16 @@ export default function MatchTabs({ matchId, match }) {
   };
 
   return (
-    <div className="bg-[#f0f2f5] min-h-screen">
+    <div className="bg-cric-bg min-h-screen">
       {/* Match Header - Premium Style */}
-      <div className="bg-[#031d44] text-white overflow-hidden">
+      <div className="bg-cric-accent text-white overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-blue-300/80">
           <div className="flex items-center gap-4">
-            <span>{match?.tournament?.name || "Cricket Series"}</span>
+            {match?.tournament ? (
+              <Link to={`/series/${match.tournament._id || match.tournament}`} className="hover:text-white transition-colors underline">{match.tournament.name}</Link>
+            ) : (
+              <span>Cricket Series</span>
+            )}
             <span>•</span>
             <span>{match?.matchType}</span>
             <span>•</span>
@@ -182,12 +187,12 @@ export default function MatchTabs({ matchId, match }) {
           <div className="lg:col-span-2 space-y-8">
             {tab === "live" && availableTabs.find(t => t.key === 'live') && (
               <>
-                <div className="bg-white rounded-[2rem] shadow-xl overflow-hidden border border-slate-200">
+                <div className="bg-cric-card rounded-[2rem] shadow-xl overflow-hidden border border-cric-border">
                   <InningsDashboard innings={match?.currentInnings === 0 ? innings1 : innings2} match={match} />
                 </div>
                 <OverTimeline innings={match?.currentInnings === 0 ? innings1 : innings2} />
-                <div className="bg-white rounded-2xl shadow-xl p-6 border border-slate-200">
-                  <h3 className="text-xl font-black text-[#031d44] mb-6 uppercase tracking-tight flex items-center gap-2">
+                <div className="bg-cric-card rounded-2xl shadow-xl p-6 border border-cric-border">
+                  <h3 className="text-xl font-black text-cric-accent mb-6 uppercase tracking-tight flex items-center gap-2">
                     <div className="w-2 h-8 bg-red-600 rounded-full" />
                     Commentary
                   </h3>
@@ -197,13 +202,13 @@ export default function MatchTabs({ matchId, match }) {
             )}
 
             {tab === "scorecard" && (
-              <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
+              <div className="bg-cric-card rounded-2xl shadow-xl overflow-hidden border border-cric-border">
                 <Scoreboard matchId={matchId} />
               </div>
             )}
 
             {tab === "commentary" && (
-              <div className="bg-white rounded-2xl shadow-xl p-6 border border-slate-200">
+              <div className="bg-cric-card rounded-2xl shadow-xl p-6 border border-cric-border">
                 <Commentary matchId={matchId} />
               </div>
             )}
@@ -213,7 +218,7 @@ export default function MatchTabs({ matchId, match }) {
             {tab === "playingxi" && <PlayingXI matchId={matchId} />}
 
             {tab === "table" && (
-              <div className="bg-white rounded-2xl shadow-xl p-6 border border-slate-200">
+              <div className="bg-cric-card rounded-2xl shadow-xl p-6 border border-cric-border">
                 {match?.tournament && (
                   <PointsTable tournamentId={match.tournament._id || match.tournament} />
                 )}
@@ -223,28 +228,28 @@ export default function MatchTabs({ matchId, match }) {
 
           {/* Sidebar */}
           <div className="space-y-8">
-            <div className="bg-white rounded-2xl shadow-xl p-6 border border-slate-200">
-              <h3 className="text-lg font-black text-[#031d44] mb-4 uppercase tracking-tight">Match Details</h3>
+            <div className="bg-cric-card rounded-2xl shadow-xl p-6 border border-cric-border">
+              <h3 className="text-lg font-black text-cric-accent mb-4 uppercase tracking-tight">Match Details</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Toss</label>
-                  <p className="text-sm font-bold text-slate-800">
+                  <label className="text-[10px] font-black uppercase text-cric-muted block mb-1">Toss</label>
+                  <p className="text-sm font-bold text-cric-text">
                     {match?.tossWinner ? "Winner: " + (match.tossWinner === team1?._id ? team1?.name : team2?.name) : "TBD"}
                   </p>
                 </div>
                 <div>
-                  <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Series</label>
-                  <p className="text-sm font-bold text-blue-600">{match?.tournament?.name || "Independent Match"}</p>
+                  <label className="text-[10px] font-black uppercase text-cric-muted block mb-1">Series</label>
+                  <p className="text-sm font-bold text-cric-accent">{match?.tournament?.name || "Independent Match"}</p>
                 </div>
                 <div>
-                  <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Season</label>
-                  <p className="text-sm font-bold text-slate-800">2024/25</p>
+                  <label className="text-[10px] font-black uppercase text-cric-muted block mb-1">Season</label>
+                  <p className="text-sm font-bold text-cric-text">2024/25</p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-xl p-6 border border-slate-200">
-              <h3 className="text-lg font-black text-[#031d44] mb-4 uppercase tracking-tight">Playing XI Preview</h3>
+            <div className="bg-cric-card rounded-2xl shadow-xl p-6 border border-cric-border">
+              <h3 className="text-lg font-black text-cric-accent mb-4 uppercase tracking-tight">Playing XI Preview</h3>
               <PlayingXI matchId={matchId} compact />
             </div>
           </div>
@@ -253,10 +258,10 @@ export default function MatchTabs({ matchId, match }) {
         {/* User Side Blog Gallery */}
         <div className="mt-16">
           <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl font-black text-[#031d44] uppercase tracking-tighter italic">
+            <h2 className="text-2xl font-black text-cric-accent uppercase tracking-tighter italic">
               Related Live Highlights
             </h2>
-            <div className="h-0.5 flex-1 bg-slate-200 mx-8" />
+            <div className="h-0.5 flex-1 bg-cric-border mx-8" />
           </div>
           <BlogGallery category="Match" relatedId={matchId} />
         </div>

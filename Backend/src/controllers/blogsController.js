@@ -1,15 +1,26 @@
 import Blog from "../models/Blog.js";
 
+const isTransientDbError = (error) => (
+  error?.name === "MongooseError" ||
+  error?.name === "MongoServerSelectionError" ||
+  error?.name === "MongoNetworkTimeoutError" ||
+  /timed out|buffering|not connected/i.test(error?.message || "")
+);
+
 export const getBlogs = async (req, res) => {
   try {
     const { category, relatedId } = req.query;
+    const limit = Math.min(Math.max(Number(req.query.limit) || 12, 1), 50);
     const filter = {};
     if (category) filter.category = category;
     if (relatedId) filter.relatedId = relatedId;
 
-    const blogs = await Blog.find(filter).sort({ createdAt: -1 });
+    const blogs = await Blog.find(filter).sort({ createdAt: -1 }).limit(limit).maxTimeMS(5000).lean();
     res.json(blogs);
   } catch (error) {
+    if (isTransientDbError(error)) {
+      return res.json([]);
+    }
     res.status(500).json({ message: error.message });
   }
 };

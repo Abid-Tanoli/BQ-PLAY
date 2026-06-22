@@ -35,9 +35,46 @@ const playerSchema = new mongoose.Schema(
       ],
       default: "Not Applicable"
     },
-    Campus: { type: String },
+    campus: { type: String },
+    // Deep categorization
+    category: {
+      type: String,
+      enum: ["School", "College", "University", "Organization", "Business", "Industry", "Club", "International", "Other"],
+      default: "Other"
+    },
+    subCategory: { type: String, default: "" },
+    ageGroup: { 
+      type: String, 
+      enum: ["U-10", "U-13", "U-15", "U-17", "U-19", "Open"],
+      default: "Open"
+    },
+    organization: { type: String, default: "" },
+    
+    // Detailed Address
+    address: {
+      town: { type: String, default: "" },
+      district: { type: String, default: "" },
+      city: { type: String, default: "" },
+      province: { type: String, default: "" },
+      country: { type: String, default: "Pakistan" }
+    },
     imageUrl: { type: String, default: "" },
     team: { type: mongoose.Schema.Types.ObjectId, ref: "Team" },
+    birthInfo: {
+      date: { type: Date },
+      place: { type: String, default: "" }
+    },
+    age: { type: Number },
+    relations: [{
+      player: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
+      relationType: { type: String } // e.g., "Father", "Brother", "Son", etc.
+    }],
+    teamHistory: [{
+      team: { type: mongoose.Schema.Types.ObjectId, ref: "Team" },
+      from: { type: Date },
+      to: { type: Date },
+      isCurrent: { type: Boolean, default: false }
+    }],
     stats: {
       runs: { type: Number, default: 0 },
       wickets: { type: Number, default: 0 },
@@ -56,9 +93,24 @@ const playerSchema = new mongoose.Schema(
       fourWickets: { type: Number, default: 0 },
       fiveWickets: { type: Number, default: 0 },
       dotBalls: { type: Number, default: 0 },
+      catches: { type: Number, default: 0 },
+      stumpings: { type: Number, default: 0 },
+      runOuts: { type: Number, default: 0 },
     },
   },
   { timestamps: true }
 );
+
+playerSchema.index({ team: 1 });
+playerSchema.index({ category: 1 });
+playerSchema.index({ "address.town": 1 });
+playerSchema.index({ "address.district": 1 });
+playerSchema.index({ "address.city": 1 });
+playerSchema.index({ "address.country": 1 });
+playerSchema.index({ playingRole: 1 });
+playerSchema.index({ "stats.runs": -1 });
+playerSchema.index({ "stats.wickets": -1 });
+playerSchema.index({ "stats.catches": -1 });
+playerSchema.index({ "stats.stumpings": -1 });
 
 export default mongoose.model("Player", playerSchema);

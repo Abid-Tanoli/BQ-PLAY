@@ -1,77 +1,31 @@
-import { io } from "socket.io-client";
+import {
+  initSocket as sharedInit,
+  getSocket as sharedGet,
+  disconnectSocket as sharedDisconnect,
+  isSocketConnected as sharedIsConnected,
+  emitSocket as sharedEmit,
+  joinMatchRoom as sharedJoin,
+  leaveMatchRoom as sharedLeave,
+} from "../../../Shared/services/socket.js";
 
-let socket = null;
+const NS = "admin";
 
-export const initSocket = () => {
-  if (!socket || !socket.connected) {
-    const url = import.meta.env.VITE_SOCKET_URL || "http://localhost:5000";
-    
-    socket = io(url, {
-      transports: ["websocket", "polling"],
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      reconnectionAttempts: 5,
-      timeout: 20000,
-      autoConnect: true,
-      withCredentials: true
-    });
+export const getSocket = () => sharedGet(NS);
 
-    socket.on("connect", () => {
-      console.log("✅ Socket connected:", socket.id);
-    });
+export const initSocket = () => sharedInit(NS);
 
-    socket.on("disconnect", (reason) => {
-      console.log("❌ Socket disconnected:", reason);
-    });
+export const disconnectSocket = () => sharedDisconnect(NS);
 
-    socket.on("connect_error", (error) => {
-      console.error("❌ Socket connection error:", error.message);
-    });
+export const isSocketConnected = () => sharedIsConnected(NS);
 
-    socket.on("reconnect", (attemptNumber) => {
-      console.log("🔄 Socket reconnected after", attemptNumber, "attempts");
-    });
+export const emitSocket = (event, data) => sharedEmit(event, data, NS);
 
-    socket.on("reconnect_error", (error) => {
-      console.error("❌ Socket reconnection error:", error.message);
-    });
+export const joinMatchRoom = (matchId) => sharedJoin(matchId, NS);
 
-    socket.on("reconnect_failed", () => {
-      console.error("❌ Socket reconnection failed");
-    });
-  }
-  
-  return socket;
-};
+export const leaveMatchRoom = (matchId) => sharedLeave(matchId, NS);
 
-export const getSocket = () => {
-  if (!socket) {
-    return initSocket();
-  }
-  return socket;
-};
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {});
+}
 
-export const disconnectSocket = () => {
-  if (socket) {
-    console.log("🔌 Disconnecting socket...");
-    socket.disconnect();
-    socket = null;
-  }
-};
-
-export const isSocketConnected = () => {
-  return socket && socket.connected;
-};
-
-export const emitSocket = (event, data) => {
-  if (isSocketConnected()) {
-    socket.emit(event, data);
-    return true;
-  } else {
-    console.warn("Socket not connected, cannot emit:", event);
-    return false;
-  }
-};
-
-export default { initSocket, getSocket, disconnectSocket, isSocketConnected, emitSocket };
+export default { initSocket, getSocket, disconnectSocket, isSocketConnected, emitSocket, joinMatchRoom, leaveMatchRoom };

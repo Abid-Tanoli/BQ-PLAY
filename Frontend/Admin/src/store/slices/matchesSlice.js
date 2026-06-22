@@ -3,7 +3,6 @@ import api from "../../services/api";
 
 const initialState = {
   matches: [],
-  currentMatch: null,
   loading: false,
   error: null,
 };
@@ -16,21 +15,7 @@ export const fetchMatches = createAsyncThunk(
       return res.data;
     } catch (err) {
       return thunkAPI.rejectWithValue(
-        err.response?.data?.message || err.message || "Failed to fetch matches"
-      );
-    }
-  }
-);
-
-export const fetchMatchById = createAsyncThunk(
-  "matches/fetchById",
-  async (id, thunkAPI) => {
-    try {
-      const res = await api.get(`/matches/${id}`);
-      return res.data;
-    } catch (err) {
-      return thunkAPI.rejectWithValue(
-        err.response?.data?.message || err.message || "Failed to fetch match"
+        err.response?.data?.message || "Failed to fetch matches"
       );
     }
   }
@@ -38,13 +23,13 @@ export const fetchMatchById = createAsyncThunk(
 
 export const createMatch = createAsyncThunk(
   "matches/create",
-  async (payload, thunkAPI) => {
+  async (data, thunkAPI) => {
     try {
-      const res = await api.post("/matches", payload);
+      const res = await api.post("/matches", data);
       return res.data;
     } catch (err) {
       return thunkAPI.rejectWithValue(
-        err.response?.data?.message || err.message || "Failed to create match"
+        err.response?.data?.message || "Failed to create match"
       );
     }
   }
@@ -58,7 +43,7 @@ export const updateMatch = createAsyncThunk(
       return res.data;
     } catch (err) {
       return thunkAPI.rejectWithValue(
-        err.response?.data?.message || err.message || "Failed to update match"
+        err.response?.data?.message || "Failed to update match"
       );
     }
   }
@@ -72,50 +57,7 @@ export const deleteMatch = createAsyncThunk(
       return id;
     } catch (err) {
       return thunkAPI.rejectWithValue(
-        err.response?.data?.message || err.message || "Failed to delete match"
-      );
-    }
-  }
-);
-
-export const updateScore = createAsyncThunk(
-  "matches/updateScore",
-  async (payload, thunkAPI) => {
-    const { matchId, ...data } = payload;
-    try {
-      const res = await api.post(`/matches/${matchId}/score`, data);
-      return res.data;
-    } catch (err) {
-      return thunkAPI.rejectWithValue(
-        err.response?.data?.message || err.message || "Failed to update score"
-      );
-    }
-  }
-);
-
-export const updateMatchStatus = createAsyncThunk(
-  "matches/updateStatus",
-  async ({ id, status }, thunkAPI) => {
-    try {
-      const res = await api.put(`/matches/${id}/status`, { status });
-      return res.data;
-    } catch (err) {
-      return thunkAPI.rejectWithValue(
-        err.response?.data?.message || err.message || "Failed to update status"
-      );
-    }
-  }
-);
-
-export const updateToss = createAsyncThunk(
-  "matches/updateToss",
-  async ({ matchId, tossWinnerId, decision }, thunkAPI) => {
-    try {
-      const res = await api.put(`/matches/${matchId}/toss`, { tossWinnerId, decision });
-      return res.data;
-    } catch (err) {
-      return thunkAPI.rejectWithValue(
-        err.response?.data?.message || err.message || "Failed to update toss"
+        err.response?.data?.message || "Failed to delete match"
       );
     }
   }
@@ -129,56 +71,7 @@ export const setPlayingXI = createAsyncThunk(
       return res.data;
     } catch (err) {
       return thunkAPI.rejectWithValue(
-        err.response?.data?.message || err.message || "Failed to set Playing XI"
-      );
-    }
-  }
-);
-
-export const setOpeners = createAsyncThunk(
-  "matches/setOpeners",
-  async ({ matchId, inningsIndex, batsman1Id, batsman2Id }, thunkAPI) => {
-    try {
-      const res = await api.put(`/matches/${matchId}/openers`, {
-        inningsIndex,
-        batsman1Id,
-        batsman2Id
-      });
-      return res.data;
-    } catch (err) {
-      return thunkAPI.rejectWithValue(
-        err.response?.data?.message || err.message || "Failed to set openers"
-      );
-    }
-  }
-);
-
-export const resolveTie = createAsyncThunk(
-  "matches/resolveTie",
-  async ({ matchId, resolution }, thunkAPI) => {
-    try {
-      const res = await api.post(`/matches/${matchId}/resolve-tie`, { resolution });
-      return res.data;
-    } catch (err) {
-      return thunkAPI.rejectWithValue(
-        err.response?.data?.message || err.message || "Failed to resolve tie"
-      );
-    }
-  }
-);
-
-export const startSuperOver = createAsyncThunk(
-  "matches/startSuperOver",
-  async ({ matchId, batsmenIds, bowlerId }, thunkAPI) => {
-    try {
-      const res = await api.post(`/matches/${matchId}/start-super-over`, {
-        batsmenIds,
-        bowlerId
-      });
-      return res.data;
-    } catch (err) {
-      return thunkAPI.rejectWithValue(
-        err.response?.data?.message || err.message || "Failed to start Super Over"
+        err.response?.data?.message || "Failed to set playing XI"
       );
     }
   }
@@ -187,14 +80,7 @@ export const startSuperOver = createAsyncThunk(
 const matchesSlice = createSlice({
   name: "matches",
   initialState,
-  reducers: {
-    clearCurrentMatch(state) {
-      state.currentMatch = null;
-    },
-    clearError(state) {
-      state.error = null;
-    },
-  },
+  reducers: {},
   extraReducers: (builder) => {
     builder
       .addCase(fetchMatches.pending, (state) => {
@@ -203,178 +89,27 @@ const matchesSlice = createSlice({
       })
       .addCase(fetchMatches.fulfilled, (state, action) => {
         state.loading = false;
-        state.matches = Array.isArray(action.payload)
-          ? action.payload
-          : action.payload?.matches || [];
+        state.matches = action.payload?.matches || action.payload || [];
       })
       .addCase(fetchMatches.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
-
-      .addCase(fetchMatchById.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchMatchById.fulfilled, (state, action) => {
-        state.loading = false;
-        state.currentMatch = action.payload;
-      })
-      .addCase(fetchMatchById.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
-
-      .addCase(createMatch.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
       .addCase(createMatch.fulfilled, (state, action) => {
-        state.loading = false;
         const match = action.payload?.match || action.payload;
-        if (match) {
-          state.matches.unshift(match);
-        }
-      })
-      .addCase(createMatch.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
-
-      .addCase(updateMatch.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+        if (match) state.matches.push(match);
       })
       .addCase(updateMatch.fulfilled, (state, action) => {
-        state.loading = false;
         const updated = action.payload?.match || action.payload;
         if (updated) {
           const index = state.matches.findIndex((m) => m._id === updated._id);
-          if (index !== -1) {
-            state.matches[index] = updated;
-          }
-          if (state.currentMatch?._id === updated._id) {
-            state.currentMatch = updated;
-          }
+          if (index !== -1) state.matches[index] = updated;
         }
-      })
-      .addCase(updateMatch.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
-
-      .addCase(deleteMatch.pending, (state) => {
-        state.loading = true;
-        state.error = null;
       })
       .addCase(deleteMatch.fulfilled, (state, action) => {
-        state.loading = false;
         state.matches = state.matches.filter((m) => m._id !== action.payload);
-        if (state.currentMatch?._id === action.payload) {
-          state.currentMatch = null;
-        }
-      })
-      .addCase(deleteMatch.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
-
-      .addCase(updateScore.pending, (state) => {
-        state.error = null;
-      })
-      .addCase(updateScore.fulfilled, (state, action) => {
-        const updated = action.payload?.match || action.payload;
-        if (updated) {
-          if (state.currentMatch?._id === updated._id) {
-            state.currentMatch = updated;
-          }
-          const index = state.matches.findIndex((m) => m._id === updated._id);
-          if (index !== -1) {
-            state.matches[index] = updated;
-          }
-        }
-      })
-      .addCase(updateScore.rejected, (state, action) => {
-        state.error = action.payload;
-      })
-
-      .addCase(updateMatchStatus.fulfilled, (state, action) => {
-        const updated = action.payload?.match || action.payload;
-        if (updated) {
-          const index = state.matches.findIndex((m) => m._id === updated._id);
-          if (index !== -1) {
-            state.matches[index] = updated;
-          }
-          if (state.currentMatch?._id === updated._id) {
-            state.currentMatch = updated;
-          }
-        }
-      })
-
-      .addCase(updateToss.fulfilled, (state, action) => {
-        const updated = action.payload?.match || action.payload;
-        if (updated) {
-          const index = state.matches.findIndex((m) => m._id === updated._id);
-          if (index !== -1) {
-            state.matches[index] = updated;
-          }
-          if (state.currentMatch?._id === updated._id) {
-            state.currentMatch = updated;
-          }
-        }
-      })
-
-      .addCase(setPlayingXI.fulfilled, (state, action) => {
-        const updated = action.payload?.match || action.payload;
-        if (updated) {
-          const index = state.matches.findIndex((m) => m._id === updated._id);
-          if (index !== -1) {
-            state.matches[index] = updated;
-          }
-          if (state.currentMatch?._id === updated._id) {
-            state.currentMatch = updated;
-          }
-        }
-      })
-
-      .addCase(setOpeners.fulfilled, (state, action) => {
-        const updated = action.payload?.match || action.payload;
-        if (updated) {
-          const index = state.matches.findIndex((m) => m._id === updated._id);
-          if (index !== -1) {
-            state.matches[index] = updated;
-          }
-          if (state.currentMatch?._id === updated._id) {
-            state.currentMatch = updated;
-          }
-        }
-      })
-      .addCase(resolveTie.fulfilled, (state, action) => {
-        const updated = action.payload?.match || action.payload;
-        if (updated) {
-          const index = state.matches.findIndex((m) => m._id === updated._id);
-          if (index !== -1) {
-            state.matches[index] = updated;
-          }
-          if (state.currentMatch?._id === updated._id) {
-            state.currentMatch = updated;
-          }
-        }
-      })
-      .addCase(startSuperOver.fulfilled, (state, action) => {
-        const updated = action.payload?.match || action.payload;
-        if (updated) {
-          const index = state.matches.findIndex((m) => m._id === updated._id);
-          if (index !== -1) {
-            state.matches[index] = updated;
-          }
-          if (state.currentMatch?._id === updated._id) {
-            state.currentMatch = updated;
-          }
-        }
       });
   },
 });
 
-export const { clearCurrentMatch, clearError } = matchesSlice.actions;
 export default matchesSlice.reducer;

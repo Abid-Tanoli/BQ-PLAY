@@ -1,49 +1,36 @@
-import { io as clientIo } from "socket.io-client";
+import {
+  initSocket as sharedInit,
+  getSocket as sharedGet,
+  joinMatchRoom as sharedJoin,
+  leaveMatchRoom as sharedLeave,
+  disconnectSocket as sharedDisconnect,
+} from "../../../Shared/services/socket.js";
 
-let socket = null;
+const NS = "user";
+
+export function getSocket() {
+  return sharedGet(NS);
+}
 
 export function initSocket() {
-  if (socket) return socket;
-
-  const SERVER = import.meta.env.VITE_SOCKET_URL || "http://localhost:5000";
-
-  socket = clientIo(SERVER, {
-    transports: ["websocket", "polling"],
-    reconnection: true,
-    reconnectionAttempts: 5,
-    reconnectionDelay: 1000,
-  });
-
-  socket.on("connect", () => {
-    console.log("✅ Socket connected:", socket.id);
-  });
-
-  socket.on("connect_error", (err) => {
-    console.warn("❌ Socket connect_error:", err.message);
-  });
-
-  return socket;
+  return sharedInit(NS);
 }
 
 export function joinMatchRoom(matchId) {
-  const s = initSocket();
-  s.emit("join-match", matchId);
+  return sharedJoin(matchId, NS);
 }
 
 export function leaveMatchRoom(matchId) {
-  if (!socket) return;
-  socket.emit("leave-match", matchId);
+  return sharedLeave(matchId, NS);
 }
 
 export function disconnectSocket() {
-  if (socket) {
-    socket.disconnect();
-    socket = null;
-  }
+  return sharedDisconnect(NS);
 }
 
 export default {
   initSocket,
+  getSocket,
   joinMatchRoom,
   leaveMatchRoom,
   disconnectSocket,

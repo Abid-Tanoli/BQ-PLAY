@@ -1,33 +1,86 @@
+import React, { Suspense, lazy } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { Home } from "./pages/Home";
-import Match from "./pages/Match";
-import Summary from "./pages/Summary";
-import Players from "./pages/Players";
-import PlayerProfile from "./pages/PlayerProfile";
-import Teams from "./pages/Teams";
-import Rankings from "./pages/Rankings";
-import PointsTable from "./pages/PointsTable";
-import Live from "./pages/Live";
-import News from "./pages/News";
-import Videos from "./pages/Videos";
+import { ThemeProvider } from "./context/ThemeContext";
+import Footer from "./components/Footer";
+import ErrorBoundary from "./components/ErrorBoundary";
+import SocketStatusIndicator from "../../Shared/components/SocketStatusIndicator";
+import { getSocket } from "./services/socket";
+
+const Home = lazy(() => import("./pages/Home").then(m => ({ default: m.Home })));
+const Match = lazy(() => import("./pages/Match"));
+const Summary = lazy(() => import("./pages/Summary"));
+const Players = lazy(() => import("./pages/Players"));
+const PlayerProfile = lazy(() => import("./pages/PlayerProfile"));
+const Teams = lazy(() => import("./pages/Teams"));
+const InternationalTeams = lazy(() => import("./pages/InternationalTeams"));
+const LeagueTeams = lazy(() => import("./pages/LeagueTeams"));
+const LeagueDetails = lazy(() => import("./pages/LeagueDetails"));
+const IncubationTeams = lazy(() => import("./pages/IncubationTeams"));
+const TeamProfile = lazy(() => import("./pages/TeamProfile"));
+const Rankings = lazy(() => import("./pages/Rankings"));
+const PointsTable = lazy(() => import("./pages/PointsTable"));
+const Live = lazy(() => import("./pages/Live"));
+const News = lazy(() => import("./pages/News"));
+const Videos = lazy(() => import("./pages/Videos"));
+const Series = lazy(() => import("./pages/Series"));
+const SeriesList = lazy(() => import("./pages/SeriesList"));
+const CricSeriesDetails = lazy(() => import("./pages/CricSeriesDetails"));
+const CricMatchDetails = lazy(() => import("./pages/CricMatchDetails"));
+const International = lazy(() => import("./pages/International"));
+const InternationalMatchDetail = lazy(() => import("./pages/InternationalMatchDetail"));
+const InternationalSeriesDetail = lazy(() => import("./pages/InternationalSeriesDetail"));
+const Highlights = lazy(() => import("./pages/Highlights"));
+const CricketNews = lazy(() => import("./pages/CricketNews"));
+const AuthPage = lazy(() => import("./pages/auth/AuthPage"));
+const PlayerComparison = lazy(() => import("./pages/PlayerComparison"));
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/live" element={<Live />} />
-        <Route path="/match/:matchId" element={<Match />} />
-        <Route path="/summary/:matchId" element={<Summary />} />
-        <Route path="/players" element={<Players />} />
-        <Route path="/players/:playerId" element={<PlayerProfile />} />
-        <Route path="/teams" element={<Teams />} />
-        <Route path="/rankings" element={<Rankings />} />
-        <Route path="/points-table" element={<PointsTable />} />
-        <Route path="/news" element={<News />} />
-        <Route path="/videos" element={<Videos />} />
-      </Routes>
-    </Router>
+    <ThemeProvider>
+      <Router>
+        <div className="flex flex-col min-h-screen">
+        <SocketStatusIndicator getSocket={getSocket} />
+        <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-white"><div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" /></div>}>
+        <Routes>
+          <Route path="/" element={<ErrorBoundary><Home /></ErrorBoundary>} />
+          <Route path="/login" element={<ErrorBoundary><AuthPage initialMode="login" /></ErrorBoundary>} />
+          <Route path="/register" element={<ErrorBoundary><AuthPage initialMode="register" /></ErrorBoundary>} />
+          <Route path="/auth" element={<ErrorBoundary><AuthPage initialMode="login" /></ErrorBoundary>} />
+          <Route path="/live" element={<ErrorBoundary><Live /></ErrorBoundary>} />
+          <Route path="/series" element={<ErrorBoundary><SeriesList /></ErrorBoundary>} />
+          <Route path="/series/:seriesId" element={<ErrorBoundary><Series /></ErrorBoundary>} />
+          <Route path="/cricket/series/:seriesId" element={<ErrorBoundary><CricSeriesDetails /></ErrorBoundary>} />
+          <Route path="/cricket/match/:matchId" element={<ErrorBoundary><CricMatchDetails /></ErrorBoundary>} />
+          <Route path="/match/:matchId" element={<ErrorBoundary><Match /></ErrorBoundary>} />
+          <Route path="/matches/:matchId" element={<ErrorBoundary><Match /></ErrorBoundary>} />
+          <Route path="/summary/:matchId" element={<ErrorBoundary><Summary /></ErrorBoundary>} />
+          <Route path="/players" element={<ErrorBoundary><Players /></ErrorBoundary>} />
+          <Route path="/players/:playerId" element={<ErrorBoundary><PlayerProfile /></ErrorBoundary>} />
+          <Route path="/teams" element={<ErrorBoundary><Teams /></ErrorBoundary>} />
+          <Route path="/teams/international" element={<ErrorBoundary><InternationalTeams /></ErrorBoundary>} />
+          <Route path="/teams/leagues" element={<ErrorBoundary><LeagueTeams /></ErrorBoundary>} />
+          <Route path="/teams/leagues/:leagueId" element={<ErrorBoundary><LeagueDetails /></ErrorBoundary>} />
+          <Route path="/teams/incubation" element={<ErrorBoundary><IncubationTeams /></ErrorBoundary>} />
+          <Route path="/teams/:id" element={<ErrorBoundary><TeamProfile /></ErrorBoundary>} />
+          <Route path="/rankings" element={<ErrorBoundary><Rankings /></ErrorBoundary>} />
+          <Route path="/points-table" element={<ErrorBoundary><PointsTable /></ErrorBoundary>} />
+          <Route path="/news" element={<ErrorBoundary><News /></ErrorBoundary>} />
+          <Route path="/videos" element={<ErrorBoundary><Videos /></ErrorBoundary>} />
+          <Route path="/intl" element={<ErrorBoundary><International /></ErrorBoundary>} />
+          <Route path="/international" element={<ErrorBoundary><International /></ErrorBoundary>} />
+          <Route path="/international/:matchId" element={<ErrorBoundary><InternationalMatchDetail /></ErrorBoundary>} />
+          <Route path="/international/match/:matchId" element={<ErrorBoundary><InternationalMatchDetail /></ErrorBoundary>} />
+          <Route path="/international/series/:seriesId" element={<ErrorBoundary><InternationalSeriesDetail /></ErrorBoundary>} />
+          <Route path="/highlights" element={<ErrorBoundary><Highlights /></ErrorBoundary>} />
+          <Route path="/cricket-news" element={<ErrorBoundary><CricketNews /></ErrorBoundary>} />
+          <Route path="/compare" element={<ErrorBoundary><PlayerComparison /></ErrorBoundary>} />
+          <Route path="/compare/:player1Id/:player2Id?" element={<ErrorBoundary><PlayerComparison /></ErrorBoundary>} />
+        </Routes>
+        <Footer />
+        </Suspense>
+        </div>
+      </Router>
+    </ThemeProvider>
   );
 }
 

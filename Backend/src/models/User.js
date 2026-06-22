@@ -14,9 +14,13 @@ const userSchema = new mongoose.Schema({
     trim: true,
     match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "Please use a valid email format"],
   },
+  googleId: {
+    type: String,
+    unique: true,
+    sparse: true,
+  },
   password: {
     type: String,
-    required: [true, "Password is required"],
     minlength: [8, "Password must be at least 8 characters"],
     select: false,
   },
@@ -26,10 +30,23 @@ const userSchema = new mongoose.Schema({
     default: "viewer",
     select: true,
   },
+  accountType: {
+    type: String,
+    enum: ["player", "handler", "organization_admin", "viewer"],
+    default: "viewer",
+  },
+  organizationCategory: {
+    type: String,
+    enum: ["School", "College", "University", "Organization", "Business", "Industry", "Club", "Academy", "League", "Other", ""],
+    default: "",
+  },
+  organizationName: { type: String, trim: true, default: "" },
+  phone: { type: String, trim: true, default: "" },
+  joinIntent: { type: String, trim: true, default: "" },
 }, { timestamps: true });
 
 userSchema.pre("save", async function () {
-  if (!this.isModified("password")) return;
+  if (!this.isModified("password") || !this.password) return;
 
   const salt = await bcrypt.genSalt(8);
   this.password = await bcrypt.hash(this.password, salt);

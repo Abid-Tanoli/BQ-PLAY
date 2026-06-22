@@ -1,0 +1,41 @@
+version: "3.9"
+
+services:
+  mongodb:
+    image: mongo:7
+    container_name: bqplay-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - bqplay-net
+
+  backend:
+    build:
+      context: ./Backend
+      target: dev
+    container_name: bqplay-backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./Backend/.env
+    environment:
+      - MONGO_URL=mongodb://mongodb:27017/bqplay
+      - NODE_ENV=development
+    volumes:
+      - ./Backend/src:/app/src
+      - ./Backend/scripts:/app/scripts
+    depends_on:
+      - mongodb
+    networks:
+      - bqplay-net
+
+volumes:
+  mongo_data:
+
+networks:
+  bqplay-net:
+    driver: bridge

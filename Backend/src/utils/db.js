@@ -1,20 +1,45 @@
 import mongoose from "mongoose";
 
+mongoose.set("bufferCommands", false);
+
 const connectDB = async () => {
   try {
-    console.log("Mongo URL:", process.env.MONGO_URL);
-
-    if (!process.env.MONGO_URL) {
-      throw new Error("Mongo URL not found! Check your .env");
+    const mongoUrl = process.env.MONGO_URL || process.env.MONGO_URI;
+    if (!mongoUrl) {
+      console.warn("Mongo URL not found. API will run in limited mode until MONGO_URL or MONGO_URI is configured.");
+      return null;
     }
 
-    const connect = await mongoose.connect(process.env.MONGO_URL);
+    if (mongoose.connection.readyState === 1) {
+      return mongoose.connection;
+    }
 
-    console.log(`✅ MongoDB Connected: ${connect.connection.host}`);
+    const connect = await mongoose.connect(mongoUrl, {
+      serverSelectionTimeoutMS: 60000,
+      connectTimeoutMS: 60000,
+      socketTimeoutMS: 120000,
+      heartbeatFrequencyMS: 15000,
+      maxPoolSize: Number(process.env.MONGO_MAX_POOL_SIZE || 20),
+      minPoolSize: Number(process.env.MONGO_MIN_POOL_SIZE || 1),
+    });
+
+    console.log(`MongoDB connected: ${connect.connection.host}`);
+    return connect.connection;
   } catch (err) {
-    console.error("❌ MongoDB Error:", err.message);
-    process.exit(1);
+    console.error("MongoDB error:", err.message);
+    if (process.env.VERCEL === "1") {
+      throw err;
+    }
+    console.warn("Continuing without MongoDB. Database-backed endpoints will return a fast unavailable response until the connection is restored.");
+    return null;
   }
+};
+
+export const isDbConnected = () => mongoose.connection.readyState === 1;
+
+export const getDbState = () => {
+  const states = ["disconnected", "connected", "connecting", "disconnecting"];
+  return states[mongoose.connection.readyState] || "unknown";
 };
 
 export default connectDB;

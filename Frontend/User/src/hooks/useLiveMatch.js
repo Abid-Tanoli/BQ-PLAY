@@ -1,23 +1,37 @@
-import { io } from "socket.io-client";
 import { useEffect, useState } from "react";
-
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:5000";
+import { initSocket } from "../services/socket.js";
 
 export default function useLiveMatch(matchId) {
   const [data, setData] = useState(null);
 
   useEffect(() => {
-    const socket = io(SOCKET_URL, {
-      transports: ["websocket", "polling"],
-      reconnection: true,
-    });
+    if (!matchId) return;
+
+    const socket = initSocket();
+    const handleBallRecorded = (payload = {}) => {
+      const payloadMatchId = payload.matchId || payload.ball?.matchId;
+      if (payloadMatchId && payloadMatchId !== matchId) return;
+      setData(payload);
+    };
+
+    const handleLegacy = (payload = {}) => {
+      const payloadMatchId = payload.matchId || payload.match?._id;
+      if (payloadMatchId && payloadMatchId !== matchId) return;
+      setData(payload);
+    };
 
     socket.emit("join-match", matchId);
-    socket.on("ball-update", setData);
+    socket.on("ball:recorded", handleBallRecorded);
+    socket.on("ball-update", handleLegacy);
+    socket.on("match:ballUpdate", handleLegacy);
+    socket.on("BALL_UPDATE", handleLegacy);
 
     return () => {
-      socket.off("ball-update");
-      socket.disconnect();
+      socket.off("ball:recorded", handleBallRecorded);
+      socket.off("ball-update", handleLegacy);
+      socket.off("match:ballUpdate", handleLegacy);
+      socket.off("BALL_UPDATE", handleLegacy);
+      socket.emit("leave-match", matchId);
     };
   }, [matchId]);
 

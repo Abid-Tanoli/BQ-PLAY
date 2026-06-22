@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build output
+dist/
+**/dist/
+build/
+coverage/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Local backend diagnostics/config with private values
+Backend/config.yaml
+Backend/check_data.js
+Backend/reset_match.js
+
+# Runtime uploads/cache
+Backend/src/Uploads/tmp/

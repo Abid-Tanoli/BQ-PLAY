@@ -1,8 +1,23 @@
 import express from "express";
 import { addBall } from "../controllers/liveMatchController.js";
+import { protect, requireAdmin } from "../middleware/authMiddleware.js";
+import rateLimiter from "../middleware/rateLimiter.js";
+import validate from "../middleware/validate.js";
+import validateObjectId from "../middleware/validateObjectId.js";
+import { updateScoreSchema } from "../validators/scoreValidators.js";
 
 const router = express.Router();
 
-router.post("/:matchId/ball", addBall);
+const scoringRateLimit = rateLimiter({ windowMs: 1000, max: 12 });
+
+router.post(
+  "/:matchId/ball",
+  protect,
+  requireAdmin,
+  scoringRateLimit,
+  validateObjectId("matchId"),
+  validate(updateScoreSchema),
+  addBall,
+);
 
 export default router;

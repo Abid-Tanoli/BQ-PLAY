@@ -1,651 +1,352 @@
-import React, { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { fetchMatches, createMatch, updateMatch, deleteMatch, setPlayingXI } from "../store/slices/matchesSlice";
-import { fetchTeams } from "../store/slices/teamSlice";
-import { useForm } from "react-hook-form";
-import { initSocket } from "../store/socket";
-import api from "../services/api";
+import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useForm } from 'react-hook-form';
+import {
+    fetchMatches,
+    createMatch,
+    updateMatch,
+    deleteMatch,
+    setPlayingXI,
+} from '../store/slices/matchesSlice';
+import { fetchTeams } from '../store/slices/teamSlice';
+import { initSocket } from '../store/socket';
+import { useToast } from '../components/Toast';
+import ConfirmModal from '../components/ConfirmModal';
 
-export default function ManageMatches() {
-  const dispatch = useDispatch();
-  const { matches, loading, error } = useSelector((state) => state.matches);
-  const { teams } = useSelector((state) => state.teams);
-  const [editingMatchId, setEditingMatchId] = useState(null);
-  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm();
+const matchTypes = ['T6', 'T8', 'T10', 'T20', 'ODI', 'Test', 'Tape Ball'];
 
-  // Playing XI Selector State
-  const [showPlayingXIModal, setShowPlayingXIModal] = useState(false);
-  const [selectedMatchForXI, setSelectedMatchForXI] = useState(null);
-  const [selectedTeamForXI, setSelectedTeamForXI] = useState(null);
-  const [tempXI, setTempXI] = useState([]);
-  const [teamPlayers, setTeamPlayers] = useState([]);
-  const [xiLoading, setXiLoading] = useState(false);
+const ManageMatches = () => {
+    const dispatch = useDispatch();
+    const { matches, loading } = useSelector((state) => state.matches);
+    const { teams } = useSelector((state) => state.teams);
+    const { register, handleSubmit, reset, setValue, watch } = useForm();
+    const [editMode, setEditMode] = useState(false);
+    const [currentMatch, setCurrentMatch] = useState(null);
+    const [showXIModal, setShowXIModal] = useState(false);
+    const [xiTeam, setXiTeam] = useState(null);
+    const [selectedXI, setSelectedXI] = useState([]);
+    const [xiSearch, setXiSearch] = useState('');
+    const { showToast } = useToast();
+    const [confirmModal, setConfirmModal] = useState({ open: false, title: '', message: '', onConfirm: null, variant: 'danger' });
 
-  // Powerplay State
-  const [powerplayEnabled, setPowerplayEnabled] = useState(false);
-  const [powerplayOvers, setPowerplayOvers] = useState(2);
+    const team1Id = watch('team1');
+    const matchType = watch('matchType');
 
-  const teamAValue = watch("teamA");
-  const teamBValue = watch("teamB");
-  const matchTypeValue = watch("matchType");
-
-  useEffect(() => {
-    dispatch(fetchMatches());
-    dispatch(fetchTeams());
-
-    const socket = initSocket();
-
-    socket.on("match:created", () => {
-      dispatch(fetchMatches());
-    });
-
-    socket.on("match:updated", () => {
-      dispatch(fetchMatches());
-    });
-
-    socket.on("match:deleted", () => {
-      dispatch(fetchMatches());
-    });
-
-    socket.on("match:updateList", () => {
-      dispatch(fetchMatches());
-    });
-
-    return () => {
-      socket.off("match:created");
-      socket.off("match:updated");
-      socket.off("match:deleted");
-      socket.off("match:updateList");
-    };
-  }, [dispatch]);
-
-  const onSubmit = async (data) => {
-    if (data.teamA === data.teamB) {
-      alert("Team A and Team B must be different!");
-      return;
-    }
-
-    try {
-      const teamA = teams.find((t) => t._id === data.teamA);
-      const teamB = teams.find((t) => t._id === data.teamB);
-
-      if (!teamA || !teamB) {
-        alert("Please select valid teams");
-        return;
-      }
-
-      const matchData = {
-        title: `${teamA.name} vs ${teamB.name}`,
-        teams: [data.teamA, data.teamB],
-        startAt: data.startTime,
-        venue: data.venue || "",
-        matchType: data.matchType || "T20",
-        powerplayConfig: {
-          enabled: powerplayEnabled,
-          overs: powerplayEnabled ? powerplayOvers : 0
+    useEffect(() => {
+        dispatch(fetchMatches());
+        dispatch(fetchTeams());
+        const socket = initSocket();
+        const refreshMatches = () => dispatch(fetchMatches());
+        if (socket) {
+            socket.on('match:created', refreshMatches);
+            socket.on('match:updated', refreshMatches);
+            socket.on('match:deleted', refreshMatches);
+            socket.on('match:updateList', refreshMatches);
         }
-      };
+        return () => {
+            if (socket) {
+                socket.off('match:created', refreshMatches);
+                socket.off('match:updated', refreshMatches);
+                socket.off('match:deleted', refreshMatches);
+                socket.off('match:updateList', refreshMatches);
+            }
+        };
+    }, [dispatch]);
 
-      if (editingMatchId) {
-        await dispatch(updateMatch({ id: editingMatchId, data: matchData })).unwrap();
-        setEditingMatchId(null);
-      } else {
-        await dispatch(createMatch(matchData)).unwrap();
-      }
+    const onSubmit = async (data) => {
+        const payload = {
+            ...data,
+            team1: data.team1,
+            team2: data.team2,
+            matchType: data.matchType,
+            venue: data.venue,
+            startTime: data.startTime,
+            powerplayOvers: data.powerplayOvers ? Number(data.powerplayOvers) : undefined,
+            overs: data.overs ? Number(data.overs) : undefined,
+        };
+        if (editMode) {
+            await dispatch(updateMatch({ id: currentMatch._id, data: payload }));
+        } else {
+            await dispatch(createMatch(payload));
+        }
+        reset();
+        setEditMode(false);
+        setCurrentMatch(null);
+        dispatch(fetchMatches());
+    };
 
-      reset();
-    } catch (err) {
-      console.error("Failed to save match:", err);
-      alert(err || "Failed to save match");
-    }
-  };
+    const handleEdit = (match) => {
+        setEditMode(true);
+        setCurrentMatch(match);
+        setValue('team1', match.team1?._id || match.team1);
+        setValue('team2', match.team2?._id || match.team2);
+        setValue('matchType', match.matchType);
+        setValue('venue', match.venue);
+        setValue('startTime', match.startTime);
+        setValue('powerplayOvers', match.powerplayOvers);
+        setValue('overs', match.overs);
+    };
 
-  const onEdit = (match) => {
-    setEditingMatchId(match._id);
+    const handleDelete = (id) => {
+        setConfirmModal({ open: true, title: 'Delete Match', message: 'Are you sure you want to delete this match?', confirmLabel: 'Delete', variant: 'danger', onConfirm: async () => { setConfirmModal({ open: false }); await dispatch(deleteMatch(id)); dispatch(fetchMatches()); } });
+    };
 
-    const teamAId = match.teams?.[0]?._id || match.teams?.[0];
-    const teamBId = match.teams?.[1]?._id || match.teams?.[1];
+    const openXIModal = (match, teamId) => {
+        const team = teams.find((t) => t._id === teamId);
+        setXiTeam(team);
+        setSelectedXI(match.playingXI?.[teamId] || []);
+        setShowXIModal(true);
+        setXiSearch('');
+    };
 
-    setValue("teamA", teamAId);
-    setValue("teamB", teamBId);
-    setValue("startTime", new Date(match.startAt).toISOString().slice(0, 16));
-    setValue("venue", match.venue || "");
-    setValue("matchType", match.matchType || "T20");
-    
-    // Load existing powerplay config
-    if (match.powerplayConfig) {
-      setPowerplayEnabled(match.powerplayConfig.enabled || false);
-      setPowerplayOvers(match.powerplayConfig.overs || 2);
-    } else {
-      setPowerplayEnabled(false);
-      setPowerplayOvers(2);
-    }
-  };
+    const toggleXIPlayer = (playerId) => {
+        setSelectedXI((prev) => {
+            if (prev.includes(playerId)) {
+                return prev.filter((id) => id !== playerId);
+            }
+            if (prev.length >= 11) return prev;
+            return [...prev, playerId];
+        });
+    };
 
-  const onDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this match?")) return;
+    const saveXI = async () => {
+        if (selectedXI.length !== 11) {
+            showToast('Please select exactly 11 players', 'warning');
+            return;
+        }
+        await dispatch(
+            setPlayingXI({
+                matchId: currentMatch?._id || xiTeam?._id,
+                teamId: xiTeam._id,
+                playingXI: selectedXI,
+            })
+        );
+        setShowXIModal(false);
+        dispatch(fetchMatches());
+    };
 
-    try {
-      await dispatch(deleteMatch(id)).unwrap();
-    } catch (err) {
-      console.error("Failed to delete match:", err);
-      alert(err || "Failed to delete match");
-    }
-  };
+    const team1 = teams.find((t) => t._id === team1Id);
 
-  const cancelEdit = () => {
-    setEditingMatchId(null);
-    reset();
-    setPowerplayEnabled(false);
-    setPowerplayOvers(2);
-  };
+    return (
+        <div className="min-h-screen bg-gradient-to-b from-slate-100 to-slate-50 p-6 lg:p-10">
+            <h1 className="text-4xl lg:text-5xl font-black text-[#031d44] mb-8">Manage Matches</h1>
 
-  const openXISelector = async (match, teamId) => {
-    setSelectedMatchForXI(match);
-    setSelectedTeamForXI(teamId);
-    setXiLoading(true);
-    setShowPlayingXIModal(true);
-
-    try {
-      // Fetch full team data to get all players
-      const res = await api.get(`/teams/${teamId}`);
-      setTeamPlayers(res.data.players || res.data.playerList || []);
-
-      // Load existing XI if any
-      const existingXI = match.playingXI?.find(xi => (xi.team?._id || xi.team) === teamId);
-      setTempXI(existingXI ? existingXI.players.map(p => p._id || p) : []);
-    } catch (err) {
-      console.error("Error loading team players:", err);
-      alert("Failed to load team players");
-    } finally {
-      setXiLoading(false);
-    }
-  };
-
-  const togglePlayerSelection = (playerId) => {
-    if (tempXI.includes(playerId)) {
-      setTempXI(tempXI.filter(id => id !== playerId));
-    } else if (tempXI.length < 11) {
-      setTempXI([...tempXI, playerId]);
-    } else {
-      alert("You can only select 11 players");
-    }
-  };
-
-  const savePlayingXI = async () => {
-    if (tempXI.length !== 11) {
-      alert("Please select exactly 11 players");
-      return;
-    }
-
-    setXiLoading(true);
-    try {
-      await dispatch(setPlayingXI({
-        matchId: selectedMatchForXI._id,
-        teamId: selectedTeamForXI,
-        players: tempXI
-      })).unwrap();
-
-      alert("Playing XI updated successfully");
-      setShowPlayingXIModal(false);
-      dispatch(fetchMatches());
-    } catch (err) {
-      console.error("Error saving Playing XI:", err);
-      alert(err || "Failed to save Playing XI");
-    } finally {
-      setXiLoading(false);
-    }
-  };
-
-  const getTeamName = (team) => {
-    if (!team) return "Unknown Team";
-    if (typeof team === 'string') {
-      const foundTeam = teams.find(t => t._id === team);
-      return foundTeam?.name || "Unknown Team";
-    }
-    return team.name || "Unknown Team";
-  };
-
-  const formatDate = (dateString) => {
-    try {
-      return new Date(dateString).toLocaleString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch {
-      return "Invalid Date";
-    }
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-800">Manage Matches</h2>
-          <p className="text-sm text-slate-600 mt-1">
-            {matches.length} total matches
-          </p>
-        </div>
-      </div>
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-          {error}
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1">
-          <div className="card sticky top-6">
-            <h3 className="text-lg font-semibold text-slate-800 mb-4">
-              {editingMatchId ? "Edit Match" : "Create New Match"}
-            </h3>
-
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Team A *
-                </label>
-                <select
-                  {...register("teamA", { required: "Team A is required" })}
-                  className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                >
-                  <option value="">Select Team A</option>
-                  {teams.map((t) => (
-                    <option
-                      key={t._id}
-                      value={t._id}
-                      disabled={t._id === teamBValue}
+            {/* Match Form */}
+            <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 mb-8">
+                <h2 className="text-2xl font-bold text-[#031d44] mb-4">
+                    {editMode ? 'Edit Match' : 'Create New Match'}
+                </h2>
+                <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <select
+                        {...register('team1', { required: true })}
+                        className="border border-slate-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#031d44]"
                     >
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
-                {errors.teamA && (
-                  <p className="text-red-500 text-xs mt-1">{errors.teamA.message}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Team B *
-                </label>
-                <select
-                  {...register("teamB", { required: "Team B is required" })}
-                  className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                >
-                  <option value="">Select Team B</option>
-                  {teams.map((t) => (
-                    <option
-                      key={t._id}
-                      value={t._id}
-                      disabled={t._id === teamAValue}
+                        <option value="">Select Team 1</option>
+                        {teams.map((t) => (
+                            <option key={t._id} value={t._id}>{t.name}</option>
+                        ))}
+                    </select>
+                    <select
+                        {...register('team2', { required: true })}
+                        className="border border-slate-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#031d44]"
                     >
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
-                {errors.teamB && (
-                  <p className="text-red-500 text-xs mt-1">{errors.teamB.message}</p>
-                )}
-                {teamAValue && teamBValue && teamAValue === teamBValue && (
-                  <p className="text-orange-500 text-xs mt-1">
-                    Teams must be different
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Match Type
-                </label>
-                <select
-                  {...register("matchType")}
-                  className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                >
-                  <option value="6 Overs">T6 (6 overs)</option>
-                  <option value="8 Overs">T8 (8 overs)</option>
-                  <option value="T10">T10 (10 overs)</option>
-                  <option value="T20">T20 (20 overs)</option>
-                  <option value="ODI">ODI (50 overs)</option>
-                  <option value="Test">Test Match</option>
-                  <option value="Tape Ball">Tape Ball</option>
-                </select>
-              </div>
-
-              {/* Powerplay Configuration - Only for Tape Ball */}
-              {matchTypeValue === "Tape Ball" && (
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                  <label className="flex items-center gap-2 mb-3">
+                        <option value="">Select Team 2</option>
+                        {teams.map((t) => (
+                            <option key={t._id} value={t._id}>{t.name}</option>
+                        ))}
+                    </select>
+                    <select
+                        {...register('matchType', { required: true })}
+                        className="border border-slate-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#031d44]"
+                    >
+                        <option value="">Match Type</option>
+                        {matchTypes.map((type) => (
+                            <option key={type} value={type}>{type}</option>
+                        ))}
+                    </select>
                     <input
-                      type="checkbox"
-                      checked={powerplayEnabled}
-                      onChange={(e) => setPowerplayEnabled(e.target.checked)}
-                      className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                        {...register('venue', { required: true })}
+                        placeholder="Venue"
+                        className="border border-slate-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#031d44]"
                     />
-                    <span className="text-sm font-medium text-slate-700">
-                      Enable Powerplay
-                    </span>
-                  </label>
-
-                  {powerplayEnabled && (
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">
-                        Powerplay Overs
-                      </label>
-                      <select
-                        value={powerplayOvers}
-                        onChange={(e) => setPowerplayOvers(Number(e.target.value))}
-                        className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
-                      >
-                        {[1, 2, 3, 4, 5, 6].map((overs) => {
-                          const maxOvers = matchTypeValue === "Tape Ball" ? 
-                            (watch("matchType") === "6 Overs" ? 6 : 
-                             watch("matchType") === "8 Overs" ? 6 : 6) : 6;
-                          if (overs > maxOvers) return null;
-                          return (
-                            <option key={overs} value={overs}>
-                              {overs} {overs === 1 ? "Over" : "Overs"}
-                            </option>
-                          );
-                        })}
-                      </select>
-                      <p className="text-xs text-slate-500 mt-1">
-                        Select how many overs the powerplay should last
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Venue
-                </label>
-                <input
-                  {...register("venue")}
-                  type="text"
-                  placeholder="e.g., National Stadium, Karachi"
-                  className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Start Time *
-                </label>
-                <input
-                  {...register("startTime", { required: "Start time is required" })}
-                  type="datetime-local"
-                  className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                />
-                {errors.startTime && (
-                  <p className="text-red-500 text-xs mt-1">{errors.startTime.message}</p>
-                )}
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? "Saving..." : editingMatchId ? "Update Match" : "Create Match"}
-                </button>
-                {editingMatchId && (
-                  <button
-                    type="button"
-                    onClick={cancelEdit}
-                    className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium transition-colors"
-                  >
-                    Cancel
-                  </button>
-                )}
-              </div>
-            </form>
-          </div>
-        </div>
-
-        <div className="lg:col-span-2">
-          <div className="card">
-            <h3 className="text-lg font-semibold text-slate-800 mb-4">All Matches</h3>
-
-            {loading && matches.length === 0 && (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              </div>
-            )}
-
-            <div className="space-y-3 max-h-[600px] overflow-y-auto">
-              {matches.map((match) => (
-                <div
-                  key={match._id}
-                  className="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors border border-slate-200"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h4 className="font-semibold text-slate-800">
-                        {getTeamName(match.teams?.[0])} vs {getTeamName(match.teams?.[1])}
-                      </h4>
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${match.status === "live"
-                          ? "bg-green-100 text-green-700 animate-pulse"
-                          : match.status === "upcoming"
-                            ? "bg-blue-100 text-blue-700"
-                            : "bg-slate-200 text-slate-700"
-                          }`}
-                      >
-                        {match.status?.toUpperCase()}
-                      </span>
-                      <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
-                        {match.matchType || "T20"}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-4 text-sm text-slate-600">
-                      <span className="flex items-center gap-1">
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
+                    <input
+                        {...register('startTime', { required: true })}
+                        type="datetime-local"
+                        className="border border-slate-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#031d44]"
+                    />
+                    <input
+                        {...register('overs')}
+                        type="number"
+                        placeholder="Overs (optional)"
+                        className="border border-slate-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#031d44]"
+                    />
+                    <input
+                        {...register('powerplayOvers')}
+                        type="number"
+                        placeholder="Powerplay Overs"
+                        className="border border-slate-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#031d44]"
+                    />
+                    <div className="flex gap-2 col-span-full">
+                        <button
+                            type="submit"
+                            className="bg-[#031d44] hover:bg-slate-800 text-white font-black text-xs uppercase tracking-widest rounded-xl px-6 py-3"
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                          />
-                        </svg>
-                        {formatDate(match.startAt)}
-                      </span>
-                      {match.venue && (
-                        <span className="flex items-center gap-1">
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                            />
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                            />
-                          </svg>
-                          {match.venue}
-                        </span>
-                      )}
+                            {editMode ? 'Update Match' : 'Create Match'}
+                        </button>
+                        {editMode && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    reset();
+                                    setEditMode(false);
+                                    setCurrentMatch(null);
+                                }}
+                                className="bg-slate-200 hover:bg-slate-300 text-[#031d44] font-black text-xs uppercase tracking-widest rounded-xl px-6 py-3"
+                            >
+                                Cancel
+                            </button>
+                        )}
                     </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => onEdit(match)}
-                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
-                        title="Edit match"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => onDelete(match._id)}
-                        className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors"
-                        title="Delete match"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                    <div className="flex gap-1">
-                      {match.teams?.map((teamId) => {
-                        const team = teams.find(t => t._id === (teamId._id || teamId));
-                        const isSet = match.playingXI?.find(xi => (xi.team?._id || xi.team) === (teamId._id || teamId))?.players?.length === 11;
-                        return (
-                          <button
-                            key={team?._id || Math.random()}
-                            onClick={() => openXISelector(match, team?._id)}
-                            className={`px-2 py-1 rounded text-[10px] font-bold uppercase transition-colors border ${isSet
-                                ? "bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
-                                : "bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200"
-                              }`}
-                          >
-                            Set {team?.name?.split(' ')[0] || "Team"} XI {isSet && "✓"}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              {matches.length === 0 && !loading && (
-                <div className="text-center py-12">
-                  <svg
-                    className="w-16 h-16 text-slate-300 mx-auto mb-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
-                  <p className="text-slate-500 mb-2">No matches found</p>
-                  <p className="text-sm text-slate-400">Create your first match to get started!</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Playing XI Modal */}
-      {showPlayingXIModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col border border-slate-200">
-            <div className="p-5 border-b flex items-center justify-between bg-slate-50/50">
-              <div>
-                <h3 className="font-bold text-slate-800 text-lg">
-                  Select Playing XI
-                </h3>
-                <p className="text-sm text-slate-500">
-                  {getTeamName(selectedTeamForXI)} - {selectedMatchForXI?.title}
-                </p>
-              </div>
-              <div className={`px-3 py-1 rounded-full text-xs font-bold ${tempXI.length === 11 ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"
-                }`}>
-                {tempXI.length} / 11 Selected
-              </div>
+                </form>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-5">
-              {xiLoading ? (
-                <div className="flex flex-col items-center justify-center py-20 gap-3">
-                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-                  <p className="text-slate-500 text-sm animate-pulse">Loading squad players...</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {teamPlayers.length > 0 ? (
-                    teamPlayers.map((player) => (
-                      <button
-                        key={player._id}
-                        onClick={() => togglePlayerSelection(player._id)}
-                        className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all duration-200 group ${tempXI.includes(player._id)
-                            ? "bg-blue-50 border-blue-500 shadow-sm"
-                            : "bg-white border-slate-100 hover:border-blue-200 hover:bg-slate-50/50"
-                          }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center transition-colors ${tempXI.includes(player._id)
-                              ? "bg-blue-500 border-blue-500"
-                              : "border-slate-200 group-hover:border-blue-300"
-                            }`}>
-                            {tempXI.includes(player._id) && (
-                              <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                              </svg>
-                            )}
-                          </div>
-                          <div className="text-left">
-                            <p className={`font-semibold text-sm transition-colors ${tempXI.includes(player._id) ? "text-blue-900" : "text-slate-700"
-                              }`}>
-                              {player.name}
-                            </p>
-                            <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">{player.role}</p>
-                          </div>
+            {/* Match List */}
+            <div className="space-y-4">
+                {matches.map((match) => (
+                    <div
+                        key={match._id}
+                        className="bg-white rounded-2xl shadow-xl border border-slate-100 p-6"
+                    >
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div className="flex-1">
+                                <div className="flex items-center gap-4 mb-2">
+                                    <span className="bg-[#031d44] text-white text-xs font-black uppercase tracking-widest px-3 py-1 rounded-lg">
+                                        {match.matchType}
+                                    </span>
+                                    <span className="text-slate-500 text-sm">{match.venue}</span>
+                                </div>
+                                <h3 className="text-xl font-bold text-[#031d44]">
+                                    {match.team1?.name || 'TBD'} vs {match.team2?.name || 'TBD'}
+                                </h3>
+                                <p className="text-slate-500 text-sm">
+                                    {new Date(match.startTime).toLocaleString()}
+                                </p>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                {match.team1 && (
+                                    <button
+                                        onClick={() => openXIModal(match, match.team1._id)}
+                                        className="bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-widest rounded-xl px-4 py-2"
+                                    >
+                                        XI: {match.team1.name}
+                                    </button>
+                                )}
+                                {match.team2 && (
+                                    <button
+                                        onClick={() => openXIModal(match, match.team2._id)}
+                                        className="bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-widest rounded-xl px-4 py-2"
+                                    >
+                                        XI: {match.team2.name}
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => handleEdit(match)}
+                                    className="bg-[#031d44] hover:bg-slate-800 text-white font-black text-xs uppercase tracking-widest rounded-xl px-4 py-2"
+                                >
+                                    Edit
+                                </button>
+                                <button
+                                    onClick={() => handleDelete(match._id)}
+                                    className="bg-red-600 hover:bg-red-700 text-white font-black text-xs uppercase tracking-widest rounded-xl px-4 py-2"
+                                >
+                                    Delete
+                                </button>
+                            </div>
                         </div>
-                      </button>
-                    ))
-                  ) : (
-                    <div className="col-span-2 text-center py-10">
-                      <p className="text-slate-500 italic">No players found in this team's squad.</p>
-                      <p className="text-xs text-slate-400 mt-1">Please add players to the team first.</p>
                     </div>
-                  )}
-                </div>
-              )}
+                ))}
             </div>
 
-            <div className="p-5 border-t bg-slate-50/80 backdrop-blur-md flex gap-4">
-              <button
-                onClick={() => setShowPlayingXIModal(false)}
-                className="flex-1 bg-white hover:bg-slate-100 text-slate-600 py-2.5 rounded-xl font-bold transition-all border border-slate-200 shadow-sm"
-                disabled={xiLoading}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={savePlayingXI}
-                disabled={xiLoading || tempXI.length !== 11}
-                className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-blue-200 disabled:opacity-50 disabled:shadow-none"
-              >
-                {xiLoading ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    <span>Saving...</span>
-                  </div>
-                ) : (
-                  `Confirm Playing XI (${tempXI.length}/11)`
-                )}
-              </button>
-            </div>
-          </div>
+            {/* Playing XI Modal */}
+            {showXIModal && xiTeam && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
+                        <div className="bg-[#031d44] text-white p-4 flex justify-between items-center">
+                            <h2 className="text-xl font-bold">Select Playing XI - {xiTeam.name}</h2>
+                            <button
+                                onClick={() => setShowXIModal(false)}
+                                className="text-2xl hover:text-slate-300"
+                            >
+                                &times;
+                            </button>
+                        </div>
+                        <div className="p-4 border-b border-slate-200">
+                            <input
+                                type="text"
+                                placeholder="Search players..."
+                                value={xiSearch}
+                                onChange={(e) => setXiSearch(e.target.value)}
+                                className="w-full border border-slate-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#031d44]"
+                            />
+                            <p className="text-sm text-slate-500 mt-2">
+                                Selected: {selectedXI.length}/11
+                            </p>
+                        </div>
+                        <div className="overflow-y-auto max-h-[50vh] p-4">
+                            {xiTeam.players
+                                ?.filter((p) => p.name?.toLowerCase().includes(xiSearch.toLowerCase()))
+                                .map((player) => (
+                                    <div
+                                        key={player._id || player}
+                                        onClick={() => toggleXIPlayer(player._id || player)}
+                                        className={`flex items-center justify-between p-3 mb-2 rounded-xl cursor-pointer border-2 transition-all ${selectedXI.includes(player._id || player)
+                                                ? 'border-[#031d44] bg-blue-50'
+                                                : 'border-slate-200 hover:border-slate-400'
+                                            }`}
+                                    >
+                                        <div>
+                                            <p className="font-bold text-[#031d44]">{player.name || 'Player'}</p>
+                                            <p className="text-sm text-slate-500">{player.role}</p>
+                                        </div>
+                                        <div
+                                            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${selectedXI.includes(player._id || player)
+                                                    ? 'bg-[#031d44] border-[#031d44]'
+                                                    : 'border-slate-300'
+                                                }`}
+                                        >
+                                            {selectedXI.includes(player._id || player) && (
+                                                <span className="text-white text-xs">&#10003;</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                        </div>
+                        <div className="p-4 border-t border-slate-200">
+                            <button
+                                onClick={saveXI}
+                                disabled={selectedXI.length !== 11}
+                                className={`w-full font-black text-xs uppercase tracking-widest rounded-xl px-6 py-3 ${selectedXI.length === 11
+                                        ? 'bg-[#031d44] hover:bg-slate-800 text-white'
+                                        : 'bg-slate-300 text-slate-500 cursor-not-allowed'
+                                    }`}
+                            >
+                                Save Playing XI
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            <ConfirmModal
+                open={confirmModal.open}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                confirmLabel={confirmModal.confirmLabel}
+                variant={confirmModal.variant}
+                onConfirm={confirmModal.onConfirm}
+                onCancel={() => setConfirmModal({ open: false })}
+            />
         </div>
-      )}
-    </div>
-  );
-}
+    );
+};
+
+export default ManageMatches;

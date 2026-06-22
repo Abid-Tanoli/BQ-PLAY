@@ -1,0 +1,111 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: Backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: Backend
+
+      - name: Run scoring tests
+        run: npm test
+        working-directory: Backend
+
+      - name: Start server
+        run: |
+          MONGO_URL="mongodb://localhost:27017/bqplay-test" \
+          JWT_SECRET="ci-only-secret" \
+          LOG_LEVEL=error \
+          node src/index.js &
+          echo "PID=$!" >> $GITHUB_ENV
+          sleep 3
+        working-directory: Backend
+
+      - name: Run smoke tests
+        run: npm run test:smoke
+        working-directory: Backend
+        env:
+          BASE_URL: http://localhost:5000/api
+
+      - name: Stop server
+        run: kill ${{ env.PID }} || true
+
+  frontend-admin:
+    name: Frontend (Admin)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: Frontend/Admin/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: Frontend/Admin
+
+      - name: Run component tests
+        run: npm test
+        working-directory: Frontend/Admin
+
+      - name: TypeScript / Vite build check
+        run: npx vite build --mode production --logLevel error
+        working-directory: Frontend/Admin
+        env:
+          VITE_SOCKET_URL: http://localhost:5000
+          VITE_API_URL: http://localhost:5000/api
+
+  frontend-user:
+    name: Frontend (User)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: Frontend/User/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: Frontend/User
+
+      - name: Run component tests
+        run: npm test
+        working-directory: Frontend/User
+
+      - name: Vite build check
+        run: npx vite build --mode production --logLevel error
+        working-directory: Frontend/User
+        env:
+          VITE_SOCKET_URL: http://localhost:5000
+          VITE_API_URL: http://localhost:5000/api

@@ -7,7 +7,7 @@ export default function validate(schema) {
       return next();
     } catch (err) {
       if (err instanceof ZodError) {
-        return res.status(400).json({ message: 'Validation failed', errors: err.errors });
+        return res.status(400).json({ message: 'Validation failed', errors: err.issues || err.errors || [] });
       }
       return res.status(400).json({ message: 'Invalid request', error: err.message || err });
     }

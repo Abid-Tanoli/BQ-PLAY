@@ -12,12 +12,12 @@ export default function BlogGallery({ category, relatedId }) {
         let url = `/blogs?category=${category}`;
         if (relatedId) url += `&relatedId=${relatedId}`;
         
-        const res = await api.get(url);
+        const res = await api.get(url, { params: { limit: 8 }, timeout: 6000 });
         // Ensure we handle arrays correctly depending on API response
         const data = Array.isArray(res.data) ? res.data : (res.data.blogs || []);
         setBlogs(data);
       } catch (err) {
-        console.error("Failed to fetch blogs:", err);
+        setBlogs([]);
       } finally {
         setLoading(false);
       }
@@ -30,9 +30,9 @@ export default function BlogGallery({ category, relatedId }) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-pulse">
         {[1, 2, 3].map(i => (
           <div key={i} className="space-y-4">
-            <div className="aspect-video bg-slate-200 rounded-2xl" />
-            <div className="h-4 bg-slate-200 rounded w-3/4" />
-            <div className="h-3 bg-slate-200 rounded w-1/2" />
+            <div className="aspect-video bg-cric-border rounded-2xl" />
+            <div className="h-4 bg-cric-border rounded w-3/4" />
+            <div className="h-3 bg-cric-border rounded w-1/2" />
           </div>
         ))}
       </div>
@@ -45,7 +45,7 @@ export default function BlogGallery({ category, relatedId }) {
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
       {blogs.map(blog => (
         <div key={blog._id} className="group cursor-pointer">
-          <div className="aspect-video rounded-[1.5rem] overflow-hidden mb-5 relative shadow-lg group-hover:shadow-2xl transition-all duration-500 bg-slate-100">
+          <div className="aspect-video rounded-[1.5rem] overflow-hidden mb-5 relative shadow-lg group-hover:shadow-2xl transition-all duration-500 bg-cric-bg">
             {blog.imageUrl ? (
               <img 
                 src={blog.imageUrl} 
@@ -53,7 +53,7 @@ export default function BlogGallery({ category, relatedId }) {
                 alt={blog.title} 
               />
             ) : (
-                <div className="w-full h-full bg-[#031d44] flex items-center justify-center text-white font-black text-2xl italic">
+                <div className="w-full h-full bg-cric-accent flex items-center justify-center text-white font-black text-2xl italic">
                    BQ NEWS
                 </div>
             )}
@@ -82,15 +82,15 @@ export default function BlogGallery({ category, relatedId }) {
           </div>
           
           <div className="px-1">
-             <h3 className="font-black text-slate-800 leading-tight line-clamp-2 group-hover:text-blue-600 transition-colors text-lg uppercase tracking-tighter italic">
+             <h3 className="font-black text-cric-text leading-tight line-clamp-2 group-hover:text-blue-600 transition-colors text-lg uppercase tracking-tighter italic">
                {blog.title}
              </h3>
              <div className="flex items-center gap-3 mt-3">
                 <p className="text-[10px] text-blue-600 font-black uppercase tracking-widest">
                    {blog.category || "General"}
                 </p>
-                <span className="w-1 h-1 bg-slate-200 rounded-full" />
-                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">
+                <span className="w-1 h-1 bg-cric-border rounded-full" />
+                <p className="text-[9px] text-cric-muted font-bold uppercase tracking-widest">
                    {new Date(blog.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                 </p>
              </div>
