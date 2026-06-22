@@ -1,6 +1,6 @@
+import "dotenv/config";
 import express from "express";
 import http from "http";
-import dotenv from "dotenv";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import connectDB, { getDbState, isDbConnected } from "./utils/db.js";
@@ -34,8 +34,6 @@ import organizationRoutes from "./routes/organizationRoutes.js";
 import rankingRoutes from "./routes/rankingRoutes.js";
 import syncRoutes from "./routes/syncRoutes.js";
 import { startSyncScheduler } from "./services/syncScheduler.js";
-
-dotenv.config();
 
 initSentry();
 

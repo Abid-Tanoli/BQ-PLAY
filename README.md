@@ -225,7 +225,7 @@ See [DEPLOYMENT.md](./DEPLOYMENT.md) for Vercel deployment guide.
 ## Socket.IO Architecture
 
 - Backend initializes Socket.IO on the HTTP server
-- Three frontend socket clients: User, Admin, Shared
+- Two frontend socket clients: User and Admin, both using the Shared socket service
 - Room-based events: `match-{matchId}` for match-specific updates
 - Ball scoring events: `ball:recorded`, `score:update`, `strike:changed`, `over:completed`, `innings:end`, `match:end`
 - Legacy events maintained for backward compatibility

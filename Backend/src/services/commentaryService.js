@@ -1,5 +1,6 @@
 import Ball from "../models/Ball.js";
 import { getIO } from "../socket/socket.js";
+import fetch from "node-fetch";
 
 export function buildCommentaryPrompt(data) {
   return `
@@ -82,13 +83,22 @@ async function callAI(prompt) {
 
   if (provider === "openai" && process.env.OPENAI_API_KEY) {
     try {
-      const { default: OpenAI } = await import("openai");
-      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-      const resp = await openai.chat.completions.create({
-        model: process.env.AI_MODEL || "gpt-4",
-        messages: [{ role: "user", content: prompt }],
-        max_tokens: 150,
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: process.env.AI_MODEL || "gpt-4",
+          messages: [{ role: "user", content: prompt }],
+          max_tokens: 150,
+        }),
       });
+      if (!response.ok) {
+        throw new Error(`OpenAI API returned ${response.status}`);
+      }
+      const resp = await response.json();
       return resp.choices[0].message.content;
     } catch (e) {
       console.warn("OpenAI API error, using fallback:", e.message);

@@ -20,6 +20,8 @@ Install Command: npm install
 ```env
 MONGO_URL=mongodb+srv://...
 JWT_SECRET=your-secret-key
+VITE_API_URL=https://your-api-host.example/api
+VITE_SOCKET_URL=https://your-socket-host.example
 ```
 
 ### Optional (features disabled without these)
@@ -29,6 +31,8 @@ RAPIDAPI_CRICKET_HOST=free-cricbuzz-cricket-api.p.rapidapi.com
 ANTHROPIC_API_KEY=
 ENABLE_FREE_CRICBUZZ=false
 ENABLE_EXTERNAL_SYNC=false
+VITE_GOOGLE_CLIENT_ID=
+VITE_CRICAPI_KEY=
 ```
 
 6. Deploy.

@@ -8,7 +8,8 @@
     "dev": "nodemon src/index.js",
     "import:old": "node scripts/importOldData.js",
     "seed": "node src/seed/seedAll.js",
-    "test": "node scripts/api-smoke-test.cjs"
+    "test": "node --test test/*.test.js",
+    "test:smoke": "node scripts/api-smoke-test.cjs"
   },
   "keywords": [],
   "author": "",

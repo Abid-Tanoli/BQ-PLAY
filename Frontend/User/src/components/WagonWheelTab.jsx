@@ -64,8 +64,9 @@ export default function WagonWheelTab({ match, players }) {
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
-        <label className="text-xs sm:text-sm font-medium text-cric-muted">Filter by Batsman:</label>
+        <label htmlFor="batsman-filter" className="text-xs sm:text-sm font-medium text-cric-muted">Filter by Batsman:</label>
         <select
+          id="batsman-filter"
           value={selectedBatsman || ""}
           onChange={(e) => setSelectedBatsman(e.target.value || null)}
           className="w-full sm:w-auto px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg border border-cric-border bg-cric-card text-cric-text text-xs sm:text-sm"

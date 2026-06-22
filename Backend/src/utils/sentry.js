@@ -2,11 +2,12 @@ import log from "./logger.js";
 
 const DSN = process.env.SENTRY_DSN;
 const ENV = process.env.NODE_ENV || "development";
+const CUSTOM_TRANSPORT_ENABLED = process.env.ENABLE_CUSTOM_SENTRY === "true";
 
 let sentryEnabled = false;
 let projectId = "";
 
-if (DSN) {
+if (DSN && CUSTOM_TRANSPORT_ENABLED) {
   const match = DSN.match(/https:\/\/([^@]+)@([^.]+)\.ingest\.sentry\.io\/(\d+)/);
   if (match) {
     projectId = match[3];
@@ -139,7 +140,9 @@ export function sentryMiddleware(err, req, res, next) {
 }
 
 export function initSentry() {
-  if (!sentryEnabled) {
+  if (!CUSTOM_TRANSPORT_ENABLED) {
+    log.info("Sentry disabled; use the official SDK before enabling production reporting");
+  } else if (!sentryEnabled) {
     log.info("Sentry not configured — set SENTRY_DSN to enable");
   }
   return sentryEnabled;

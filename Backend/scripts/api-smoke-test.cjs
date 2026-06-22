@@ -1,6 +1,6 @@
 const http = require('http');
 
-const BASE = 'http://localhost:5000/api';
+const BASE = process.env.BASE_URL || 'http://localhost:5000/api';
 const PASS = [];
 const FAIL = [];
 

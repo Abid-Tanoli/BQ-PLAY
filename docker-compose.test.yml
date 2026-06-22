@@ -1,0 +1,33 @@
+services:
+  mongodb-test:
+    image: mongo:7
+    tmpfs:
+      - /data/db
+
+  backend-test:
+    build:
+      context: ./Backend
+      target: production
+    environment:
+      MONGO_URL: mongodb://mongodb-test:27017/bqplay-test
+      JWT_SECRET: docker-test-secret
+      NODE_ENV: test
+      LOG_LEVEL: error
+    depends_on:
+      - mongodb-test
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:5000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  api-smoke:
+    build:
+      context: ./Backend
+      target: production
+    command: ["npm", "run", "test:smoke"]
+    environment:
+      BASE_URL: http://backend-test:5000/api
+    depends_on:
+      backend-test:
+        condition: service_healthy

@@ -27,6 +27,11 @@ export default function CommentaryBall({ over, ball, players, compact = false })
             <span className="font-bold text-cric-muted">{ballResultText(ball)}</span>
           </p>
           {text && <p className="mt-0.5 truncate text-cric-muted/70">{text}</p>}
+          {text && ball.isAi && (
+            <span className="mt-0.5 inline-flex rounded border border-violet-300 px-1 text-[8px] font-bold uppercase text-violet-600 dark:border-violet-700 dark:text-violet-300">
+              AI
+            </span>
+          )}
         </div>
       </div>
     );
@@ -45,7 +50,14 @@ export default function CommentaryBall({ over, ball, players, compact = false })
         </div>
       </div>
       {text && (
-        <p className="ml-8 sm:ml-12 mt-1 sm:mt-1.5 text-[11px] sm:text-xs text-cric-muted italic leading-relaxed">{text}</p>
+        <div className="ml-8 sm:ml-12 mt-1 sm:mt-1.5 flex items-start gap-1.5">
+          <p className="text-[11px] sm:text-xs text-cric-muted italic leading-relaxed">{text}</p>
+          {ball.isAi && (
+            <span className="shrink-0 rounded border border-violet-300 px-1 py-0.5 text-[8px] font-bold uppercase text-violet-600 dark:border-violet-700 dark:text-violet-300">
+              AI
+            </span>
+          )}
+        </div>
       )}
       {dataPoints.length > 0 && (
         <div className="ml-8 sm:ml-12 mt-1 sm:mt-2 flex flex-wrap gap-1 sm:gap-1.5">

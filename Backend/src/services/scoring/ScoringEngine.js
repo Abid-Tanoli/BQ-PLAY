@@ -51,6 +51,33 @@ class ScoringEngine {
   // PROCESS DELIVERY
   // ══════════════════════════════════════════════════════════════════════════════
 
+  /**
+   * Processes a single delivery (ball) and updates the match innings, batsman, bowler, and partnership statistics.
+   * @param {Object} delivery - The delivery data.
+   * @param {number} [delivery.inningsIndex] - The index of the current innings (defaults to currentInnings).
+   * @param {boolean} [delivery.resetMatch] - True if requesting a full reset of the match.
+   * @param {boolean} [delivery.revertBall] - True if requesting an undo/reversion of the last recorded ball.
+   * @param {number} [delivery.penaltyRuns] - Penalty runs to award to the batting team.
+   * @param {string} [delivery.penaltyReason] - The reason why penalty runs were awarded.
+   * @param {string} delivery.batsmanOnStrike - ID of the batsman on strike.
+   * @param {string} delivery.batsmanNonStrike - ID of the batsman at the non-striker's end.
+   * @param {string} delivery.bowler - ID of the current bowler.
+   * @param {number} delivery.runs - Number of runs scored on this delivery.
+   * @param {boolean} [delivery.isWide] - True if the delivery was a wide.
+   * @param {boolean} [delivery.isNoBall] - True if the delivery was a no-ball.
+   * @param {boolean} [delivery.isBye] - True if runs scored were byes.
+   * @param {boolean} [delivery.isLegBye] - True if runs scored were leg-byes.
+   * @param {boolean} [delivery.isWicket] - True if a dismissal occurred.
+   * @param {string} [delivery.wicketType] - The type of wicket/dismissal (e.g. bowled, caught, lbw, run_out).
+   * @param {string} [delivery.dismissedPlayer] - ID of the dismissed batsman.
+   * @param {string} [delivery.fielder] - ID of the fielder involved (e.g. for catches/run outs).
+   * @param {boolean} [delivery.didCross] - True if the batsmen crossed during a dismissal (used for new batter strike).
+   * @param {boolean} [delivery.isAssistedRunOut] - True if the run out was assisted by another fielder.
+   * @param {boolean} [delivery.isDirectHitRunOut] - True if the run out was a direct hit.
+   * @param {string} [delivery.commentary] - Optional custom manual commentary text.
+   * @param {string} [delivery.vividCommentary] - Optional AI generated commentary.
+   * @returns {Object} Result of processing containing the current innings state, the processed ball record, and outcome flags.
+   */
   processDelivery(delivery) {
     this.events = [];
     const { inningsIndex = this.match.currentInnings || 0 } = delivery;

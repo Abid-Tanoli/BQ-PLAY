@@ -1,8 +1,4 @@
 /* ─── Shared Theme Foundation ─── */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
-
-@import "tailwindcss";
-
 @theme {
   --color-cric-bg: var(--cric-bg);
   --color-cric-card: var(--cric-card);

@@ -81,7 +81,7 @@ import Match from "../models/Match.js";
 
 const router = express.Router();
 const adminOnly = [protect, requireAdmin];
-const scoringRateLimit = rateLimiter({ windowMs: 1000, max: 5 });
+const scoringRateLimit = rateLimiter({ windowMs: 1000, max: 12 });
 
 router.get("/", getMatches);
 router.get("/:id", validateObjectId("id"), getMatch);
