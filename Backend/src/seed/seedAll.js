@@ -5,11 +5,13 @@ import Team from '../models/Team.js';
 import Player from '../models/Player.js';
 import Match from '../models/Match.js';
 import connectDB from '../utils/db.js';
+import { assertDestructiveSeedAllowed } from './destructiveGuard.js';
 
 dotenv.config();
 
 async function seed() {
   try {
+    assertDestructiveSeedAllowed('Full database seed');
     await connectDB();
 
     console.log('🗑️  Clearing existing data...');

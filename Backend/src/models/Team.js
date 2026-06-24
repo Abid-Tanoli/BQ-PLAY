@@ -97,7 +97,10 @@ const teamSchema = new mongoose.Schema(
     }],
     longName: { type: String, default: "" },
     isCountry: { type: Boolean, default: false },
-    espnTeamId: { type: String, default: "" }
+    espnTeamId: { type: String, default: "" },
+    isSeed: { type: Boolean, default: false },
+    seedSource: { type: String, default: "" },
+    seedVersion: { type: String, default: "" }
   },
   {
     timestamps: true,

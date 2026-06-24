@@ -317,6 +317,9 @@ const matchSchema = new mongoose.Schema(
     slug: { type: String, default: "" },
     resultText: { type: String, default: "" },
     statusText: { type: String, default: "" },
+    isSeed: { type: Boolean, default: false },
+    seedSource: { type: String, default: "" },
+    seedVersion: { type: String, default: "" },
     commentary: { type: mongoose.Schema.Types.Mixed },
     seriesMatchNumber: {
       type: Number,

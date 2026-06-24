@@ -97,6 +97,9 @@ const playerSchema = new mongoose.Schema(
       stumpings: { type: Number, default: 0 },
       runOuts: { type: Number, default: 0 },
     },
+    isSeed: { type: Boolean, default: false },
+    seedSource: { type: String, default: "" },
+    seedVersion: { type: String, default: "" },
   },
   { timestamps: true }
 );

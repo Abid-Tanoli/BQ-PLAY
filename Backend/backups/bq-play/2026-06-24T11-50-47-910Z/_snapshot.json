@@ -1,0 +1,15 @@
+{
+  "databaseName": "bq-play",
+  "exportedAt": "2026-06-24T11:50:48.762Z",
+  "counts": {
+    "teams": 4,
+    "players": 44,
+    "matches": 2,
+    "users": 0,
+    "admins": 0,
+    "innings": 0,
+    "balls": 0,
+    "commentary": 0,
+    "commentaries": 0
+  }
+}

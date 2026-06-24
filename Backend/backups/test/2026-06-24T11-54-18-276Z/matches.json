@@ -1,0 +1,121 @@
+[
+  {
+    "_id": "6a3940e655cf9ea9ce47a3b9",
+    "title": "Abid XI vs Tanoli Troopers",
+    "venue": "National Ground",
+    "matchType": "T20",
+    "matchCategory": "Other",
+    "category": "Other",
+    "subCategory": "",
+    "ageGroup": "Open",
+    "organization": "",
+    "address": {
+      "country": "Pakistan"
+    },
+    "totalOvers": 20,
+    "startAt": "2026-06-22T15:04:22.763Z",
+    "teams": [
+      "6a3940e455cf9ea9ce47a39f",
+      "6a3940e455cf9ea9ce47a3a0"
+    ],
+    "innings": [
+      {
+        "team": "6a3940e455cf9ea9ce47a39f",
+        "battingOrder": [],
+        "runs": 0,
+        "wickets": 0,
+        "overs": 0,
+        "balls": 0,
+        "extras": {
+          "wides": 0,
+          "noBalls": 0,
+          "byes": 0,
+          "legByes": 0,
+          "penalties": 0,
+          "total": 0
+        },
+        "status": "upcoming",
+        "runRate": 0,
+        "requiredRunRate": 0,
+        "target": 0,
+        "powerplayOvers": 0,
+        "powerplayConfig": {
+          "enabled": false,
+          "overs": 0
+        },
+        "declared": false,
+        "_id": "6a3940e655cf9ea9ce47a3ba",
+        "oversHistory": [],
+        "batting": [],
+        "bowling": [],
+        "fallOfWickets": [],
+        "partnerships": []
+      },
+      {
+        "team": "6a3940e455cf9ea9ce47a3a0",
+        "battingOrder": [],
+        "runs": 0,
+        "wickets": 0,
+        "overs": 0,
+        "balls": 0,
+        "extras": {
+          "wides": 0,
+          "noBalls": 0,
+          "byes": 0,
+          "legByes": 0,
+          "penalties": 0,
+          "total": 0
+        },
+        "status": "upcoming",
+        "runRate": 0,
+        "requiredRunRate": 0,
+        "target": 0,
+        "powerplayOvers": 0,
+        "powerplayConfig": {
+          "enabled": false,
+          "overs": 0
+        },
+        "declared": false,
+        "_id": "6a3940e655cf9ea9ce47a3bb",
+        "oversHistory": [],
+        "batting": [],
+        "bowling": [],
+        "fallOfWickets": [],
+        "partnerships": []
+      }
+    ],
+    "currentInnings": 0,
+    "status": "upcoming",
+    "tieResolution": null,
+    "series": "",
+    "espnMatchId": "",
+    "slug": "",
+    "resultText": "",
+    "statusText": "",
+    "seriesMatchNumber": null,
+    "seriesStanding": {
+      "matchesPlayed": 0
+    },
+    "powerplayConfig": {
+      "enabled": false,
+      "overs": 0,
+      "type": "standard",
+      "battingPowerplayOvers": 0,
+      "fieldersOutsideCircle": 2
+    },
+    "umpires": [],
+    "highlights": [],
+    "playingXI": [],
+    "squad15": [],
+    "twelfthMan": [],
+    "bowlingXI": [],
+    "teamRoles": [],
+    "winProbabilityHistory": [],
+    "drsReviews": [],
+    "timeouts": [],
+    "superOvers": [],
+    "createdAt": "2026-06-22T14:04:22.773Z",
+    "updatedAt": "2026-06-22T14:04:22.773Z",
+    "__v": 0
+  }
+]

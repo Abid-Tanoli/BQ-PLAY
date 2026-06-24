@@ -2,11 +2,13 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import Team from "../src/models/Team.js";
 import Player from "../src/models/Player.js";
+import { assertDestructiveSeedAllowed } from "../src/seed/destructiveGuard.js";
 
 dotenv.config();
 
 async function deletePSLData() {
   try {
+    assertDestructiveSeedAllowed("PSL data deletion");
     console.log("🔌 Connecting to database...");
     await mongoose.connect(process.env.MONGO_URL);
     console.log("✅ Connected to MongoDB");

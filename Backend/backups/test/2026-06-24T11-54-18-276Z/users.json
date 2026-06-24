@@ -1,0 +1,25 @@
+[
+  {
+    "_id": "69dcea201230d6fbbf667378",
+    "name": "Admin",
+    "email": "admin@bqplay.com",
+    "role": "viewer",
+    "createdAt": "2026-04-13T13:05:36.236Z",
+    "updatedAt": "2026-04-13T13:05:36.236Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a2a9bc23188593bfd5b4904",
+    "name": "Fahad",
+    "email": "fahad@mail.com",
+    "role": "viewer",
+    "accountType": "player",
+    "organizationCategory": "",
+    "organizationName": "",
+    "phone": "",
+    "joinIntent": "",
+    "createdAt": "2026-06-11T11:28:02.051Z",
+    "updatedAt": "2026-06-11T11:28:02.051Z",
+    "__v": 0
+  }
+]

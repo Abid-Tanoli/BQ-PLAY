@@ -60,7 +60,7 @@ export function initSocket(namespace = "admin") {
   }
 
   const socket = io(getUrl(), {
-    transports: ["websocket"],
+    transports: ["websocket", "polling"],
     reconnection: true,
     reconnectionDelay: 2000,
     reconnectionDelayMax: 10000,
@@ -79,7 +79,8 @@ export function initSocket(namespace = "admin") {
   });
   socket.on("connect_error", (error) => {
     if (!socket?.connected) {
-      console.warn(`[SOCKET:${namespace}] error      ${error.message}`);
+      const transport = socket.io?.engine?.transport?.name || "unknown";
+      console.warn(`[SOCKET:${namespace}] error      ${error.message} transport=${transport}`);
     }
   });
   socket.on("reconnect", (attemptNumber) => {
@@ -106,7 +107,6 @@ export function disconnectSocket(namespace = "admin") {
   const s = getInstance(namespace);
   if (s) {
     console.log(`[SOCKET:${namespace}] manual disconnect`);
-    s.removeAllListeners();
     s.disconnect();
     setInstance(namespace, null);
   }

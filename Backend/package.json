@@ -7,7 +7,10 @@
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
     "import:old": "node scripts/importOldData.js",
-    "seed": "node src/seed/seedAll.js",
+    "seed": "node src/seed/seedInitialData.js",
+    "db:export:bq-play": "node src/scripts/exportDbSnapshot.js --db=bq-play",
+    "db:export:test": "node src/scripts/exportDbSnapshot.js --db=test",
+    "admin:create": "node src/scripts/createAdmin.js",
     "test": "node --test test/*.test.js",
     "test:smoke": "node scripts/api-smoke-test.cjs"
   },

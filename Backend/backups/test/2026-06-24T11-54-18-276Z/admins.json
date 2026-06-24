@@ -1,0 +1,20 @@
+[
+  {
+    "_id": "6a3940e355cf9ea9ce47a39c",
+    "name": "Super Admin",
+    "email": "admin@bqplay.com",
+    "role": "admin",
+    "createdAt": "2026-06-22T14:04:19.939Z",
+    "updatedAt": "2026-06-22T14:04:19.939Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a3a7ab26108ea0dd18ea7ca",
+    "name": "Test Admin",
+    "email": "testadmin@bqplay.com",
+    "role": "admin",
+    "createdAt": "2026-06-23T12:23:14.174Z",
+    "updatedAt": "2026-06-23T12:23:14.174Z",
+    "__v": 0
+  }
+]

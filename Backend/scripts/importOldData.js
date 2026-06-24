@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import Team from "../src/models/Team.js";
 import Player from "../src/models/Player.js";
+import { assertDestructiveSeedAllowed } from "../src/seed/destructiveGuard.js";
 
 dotenv.config();
 
@@ -67,6 +68,7 @@ const UNIQUE_PLAYERS = OLD_PLAYERS.filter(p => {
 
 async function importData() {
   try {
+    assertDestructiveSeedAllowed("Old data import");
     console.log("🔌 Connecting to database...");
     await mongoose.connect(process.env.MONGO_URL);
     console.log("✅ Connected to MongoDB");

@@ -1,4 +1,5 @@
 import axios from "axios";
+import { clearAdminSession, isAuthFailure, SESSION_EXPIRED_MESSAGE } from "./authSession";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
@@ -8,34 +9,44 @@ const api = axios.create({
   timeout: 10000,
 });
 
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token") || localStorage.getItem("bq_token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
+function attachAuthInterceptors(client) {
+  if (client.__bqPlayAuthInterceptorsAttached) return;
+  client.__bqPlayAuthInterceptorsAttached = true;
 
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("bq_token");
-      localStorage.removeItem("bq_user");
-      if (error.response?.status === 403) {
+  client.interceptors.request.use(
+    (config) => {
+      const token = localStorage.getItem("token") || localStorage.getItem("bq_token");
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+    },
+    (error) => Promise.reject(error)
+  );
+
+  client.interceptors.response.use(
+    (response) => response,
+    (error) => {
+      if (isAuthFailure(error)) {
+        error.response.data = error.response.data || {};
+        error.response.data.message = SESSION_EXPIRED_MESSAGE;
+        clearAdminSession(SESSION_EXPIRED_MESSAGE);
+
+        if (window.location.pathname !== "/admin/login") {
+          window.location.href = "/admin/login";
+        }
+      } else if (error.response?.status === 403) {
         const msg = error.response?.data?.message || "Access denied: insufficient permissions";
         error.response.data = error.response.data || {};
         error.response.data.message = msg;
       }
-      window.location.href = "/admin/login";
+      return Promise.reject(error);
     }
-    return Promise.reject(error);
-  }
-);
+  );
+}
+
+attachAuthInterceptors(api);
+attachAuthInterceptors(axios);
 
 export default api;
-export { api };
+export { api, attachAuthInterceptors, clearAdminSession, isAuthFailure };

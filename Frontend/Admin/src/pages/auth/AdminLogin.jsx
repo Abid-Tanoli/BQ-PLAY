@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -7,6 +7,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
 import { login, clearError } from "../../store/slices/authSlice";
 import api from "../../services/api";
+import { consumeSessionMessage } from "../../services/authSession";
 
 const hasGoogleClientId = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID && import.meta.env.VITE_GOOGLE_CLIENT_ID !== 'your_google_client_id.apps.googleusercontent.com');
 
@@ -19,6 +20,7 @@ export default function AdminLogin() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { loading, error, token } = useSelector((state) => state.auth);
+  const [sessionMessage, setSessionMessage] = useState("");
   const {
     register,
     handleSubmit,
@@ -32,6 +34,10 @@ export default function AdminLogin() {
       navigate("/admin");
     }
   }, [token, navigate]);
+
+  useEffect(() => {
+    setSessionMessage(consumeSessionMessage() || "");
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -64,9 +70,9 @@ export default function AdminLogin() {
             <p className="text-cric-muted mt-2">Sign in to your account</p>
           </div>
 
-          {error && (
+          {(sessionMessage || error) && (
             <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-700 dark:text-red-400 text-sm">
-              {error}
+              {sessionMessage || error}
             </div>
           )}
 

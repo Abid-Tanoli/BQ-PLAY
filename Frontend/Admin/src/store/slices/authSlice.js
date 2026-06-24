@@ -1,8 +1,18 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../services/api";
+import { clearAdminSession } from "../../services/authSession";
+
+function readStoredUser() {
+  try {
+    return JSON.parse(localStorage.getItem("bq_user")) || null;
+  } catch {
+    clearAdminSession("");
+    return null;
+  }
+}
 
 const initialState = {
-  user: JSON.parse(localStorage.getItem("bq_user")) || null,
+  user: readStoredUser(),
   token: localStorage.getItem("token") || localStorage.getItem("bq_token") || null,
   loading: false,
   error: null,
@@ -15,9 +25,7 @@ function persistToken(token, user) {
 }
 
 function clearAllAuth() {
-  localStorage.removeItem("token");
-  localStorage.removeItem("bq_token");
-  localStorage.removeItem("bq_user");
+  clearAdminSession("");
 }
 
 export const login = createAsyncThunk(

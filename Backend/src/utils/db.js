@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { assertMongoDatabaseName } from "./mongoTarget.js";
 
 mongoose.set("bufferCommands", false);
 
@@ -9,6 +10,7 @@ const connectDB = async () => {
       console.warn("Mongo URL not found. API will run in limited mode until MONGO_URL or MONGO_URI is configured.");
       return null;
     }
+    assertMongoDatabaseName(mongoUrl);
 
     if (mongoose.connection.readyState === 1) {
       return mongoose.connection;

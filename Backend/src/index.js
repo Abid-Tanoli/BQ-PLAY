@@ -258,18 +258,19 @@ if (shouldListen) {
     log.info('Socket.IO ready for connections');
     log.info('CORS enabled for configured origins');
 
-    // Start cricket polling if API key is configured (OPTIONAL)
-    if (hasCricApiKey()) {
+    // External live providers are optional and can consume quota, so they only run when explicitly enabled.
+    if (externalSyncEnabled && hasCricApiKey()) {
       cricketPolling.start();
       log.info('External cricket API polling started');
+    } else {
+      log.info('External cricket API polling disabled (set ENABLE_EXTERNAL_SYNC=true to enable)');
     }
 
-    // Start international live score poller
-    if (hasExternalCricketProvider()) {
+    if (externalSyncEnabled && hasExternalCricketProvider()) {
       startInternationalPoller(io);
       log.info('International live score poller started');
     } else {
-      log.info('International live score poller disabled (add RAPIDAPI_KEY or CRICKET_API_KEY to enable)');
+      log.info('International live score poller disabled (set ENABLE_EXTERNAL_SYNC=true to enable)');
     }
 
     // Start external sync scheduler only when explicitly enabled.

@@ -22,7 +22,7 @@ export const initSocket = (server) => {
       methods: ["GET", "POST", "PUT", "DELETE"],
       credentials: true
     },
-    transports: ["websocket"],
+    transports: ["websocket", "polling"],
     pingTimeout: 120000,
     pingInterval: 30000,
     connectTimeout: 30000,
@@ -107,7 +107,7 @@ export const initSocket = (server) => {
     });
   });
 
-  log.info("Socket.IO initialized successfully (websocket-only)");
+  log.info("Socket.IO initialized successfully");
   return io;
 };
 

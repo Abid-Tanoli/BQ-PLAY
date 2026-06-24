@@ -1,0 +1,494 @@
+[
+  {
+    "_id": "6a3bbc577c58eee52decb982",
+    "title": "BQ Falcons vs BQ Titans",
+    "venue": "BQ Cricket Ground",
+    "matchType": "T20",
+    "matchCategory": "Club",
+    "category": "Club",
+    "subCategory": "Starter",
+    "ageGroup": "Open",
+    "organization": "BQ-PLAY Starter Seed",
+    "address": {
+      "town": "Central",
+      "district": "Karachi",
+      "city": "Karachi",
+      "province": "Sindh",
+      "country": "Pakistan"
+    },
+    "totalOvers": 20,
+    "startAt": "2026-06-25T11:15:35.058Z",
+    "teams": [
+      "6a3bbc497c58eee52decb8ae",
+      "6a3bbc497c58eee52decb8b4"
+    ],
+    "innings": [
+      {
+        "team": "6a3bbc497c58eee52decb8ae",
+        "battingOrder": [
+          "6a3bbc4a7c58eee52decb8c7",
+          "6a3bbc4a7c58eee52decb8ce",
+          "6a3bbc4a7c58eee52decb8d4",
+          "6a3bbc4b7c58eee52decb8da",
+          "6a3bbc4b7c58eee52decb8de",
+          "6a3bbc4b7c58eee52decb8e2",
+          "6a3bbc4c7c58eee52decb8e6",
+          "6a3bbc4c7c58eee52decb8ea",
+          "6a3bbc4c7c58eee52decb8ee",
+          "6a3bbc4c7c58eee52decb8f2",
+          "6a3bbc4d7c58eee52decb8f6"
+        ],
+        "runs": 0,
+        "wickets": 0,
+        "overs": 0,
+        "balls": 0,
+        "extras": {
+          "wides": 0,
+          "noBalls": 0,
+          "byes": 0,
+          "legByes": 0,
+          "penalties": 0,
+          "total": 0
+        },
+        "status": "upcoming",
+        "oversHistory": [],
+        "batting": [],
+        "bowling": [],
+        "fallOfWickets": [],
+        "partnerships": [],
+        "runRate": 0,
+        "requiredRunRate": 0,
+        "target": 0,
+        "powerplayOvers": 0,
+        "powerplayConfig": {
+          "enabled": true,
+          "overs": 6
+        },
+        "declared": false,
+        "_id": "6a3bbc577c58eee52decb983"
+      },
+      {
+        "team": "6a3bbc497c58eee52decb8b4",
+        "battingOrder": [
+          "6a3bbc4d7c58eee52decb8fb",
+          "6a3bbc4d7c58eee52decb8ff",
+          "6a3bbc4e7c58eee52decb903",
+          "6a3bbc4e7c58eee52decb907",
+          "6a3bbc4e7c58eee52decb90b",
+          "6a3bbc4e7c58eee52decb90f",
+          "6a3bbc4f7c58eee52decb913",
+          "6a3bbc4f7c58eee52decb917",
+          "6a3bbc4f7c58eee52decb91b",
+          "6a3bbc507c58eee52decb91f",
+          "6a3bbc507c58eee52decb923"
+        ],
+        "runs": 0,
+        "wickets": 0,
+        "overs": 0,
+        "balls": 0,
+        "extras": {
+          "wides": 0,
+          "noBalls": 0,
+          "byes": 0,
+          "legByes": 0,
+          "penalties": 0,
+          "total": 0
+        },
+        "status": "upcoming",
+        "oversHistory": [],
+        "batting": [],
+        "bowling": [],
+        "fallOfWickets": [],
+        "partnerships": [],
+        "runRate": 0,
+        "requiredRunRate": 0,
+        "target": 0,
+        "powerplayOvers": 0,
+        "powerplayConfig": {
+          "enabled": true,
+          "overs": 6
+        },
+        "declared": false,
+        "_id": "6a3bbc577c58eee52decb984"
+      }
+    ],
+    "currentInnings": 0,
+    "status": "upcoming",
+    "tieResolution": null,
+    "playingXI": [
+      {
+        "team": "6a3bbc497c58eee52decb8ae",
+        "players": [
+          "6a3bbc4a7c58eee52decb8c7",
+          "6a3bbc4a7c58eee52decb8ce",
+          "6a3bbc4a7c58eee52decb8d4",
+          "6a3bbc4b7c58eee52decb8da",
+          "6a3bbc4b7c58eee52decb8de",
+          "6a3bbc4b7c58eee52decb8e2",
+          "6a3bbc4c7c58eee52decb8e6",
+          "6a3bbc4c7c58eee52decb8ea",
+          "6a3bbc4c7c58eee52decb8ee",
+          "6a3bbc4c7c58eee52decb8f2",
+          "6a3bbc4d7c58eee52decb8f6"
+        ],
+        "_id": "6a3bbc577c58eee52decb985"
+      },
+      {
+        "team": "6a3bbc497c58eee52decb8b4",
+        "players": [
+          "6a3bbc4d7c58eee52decb8fb",
+          "6a3bbc4d7c58eee52decb8ff",
+          "6a3bbc4e7c58eee52decb903",
+          "6a3bbc4e7c58eee52decb907",
+          "6a3bbc4e7c58eee52decb90b",
+          "6a3bbc4e7c58eee52decb90f",
+          "6a3bbc4f7c58eee52decb913",
+          "6a3bbc4f7c58eee52decb917",
+          "6a3bbc4f7c58eee52decb91b",
+          "6a3bbc507c58eee52decb91f",
+          "6a3bbc507c58eee52decb923"
+        ],
+        "_id": "6a3bbc577c58eee52decb986"
+      }
+    ],
+    "squad15": [
+      {
+        "team": "6a3bbc497c58eee52decb8ae",
+        "players": [
+          "6a3bbc4a7c58eee52decb8c7",
+          "6a3bbc4a7c58eee52decb8ce",
+          "6a3bbc4a7c58eee52decb8d4",
+          "6a3bbc4b7c58eee52decb8da",
+          "6a3bbc4b7c58eee52decb8de",
+          "6a3bbc4b7c58eee52decb8e2",
+          "6a3bbc4c7c58eee52decb8e6",
+          "6a3bbc4c7c58eee52decb8ea",
+          "6a3bbc4c7c58eee52decb8ee",
+          "6a3bbc4c7c58eee52decb8f2",
+          "6a3bbc4d7c58eee52decb8f6"
+        ],
+        "captain": "6a3bbc4a7c58eee52decb8c7",
+        "viceCaptain": "6a3bbc4b7c58eee52decb8de",
+        "wicketKeepers": [
+          "6a3bbc4a7c58eee52decb8ce"
+        ],
+        "_id": "6a3bbc577c58eee52decb987"
+      },
+      {
+        "team": "6a3bbc497c58eee52decb8b4",
+        "players": [
+          "6a3bbc4d7c58eee52decb8fb",
+          "6a3bbc4d7c58eee52decb8ff",
+          "6a3bbc4e7c58eee52decb903",
+          "6a3bbc4e7c58eee52decb907",
+          "6a3bbc4e7c58eee52decb90b",
+          "6a3bbc4e7c58eee52decb90f",
+          "6a3bbc4f7c58eee52decb913",
+          "6a3bbc4f7c58eee52decb917",
+          "6a3bbc4f7c58eee52decb91b",
+          "6a3bbc507c58eee52decb91f",
+          "6a3bbc507c58eee52decb923"
+        ],
+        "captain": "6a3bbc4d7c58eee52decb8fb",
+        "viceCaptain": "6a3bbc4e7c58eee52decb90b",
+        "wicketKeepers": [
+          "6a3bbc4d7c58eee52decb8ff"
+        ],
+        "_id": "6a3bbc577c58eee52decb988"
+      }
+    ],
+    "teamRoles": [
+      {
+        "team": "6a3bbc497c58eee52decb8ae",
+        "captain": "6a3bbc4a7c58eee52decb8c7",
+        "viceCaptain": "6a3bbc4b7c58eee52decb8de",
+        "wicketKeepers": [
+          "6a3bbc4a7c58eee52decb8ce"
+        ],
+        "_id": "6a3bbc577c58eee52decb989"
+      },
+      {
+        "team": "6a3bbc497c58eee52decb8b4",
+        "captain": "6a3bbc4d7c58eee52decb8fb",
+        "viceCaptain": "6a3bbc4e7c58eee52decb90b",
+        "wicketKeepers": [
+          "6a3bbc4d7c58eee52decb8ff"
+        ],
+        "_id": "6a3bbc577c58eee52decb98a"
+      }
+    ],
+    "series": "BQ-PLAY Starter Matches",
+    "espnMatchId": "",
+    "slug": "bqplay-initial-seed-falcons-vs-titans",
+    "resultText": "",
+    "statusText": "Upcoming",
+    "seriesMatchNumber": 1,
+    "seriesStanding": {
+      "matchesPlayed": 0
+    },
+    "powerplayConfig": {
+      "enabled": true,
+      "overs": 6,
+      "type": "standard",
+      "battingPowerplayOvers": 0,
+      "fieldersOutsideCircle": 2
+    },
+    "umpires": [],
+    "highlights": [],
+    "twelfthMan": [],
+    "bowlingXI": [],
+    "winProbabilityHistory": [],
+    "drsReviews": [],
+    "timeouts": [],
+    "superOvers": [],
+    "createdAt": "2026-06-24T11:15:35.068Z",
+    "updatedAt": "2026-06-24T11:15:35.068Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a3bbc577c58eee52decb98d",
+    "title": "BQ Strikers vs BQ Royals",
+    "venue": "BQ Academy Ground",
+    "matchType": "T20",
+    "matchCategory": "Club",
+    "category": "Club",
+    "subCategory": "Starter",
+    "ageGroup": "Open",
+    "organization": "BQ-PLAY Starter Seed",
+    "address": {
+      "town": "Central",
+      "district": "Karachi",
+      "city": "Karachi",
+      "province": "Sindh",
+      "country": "Pakistan"
+    },
+    "totalOvers": 20,
+    "startAt": "2026-06-26T11:15:35.343Z",
+    "teams": [
+      "6a3bbc497c58eee52decb8ba",
+      "6a3bbc4a7c58eee52decb8c0"
+    ],
+    "innings": [
+      {
+        "team": "6a3bbc497c58eee52decb8ba",
+        "battingOrder": [
+          "6a3bbc507c58eee52decb928",
+          "6a3bbc517c58eee52decb92c",
+          "6a3bbc517c58eee52decb930",
+          "6a3bbc517c58eee52decb934",
+          "6a3bbc517c58eee52decb938",
+          "6a3bbc527c58eee52decb93c",
+          "6a3bbc527c58eee52decb940",
+          "6a3bbc527c58eee52decb944",
+          "6a3bbc527c58eee52decb948",
+          "6a3bbc537c58eee52decb94c",
+          "6a3bbc537c58eee52decb950"
+        ],
+        "runs": 0,
+        "wickets": 0,
+        "overs": 0,
+        "balls": 0,
+        "extras": {
+          "wides": 0,
+          "noBalls": 0,
+          "byes": 0,
+          "legByes": 0,
+          "penalties": 0,
+          "total": 0
+        },
+        "status": "upcoming",
+        "oversHistory": [],
+        "batting": [],
+        "bowling": [],
+        "fallOfWickets": [],
+        "partnerships": [],
+        "runRate": 0,
+        "requiredRunRate": 0,
+        "target": 0,
+        "powerplayOvers": 0,
+        "powerplayConfig": {
+          "enabled": true,
+          "overs": 6
+        },
+        "declared": false,
+        "_id": "6a3bbc577c58eee52decb98e"
+      },
+      {
+        "team": "6a3bbc4a7c58eee52decb8c0",
+        "battingOrder": [
+          "6a3bbc537c58eee52decb955",
+          "6a3bbc547c58eee52decb959",
+          "6a3bbc547c58eee52decb95d",
+          "6a3bbc547c58eee52decb961",
+          "6a3bbc547c58eee52decb965",
+          "6a3bbc557c58eee52decb969",
+          "6a3bbc557c58eee52decb96d",
+          "6a3bbc557c58eee52decb971",
+          "6a3bbc567c58eee52decb975",
+          "6a3bbc567c58eee52decb979",
+          "6a3bbc567c58eee52decb97d"
+        ],
+        "runs": 0,
+        "wickets": 0,
+        "overs": 0,
+        "balls": 0,
+        "extras": {
+          "wides": 0,
+          "noBalls": 0,
+          "byes": 0,
+          "legByes": 0,
+          "penalties": 0,
+          "total": 0
+        },
+        "status": "upcoming",
+        "oversHistory": [],
+        "batting": [],
+        "bowling": [],
+        "fallOfWickets": [],
+        "partnerships": [],
+        "runRate": 0,
+        "requiredRunRate": 0,
+        "target": 0,
+        "powerplayOvers": 0,
+        "powerplayConfig": {
+          "enabled": true,
+          "overs": 6
+        },
+        "declared": false,
+        "_id": "6a3bbc577c58eee52decb98f"
+      }
+    ],
+    "currentInnings": 0,
+    "status": "upcoming",
+    "tieResolution": null,
+    "playingXI": [
+      {
+        "team": "6a3bbc497c58eee52decb8ba",
+        "players": [
+          "6a3bbc507c58eee52decb928",
+          "6a3bbc517c58eee52decb92c",
+          "6a3bbc517c58eee52decb930",
+          "6a3bbc517c58eee52decb934",
+          "6a3bbc517c58eee52decb938",
+          "6a3bbc527c58eee52decb93c",
+          "6a3bbc527c58eee52decb940",
+          "6a3bbc527c58eee52decb944",
+          "6a3bbc527c58eee52decb948",
+          "6a3bbc537c58eee52decb94c",
+          "6a3bbc537c58eee52decb950"
+        ],
+        "_id": "6a3bbc577c58eee52decb990"
+      },
+      {
+        "team": "6a3bbc4a7c58eee52decb8c0",
+        "players": [
+          "6a3bbc537c58eee52decb955",
+          "6a3bbc547c58eee52decb959",
+          "6a3bbc547c58eee52decb95d",
+          "6a3bbc547c58eee52decb961",
+          "6a3bbc547c58eee52decb965",
+          "6a3bbc557c58eee52decb969",
+          "6a3bbc557c58eee52decb96d",
+          "6a3bbc557c58eee52decb971",
+          "6a3bbc567c58eee52decb975",
+          "6a3bbc567c58eee52decb979",
+          "6a3bbc567c58eee52decb97d"
+        ],
+        "_id": "6a3bbc577c58eee52decb991"
+      }
+    ],
+    "squad15": [
+      {
+        "team": "6a3bbc497c58eee52decb8ba",
+        "players": [
+          "6a3bbc507c58eee52decb928",
+          "6a3bbc517c58eee52decb92c",
+          "6a3bbc517c58eee52decb930",
+          "6a3bbc517c58eee52decb934",
+          "6a3bbc517c58eee52decb938",
+          "6a3bbc527c58eee52decb93c",
+          "6a3bbc527c58eee52decb940",
+          "6a3bbc527c58eee52decb944",
+          "6a3bbc527c58eee52decb948",
+          "6a3bbc537c58eee52decb94c",
+          "6a3bbc537c58eee52decb950"
+        ],
+        "captain": "6a3bbc507c58eee52decb928",
+        "viceCaptain": "6a3bbc517c58eee52decb938",
+        "wicketKeepers": [
+          "6a3bbc517c58eee52decb92c"
+        ],
+        "_id": "6a3bbc577c58eee52decb992"
+      },
+      {
+        "team": "6a3bbc4a7c58eee52decb8c0",
+        "players": [
+          "6a3bbc537c58eee52decb955",
+          "6a3bbc547c58eee52decb959",
+          "6a3bbc547c58eee52decb95d",
+          "6a3bbc547c58eee52decb961",
+          "6a3bbc547c58eee52decb965",
+          "6a3bbc557c58eee52decb969",
+          "6a3bbc557c58eee52decb96d",
+          "6a3bbc557c58eee52decb971",
+          "6a3bbc567c58eee52decb975",
+          "6a3bbc567c58eee52decb979",
+          "6a3bbc567c58eee52decb97d"
+        ],
+        "captain": "6a3bbc537c58eee52decb955",
+        "viceCaptain": "6a3bbc547c58eee52decb965",
+        "wicketKeepers": [
+          "6a3bbc547c58eee52decb959"
+        ],
+        "_id": "6a3bbc577c58eee52decb993"
+      }
+    ],
+    "teamRoles": [
+      {
+        "team": "6a3bbc497c58eee52decb8ba",
+        "captain": "6a3bbc507c58eee52decb928",
+        "viceCaptain": "6a3bbc517c58eee52decb938",
+        "wicketKeepers": [
+          "6a3bbc517c58eee52decb92c"
+        ],
+        "_id": "6a3bbc577c58eee52decb994"
+      },
+      {
+        "team": "6a3bbc4a7c58eee52decb8c0",
+        "captain": "6a3bbc537c58eee52decb955",
+        "viceCaptain": "6a3bbc547c58eee52decb965",
+        "wicketKeepers": [
+          "6a3bbc547c58eee52decb959"
+        ],
+        "_id": "6a3bbc577c58eee52decb995"
+      }
+    ],
+    "series": "BQ-PLAY Starter Matches",
+    "espnMatchId": "",
+    "slug": "bqplay-initial-seed-strikers-vs-royals",
+    "resultText": "",
+    "statusText": "Upcoming",
+    "seriesMatchNumber": 2,
+    "seriesStanding": {
+      "matchesPlayed": 0
+    },
+    "powerplayConfig": {
+      "enabled": true,
+      "overs": 6,
+      "type": "standard",
+      "battingPowerplayOvers": 0,
+      "fieldersOutsideCircle": 2
+    },
+    "umpires": [],
+    "highlights": [],
+    "twelfthMan": [],
+    "bowlingXI": [],
+    "winProbabilityHistory": [],
+    "drsReviews": [],
+    "timeouts": [],
+    "superOvers": [],
+    "createdAt": "2026-06-24T11:15:35.348Z",
+    "updatedAt": "2026-06-24T11:15:35.348Z",
+    "__v": 0
+  }
+]

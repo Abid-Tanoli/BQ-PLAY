@@ -1,0 +1,100 @@
+[
+  {
+    "_id": "6a3940e455cf9ea9ce47a3a9",
+    "name": "A. Batsman",
+    "role": "Batsman",
+    "playingRole": "Batsman",
+    "battingStyle": "Right-handed",
+    "bowlingStyle": "Not Applicable",
+    "category": "Other",
+    "subCategory": "",
+    "ageGroup": "Open",
+    "organization": "",
+    "address": {
+      "town": "",
+      "district": "",
+      "city": "",
+      "province": "",
+      "country": "Pakistan"
+    },
+    "imageUrl": "",
+    "birthInfo": {
+      "place": ""
+    },
+    "stats": {
+      "runs": 0,
+      "wickets": 0,
+      "strikeRate": 0,
+      "economy": 0,
+      "matches": 0,
+      "innings": 0,
+      "notOuts": 0,
+      "highScore": 0,
+      "average": 0,
+      "fifties": 0,
+      "hundreds": 0,
+      "bowlingAverage": 0,
+      "bestBowling": "0-0",
+      "fourWickets": 0,
+      "fiveWickets": 0,
+      "dotBalls": 0,
+      "catches": 0,
+      "stumpings": 0,
+      "runOuts": 0
+    },
+    "relations": [],
+    "teamHistory": [],
+    "createdAt": "2026-06-22T14:04:20.401Z",
+    "updatedAt": "2026-06-22T14:42:15.074Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a3940e455cf9ea9ce47a3aa",
+    "name": "T. Bowler",
+    "role": "Bowler",
+    "playingRole": "Batsman",
+    "battingStyle": "Right-handed",
+    "bowlingStyle": "Not Applicable",
+    "category": "Other",
+    "subCategory": "",
+    "ageGroup": "Open",
+    "organization": "",
+    "address": {
+      "town": "",
+      "district": "",
+      "city": "",
+      "province": "",
+      "country": "Pakistan"
+    },
+    "imageUrl": "",
+    "birthInfo": {
+      "place": ""
+    },
+    "stats": {
+      "runs": 0,
+      "wickets": 0,
+      "strikeRate": 0,
+      "economy": 0,
+      "matches": 0,
+      "innings": 0,
+      "notOuts": 0,
+      "highScore": 0,
+      "average": 0,
+      "fifties": 0,
+      "hundreds": 0,
+      "bowlingAverage": 0,
+      "bestBowling": "0-0",
+      "fourWickets": 0,
+      "fiveWickets": 0,
+      "dotBalls": 0,
+      "catches": 0,
+      "stumpings": 0,
+      "runOuts": 0
+    },
+    "relations": [],
+    "teamHistory": [],
+    "createdAt": "2026-06-22T14:04:20.914Z",
+    "updatedAt": "2026-06-22T14:42:18.491Z",
+    "__v": 0
+  }
+]

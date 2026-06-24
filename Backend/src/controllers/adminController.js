@@ -8,6 +8,11 @@ export const registerAdmin = async (req, res) => {
     if (!name || !email || !password)
       return res.status(400).json({ message: "All fields are required" });
 
+    const adminCount = await Admin.countDocuments();
+    if (adminCount > 0) {
+      return res.status(403).json({ message: "Admin registration is closed. Login with an existing admin account." });
+    }
+
     const existing = await Admin.findOne({ email });
     if (existing) return res.status(400).json({ message: "Admin already exists" });
 
