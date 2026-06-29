@@ -1,24 +1,16 @@
 import { Server } from "socket.io";
 import log from "../utils/logger.js";
+import { corsOrigin } from "../config/cors.js";
 
 let io;
 
 const matchRoom = (matchId) => `match-${matchId}`;
-const configuredCorsOrigins = (process.env.CORS_ORIGINS || "")
-  .split(",")
-  .map((origin) => origin.trim())
-  .filter(Boolean);
 const shouldLogSocket = () => process.env.LOG_SOCKET === "true";
 
 export const initSocket = (server) => {
   io = new Server(server, {
     cors: {
-      origin: configuredCorsOrigins.length
-        ? (origin, callback) => {
-            if (!origin || configuredCorsOrigins.includes(origin)) return callback(null, true);
-            return callback(new Error("Not allowed by CORS"));
-          }
-        : true,
+      origin: corsOrigin,
       methods: ["GET", "POST", "PUT", "DELETE"],
       credentials: true
     },

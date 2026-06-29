@@ -5,6 +5,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import connectDB, { getDbState, isDbConnected } from "./utils/db.js";
 import { initSocket } from "./socket/socket.js";
+import { corsOrigin } from "./config/cors.js";
 
 import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
@@ -40,18 +41,9 @@ initSentry();
 const app = express();
 
 const dbReadyPromise = connectDB();
-const configuredCorsOrigins = (process.env.CORS_ORIGINS || "")
-  .split(",")
-  .map((origin) => origin.trim())
-  .filter(Boolean);
 
 const corsOptions = {
-  origin: configuredCorsOrigins.length
-    ? (origin, callback) => {
-        if (!origin || configuredCorsOrigins.includes(origin)) return callback(null, true);
-        return callback(new Error("Not allowed by CORS"));
-      }
-    : true,
+  origin: corsOrigin,
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],

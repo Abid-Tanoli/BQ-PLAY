@@ -1,8 +1,9 @@
 import axios from "axios";
 import { clearAdminSession, isAuthFailure, SESSION_EXPIRED_MESSAGE } from "./authSession";
+import { API_BASE_URL } from "../../../Shared/config/env.js";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
+  baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
@@ -49,4 +50,4 @@ attachAuthInterceptors(api);
 attachAuthInterceptors(axios);
 
 export default api;
-export { api, attachAuthInterceptors, clearAdminSession, isAuthFailure };
+export { API_BASE_URL, api, attachAuthInterceptors, clearAdminSession, isAuthFailure };

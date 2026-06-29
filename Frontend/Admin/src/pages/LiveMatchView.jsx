@@ -4,8 +4,8 @@ import axios from 'axios';
 import { useSelector } from 'react-redux';
 import WagonWheel from '../components/ScoreManagement/WagonWheel';
 import PartnershipBuilder from '../components/ScoreManagement/PartnershipBuilder';
+import { API_BASE_URL } from '../services/api';
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 const TABS = ['Live', 'Scorecard', 'Commentary', 'Stats', 'Overs', 'Playing XI', 'Wagon Wheel', 'Partnerships', 'Photos', 'Videos', 'Blogs'];
 
 export default function LiveMatchView() {
@@ -19,7 +19,7 @@ export default function LiveMatchView() {
 
   const fetchMatch = async () => {
     try {
-      const res = await axios.get(`${API_URL}/matches/${id}`);
+      const res = await axios.get(`${API_BASE_URL}/matches/${id}`);
       setMatchData(res.data);
     } catch (err) {
       setError('Failed to load match data');

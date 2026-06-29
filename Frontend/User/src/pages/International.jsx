@@ -4,8 +4,6 @@ import Header from '../components/Header';
 import { api } from '../services/api';
 import { getSocket, initSocket } from '../services/socket';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
 const asArray = (value) => Array.isArray(value) ? value : [];
 
 const getMatchId = (match = {}) => match.id || match._id || match.matchId;
@@ -91,7 +89,7 @@ export default function International() {
   };
 
   const setupSocket = () => {
-    const socket = getSocket() || initSocket(API_BASE.replace('/api', ''));
+    const socket = getSocket() || initSocket();
     const handleMatchesUpdate = ({ matches: nextMatches = [] }) => {
       setMatches(asArray(nextMatches));
     };

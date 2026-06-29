@@ -1,6 +1,5 @@
 import axios from "axios";
-
-const API_BASE_URL = (import.meta.env.VITE_API_URL || "/api").replace(/\/+$/, "");
+import { API_BASE_URL } from "../../../Shared/config/env.js";
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -47,3 +46,4 @@ export const setAuthToken = (token) => {
 
 // Reuse socket from socket.js to avoid duplicate connections
 export { initSocket, getSocket, disconnectSocket } from "./socket.js";
+export { API_BASE_URL };

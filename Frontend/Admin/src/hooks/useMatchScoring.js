@@ -5,8 +5,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from '../components/Toast';
 import { getTabIdFromRoute, getScoreTabPath, FIELD_POSITIONS, WICKET_TYPES } from '../components/ScoreManagement/constants';
 import { getSocket, joinMatchRoom, leaveMatchRoom } from '../store/socket';
+import { API_BASE_URL } from '../services/api';
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 const isIllegalDelivery = (ball) => !!(ball?.isWide || ball?.isNoBall);
 
 export default function useMatchScoring() {
@@ -38,7 +38,7 @@ export default function useMatchScoring() {
         if (!targetMatchId) return;
         try {
             const headers = token ? { Authorization: `Bearer ${token}` } : {};
-            const res = await axios.get(`${API_URL}/matches/${targetMatchId}`, { headers });
+            const res = await axios.get(`${API_BASE_URL}/matches/${targetMatchId}`, { headers });
             setSelectedMatch(res.data);
         } catch (err) {
             console.error("Failed to reload match:", err);
@@ -248,7 +248,7 @@ export default function useMatchScoring() {
     const fetchMatches = async () => {
         try {
             setLoading(true);
-            const res = await axios.get(`${API_URL}/matches`, { headers: { Authorization: `Bearer ${token}` } });
+            const res = await axios.get(`${API_BASE_URL}/matches`, { headers: { Authorization: `Bearer ${token}` } });
             setMatches(res.data?.matches || res.data || []);
         } catch (err) {
             console.error(err);
@@ -261,7 +261,7 @@ export default function useMatchScoring() {
         try {
             setLoading(true);
             const headers = token ? { Authorization: `Bearer ${token}` } : {};
-            const res = await axios.get(`${API_URL}/matches/${id}`, { headers });
+            const res = await axios.get(`${API_BASE_URL}/matches/${id}`, { headers });
             setSelectedMatch(res.data);
 
             const t1XI = res.data.playingXI?.find(p => (p.team?._id || p.team) === res.data.teams[0]?._id)?.players?.map(p => p._id || p) || [];
@@ -393,7 +393,7 @@ export default function useMatchScoring() {
         };
 
         try {
-            const res = await axios.post(`${API_URL}/matches/${selectedMatch._id}/score`, ballData, {
+            const res = await axios.post(`${API_BASE_URL}/matches/${selectedMatch._id}/score`, ballData, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
@@ -437,7 +437,7 @@ export default function useMatchScoring() {
 
     const doEndInnings = async () => {
         try {
-            const res = await axios.post(`${API_URL}/matches/${selectedMatch._id}/end-innings`, {
+            const res = await axios.post(`${API_BASE_URL}/matches/${selectedMatch._id}/end-innings`, {
                 inningsIndex: selectedMatch.currentInnings
             }, { headers: { Authorization: `Bearer ${token}` } });
             setSelectedMatch(res.data.match);
@@ -449,7 +449,7 @@ export default function useMatchScoring() {
 
     const handleStartNext = async () => {
         try {
-            const res = await axios.post(`${API_URL}/matches/${selectedMatch._id}/start-next-innings`, {
+            const res = await axios.post(`${API_BASE_URL}/matches/${selectedMatch._id}/start-next-innings`, {
                 previousInningsIndex: selectedMatch.currentInnings
             }, { headers: { Authorization: `Bearer ${token}` } });
             setSelectedMatch(res.data.match);
@@ -468,7 +468,7 @@ export default function useMatchScoring() {
         if (reverting) return;
         setReverting(true);
         try {
-            const res = await axios.post(`${API_URL}/matches/${selectedMatch._id}/revert-ball`,
+            const res = await axios.post(`${API_BASE_URL}/matches/${selectedMatch._id}/revert-ball`,
                 { inningsIndex: selectedMatch.currentInnings },
                 { headers: { Authorization: `Bearer ${token}` } });
             setSelectedMatch(res.data.match);
@@ -486,7 +486,7 @@ export default function useMatchScoring() {
 
     const doRetire = async (playerId, type) => {
         try {
-            const res = await axios.post(`${API_URL}/matches/${selectedMatch._id}/retire-batsman`, {
+            const res = await axios.post(`${API_BASE_URL}/matches/${selectedMatch._id}/retire-batsman`, {
                 inningsIndex: selectedMatch.currentInnings,
                 playerId,
                 type
@@ -506,7 +506,7 @@ export default function useMatchScoring() {
     const handleEditBall = async (ballData) => {
         try {
             const res = await axios.put(
-                `${API_URL}/matches/${selectedMatch._id}/edit-ball`,
+                `${API_BASE_URL}/matches/${selectedMatch._id}/edit-ball`,
                 { inningsIndex: selectedMatch.currentInnings, ...ballData },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
@@ -523,7 +523,7 @@ export default function useMatchScoring() {
 
     const doResetInnings = async () => {
         try {
-            const res = await axios.post(`${API_URL}/matches/${selectedMatch._id}/reset-innings`, {
+            const res = await axios.post(`${API_BASE_URL}/matches/${selectedMatch._id}/reset-innings`, {
                 inningsIndex: selectedMatch.currentInnings
             }, { headers: { Authorization: `Bearer ${token}` } });
             setSelectedMatch(res.data.match);
@@ -539,7 +539,7 @@ export default function useMatchScoring() {
 
     const doResetMatch = async () => {
         try {
-            const res = await axios.post(`${API_URL}/matches/${selectedMatch._id}/reset-match`, {}, {
+            const res = await axios.post(`${API_BASE_URL}/matches/${selectedMatch._id}/reset-match`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setSelectedMatch(res.data.match);
@@ -571,13 +571,13 @@ export default function useMatchScoring() {
                     b2 = playerId;
                 }
 
-                await axios.put(`${API_URL}/matches/${selectedMatch._id}/openers`, {
+                await axios.put(`${API_BASE_URL}/matches/${selectedMatch._id}/openers`, {
                     inningsIndex: selectedMatch.currentInnings,
                     batsman1Id: b1,
                     batsman2Id: b2
                 }, { headers: { Authorization: `Bearer ${token}` } });
             } else if (role === 'bowler') {
-                await axios.post(`${API_URL}/matches/${selectedMatch._id}/set-bowler`, {
+                await axios.post(`${API_BASE_URL}/matches/${selectedMatch._id}/set-bowler`, {
                     inningsIndex: selectedMatch.currentInnings,
                     bowlerId: playerId
                 }, { headers: { Authorization: `Bearer ${token}` } });
@@ -594,7 +594,7 @@ export default function useMatchScoring() {
 
             setSelectedMatch({ ...updated });
             setShowSelectionModal('');
-            const res = await axios.get(`${API_URL}/matches/${selectedMatch._id}`);
+            const res = await axios.get(`${API_BASE_URL}/matches/${selectedMatch._id}`);
             setSelectedMatch(res.data);
             checkRoles(res.data);
         } catch (err) {
@@ -608,10 +608,10 @@ export default function useMatchScoring() {
             return;
         }
         try {
-            await axios.put(`${API_URL}/matches/${selectedMatch._id}/format`, formatData, {
+            await axios.put(`${API_BASE_URL}/matches/${selectedMatch._id}/format`, formatData, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            const res = await axios.get(`${API_URL}/matches/${selectedMatch._id}`);
+            const res = await axios.get(`${API_BASE_URL}/matches/${selectedMatch._id}`);
             setSelectedMatch(res.data);
             checkRoles(res.data);
             setWizardStep(2);
@@ -627,9 +627,9 @@ export default function useMatchScoring() {
             return;
         }
         try {
-            await axios.put(`${API_URL}/matches/${selectedMatch._id}/playing-xi`, { teamId: selectedMatch.teams[0]._id, players: setupState.team1XI }, { headers: { Authorization: `Bearer ${token}` } });
-            await axios.put(`${API_URL}/matches/${selectedMatch._id}/playing-xi`, { teamId: selectedMatch.teams[1]._id, players: setupState.team2XI }, { headers: { Authorization: `Bearer ${token}` } });
-            const res = await axios.get(`${API_URL}/matches/${selectedMatch._id}`);
+            await axios.put(`${API_BASE_URL}/matches/${selectedMatch._id}/playing-xi`, { teamId: selectedMatch.teams[0]._id, players: setupState.team1XI }, { headers: { Authorization: `Bearer ${token}` } });
+            await axios.put(`${API_BASE_URL}/matches/${selectedMatch._id}/playing-xi`, { teamId: selectedMatch.teams[1]._id, players: setupState.team2XI }, { headers: { Authorization: `Bearer ${token}` } });
+            const res = await axios.get(`${API_BASE_URL}/matches/${selectedMatch._id}`);
             setSelectedMatch(res.data);
             checkRoles(res.data);
             setWizardStep(2);
@@ -645,11 +645,11 @@ export default function useMatchScoring() {
             return;
         }
         try {
-            await axios.put(`${API_URL}/matches/${selectedMatch._id}/toss`, {
+            await axios.put(`${API_BASE_URL}/matches/${selectedMatch._id}/toss`, {
                 tossWinnerId: setupState.tossWinner,
                 decision: setupState.tossDecision
             }, { headers: { Authorization: `Bearer ${token}` } });
-            const res = await axios.get(`${API_URL}/matches/${selectedMatch._id}`);
+            const res = await axios.get(`${API_BASE_URL}/matches/${selectedMatch._id}`);
             setSelectedMatch(res.data);
             checkRoles(res.data);
             setWizardStep(3);
@@ -669,19 +669,19 @@ export default function useMatchScoring() {
             return;
         }
         try {
-            await axios.put(`${API_URL}/matches/${selectedMatch._id}/openers`, {
+            await axios.put(`${API_BASE_URL}/matches/${selectedMatch._id}/openers`, {
                 inningsIndex: selectedMatch.currentInnings,
                 batsman1Id: setupState.strikerId,
                 batsman2Id: setupState.nonStrikerId
             }, { headers: { Authorization: `Bearer ${token}` } });
 
-            await axios.post(`${API_URL}/matches/${selectedMatch._id}/set-bowler`, {
+            await axios.post(`${API_BASE_URL}/matches/${selectedMatch._id}/set-bowler`, {
                 inningsIndex: selectedMatch.currentInnings,
                 bowlerId: setupState.bowlerId
             }, { headers: { Authorization: `Bearer ${token}` } });
 
             setIsPreMatchComplete(true);
-            const res = await axios.get(`${API_URL}/matches/${selectedMatch._id}`);
+            const res = await axios.get(`${API_BASE_URL}/matches/${selectedMatch._id}`);
             setSelectedMatch(res.data);
             checkRoles(res.data);
             setToast("Match Ready to Start!");
@@ -696,7 +696,7 @@ export default function useMatchScoring() {
 
     const doTimeout = async () => {
         try {
-            const res = await axios.post(`${API_URL}/matches/${selectedMatch._id}/timeout`, {
+            const res = await axios.post(`${API_BASE_URL}/matches/${selectedMatch._id}/timeout`, {
                 teamId: battingTeamId
             }, { headers: { Authorization: `Bearer ${token}` } });
             setSelectedMatch(res.data.match);
@@ -708,7 +708,7 @@ export default function useMatchScoring() {
 
     const handleDRSReview = async () => {
         try {
-            const res = await axios.post(`${API_URL}/matches/${selectedMatch._id}/drs`, {
+            const res = await axios.post(`${API_BASE_URL}/matches/${selectedMatch._id}/drs`, {
                 teamId: battingTeamId,
                 result: drsData.result,
                 type: drsData.type,
@@ -725,7 +725,7 @@ export default function useMatchScoring() {
 
     const handleResolveTie = async (resolution) => {
         try {
-            const res = await axios.post(`${API_URL}/matches/${selectedMatch._id}/resolve-tie`, {
+            const res = await axios.post(`${API_BASE_URL}/matches/${selectedMatch._id}/resolve-tie`, {
                 resolution
             }, { headers: { Authorization: `Bearer ${token}` } });
             setSelectedMatch(res.data.match);
@@ -741,7 +741,7 @@ export default function useMatchScoring() {
 
     const handleStartSuperOver = async ({ batsmenIds, bowlerId }) => {
         try {
-            const res = await axios.post(`${API_URL}/matches/${selectedMatch._id}/start-super-over`, {
+            const res = await axios.post(`${API_BASE_URL}/matches/${selectedMatch._id}/start-super-over`, {
                 batsmenIds,
                 bowlerId
             }, { headers: { Authorization: `Bearer ${token}` } });
@@ -761,7 +761,7 @@ export default function useMatchScoring() {
 
     const doDeleteMatch = async (matchId) => {
         try {
-            await axios.delete(`${API_URL}/matches/${matchId}`, { headers: { Authorization: `Bearer ${token}` } });
+            await axios.delete(`${API_BASE_URL}/matches/${matchId}`, { headers: { Authorization: `Bearer ${token}` } });
             setMatches(prev => prev.filter(m => m._id !== matchId));
         } catch (err) {
             showToast(err.response?.data?.message || err.message, 'error');

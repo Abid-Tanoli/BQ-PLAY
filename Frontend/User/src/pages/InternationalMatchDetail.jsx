@@ -14,8 +14,6 @@ import Header from '../components/Header';
 import { api } from '../services/api';
 import { getSocket, initSocket } from '../services/socket';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
 const asArray = (value) => Array.isArray(value) ? value : [];
 
 const scoreTeam = (score = {}) => score.inning?.split(' Inning')[0] || score.team || score.teamName || 'Innings';
@@ -165,7 +163,7 @@ export default function InternationalMatchDetail() {
   };
 
   const setupSocket = () => {
-    const socket = getSocket() || initSocket(API_BASE.replace('/api', ''));
+    const socket = getSocket() || initSocket();
     const handleUpdate = ({ matchId: updatedId, score, status, scorecard: nextScorecard }) => {
       if (String(updatedId) !== String(matchId)) return;
       setCenter(previous => ({

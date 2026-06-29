@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import { API_BASE_URL } from '../services/api';
 
 export default function AdminInternational() {
   const [activeTab, setActiveTab] = useState('live');
@@ -20,10 +19,10 @@ export default function AdminInternational() {
     setLoading(true);
     try {
       const [liveRes, seriesRes, highlightsRes, newsRes] = await Promise.all([
-        axios.get(`${API_BASE}/international/live`).catch(() => ({ data: { data: [] } })),
-        axios.get(`${API_BASE}/international/series`).catch(() => ({ data: { data: [] } })),
-        axios.get(`${API_BASE}/international/highlights?q=cricket`).catch(() => ({ data: { data: [] } })),
-        axios.get(`${API_BASE}/international/news?limit=5`).catch(() => ({ data: { data: [] } })),
+        axios.get(`${API_BASE_URL}/international/live`).catch(() => ({ data: { data: [] } })),
+        axios.get(`${API_BASE_URL}/international/series`).catch(() => ({ data: { data: [] } })),
+        axios.get(`${API_BASE_URL}/international/highlights?q=cricket`).catch(() => ({ data: { data: [] } })),
+        axios.get(`${API_BASE_URL}/international/news?limit=5`).catch(() => ({ data: { data: [] } })),
       ]);
       setLiveMatches(liveRes.data.data || []);
       setSeries(seriesRes.data.data || []);

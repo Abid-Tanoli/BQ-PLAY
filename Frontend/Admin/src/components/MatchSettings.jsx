@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import api from '../services/api';
+import api, { API_BASE_URL } from '../services/api';
 import { useToast } from './Toast';
 import ConfirmModal from './ConfirmModal';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const MatchSettings = ({ match, onClose, onUpdate }) => {
     const [activeTab, setActiveTab] = useState('overs');
@@ -25,7 +23,7 @@ const MatchSettings = ({ match, onClose, onUpdate }) => {
         setLoading(true);
         try {
             await axios.post(
-                `${API_URL}/matches/${match._id}/reduce-overs`,
+                `${API_BASE_URL}/matches/${match._id}/reduce-overs`,
                 { overs: newOvers },
                 { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
             );
@@ -83,7 +81,7 @@ const MatchSettings = ({ match, onClose, onUpdate }) => {
         setLoading(true);
         try {
             await axios.post(
-                `${API_URL}/matches/${match._id}/start-super-over`,
+                `${API_BASE_URL}/matches/${match._id}/start-super-over`,
                 {},
                 { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
             );

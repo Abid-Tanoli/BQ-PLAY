@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useSelector } from 'react-redux';
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+import { API_BASE_URL } from '../services/api';
 
 export default function SeriesDetail() {
   const { id } = useParams();
@@ -16,7 +15,7 @@ export default function SeriesDetail() {
   useEffect(() => {
     const fetchSeries = async () => {
       try {
-        const res = await axios.get(`${API_URL}/series/${id}`, {
+        const res = await axios.get(`${API_BASE_URL}/series/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setSeriesData(res.data);

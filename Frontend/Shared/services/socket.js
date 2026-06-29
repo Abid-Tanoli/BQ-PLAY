@@ -1,4 +1,5 @@
 import { io } from "socket.io-client";
+import { SOCKET_URL } from "../config/env.js";
 
 const instances = {};
 const CONFIG = {
@@ -11,13 +12,6 @@ const CONFIG = {
     autoConnect: false,
   },
 };
-
-function getUrl() {
-  return (
-    import.meta.env.VITE_SOCKET_URL ||
-    (import.meta.env.DEV ? "http://localhost:5000" : window.location.origin)
-  );
-}
 
 function getInstance(namespace) {
   if (!namespace) return null;
@@ -59,7 +53,7 @@ export function initSocket(namespace = "admin") {
     return existing;
   }
 
-  const socket = io(getUrl(), {
+  const socket = io(SOCKET_URL, {
     transports: ["websocket", "polling"],
     reconnection: true,
     reconnectionDelay: 2000,
