@@ -353,7 +353,7 @@ const RightSidebarControls = React.memo(({
             </div>
 
             <div className="mt-auto pt-12 text-center opacity-30 text-[9px] font-black tracking-[0.5em] uppercase">
-                BQ-PLAY Elite Scoring Engine 2026
+                CricAll Elite Scoring Engine 2026
             </div>
         </div>
 

@@ -19,7 +19,7 @@ if (DSN && CUSTOM_TRANSPORT_ENABLED) {
 }
 
 function buildEnvelope(event) {
-  const authHeader = { sdk: { name: "bqplay-custom", version: "1.0.0" } };
+  const authHeader = { sdk: { name: "cricall-custom", version: "1.0.0" } };
   const itemHeader = { type: "event", content_type: "application/json" };
   const header = JSON.stringify(authHeader);
   const itemH = JSON.stringify(itemHeader);
@@ -36,7 +36,7 @@ function buildEvent(err, req) {
     timestamp: new Date().toISOString(),
     platform: "node",
     level: "error",
-    logger: "bqplay-backend",
+    logger: "cricall-backend",
     environment: ENV,
     exception: {
       values: [

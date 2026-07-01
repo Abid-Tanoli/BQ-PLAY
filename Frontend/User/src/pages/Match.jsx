@@ -295,7 +295,7 @@ const Match = () => {
           <Link to="/live" className="touch-target flex items-center gap-1.5 text-xs font-bold text-cric-muted hover:text-cric-accent shrink-0">
             <span aria-hidden="true">←</span> Live
           </Link>
-          <Link to="/" className="text-sm font-black font-raj text-cric-text truncate">BQ-PLAY</Link>
+          <Link to="/" className="text-sm font-black font-raj text-cric-text truncate">CricAll</Link>
           <div className="flex items-center gap-2">
             <PDFReport match={match} label="PDF" />
             <button

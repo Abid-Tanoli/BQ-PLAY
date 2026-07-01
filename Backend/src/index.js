@@ -182,17 +182,18 @@ app.use("/api/commentary", commentaryRoutes);
 
 app.get("/api/health", (req, res) => {
   res.json({
+    success: true,
     status: "ok",
     dbState: getDbState(),
     dbConnected: isDbConnected(),
-    message: "Server is running",
+    message: "CricAll API is running",
     timestamp: new Date().toISOString()
   });
 });
 
 app.get("/", (req, res) => {
   res.json({
-    message: "BQ-Play API Server",
+    message: "CricAll API Server",
     version: "1.0.0",
     endpoints: {
       auth: "/api/auth",
@@ -246,7 +247,7 @@ import { seedFieldingPositions } from "./seed/fieldingPositions.js";
 
 if (shouldListen) {
   server.listen(PORT, () => {
-    log.info({ port: PORT }, `Server running on port ${PORT}`);
+    log.info({ port: PORT }, `CricAll API running on port ${PORT}`);
     log.info('Socket.IO ready for connections');
     log.info('CORS enabled for configured origins');
 

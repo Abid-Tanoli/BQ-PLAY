@@ -80,7 +80,7 @@ function EmptyState({ title, detail }) {
 function ApiWarning({ status }) {
   if (!status?.lastError && status?.configured !== false) return null;
 
-  const provider = status?.configured ? 'BQ-PLAY live data provider' : 'Live data provider';
+  const provider = status?.configured ? 'CricAll live data provider' : 'Live data provider';
   const detail = status?.lastError
     || 'Cricket API is not configured. Real live data will appear after adding a working provider.';
 

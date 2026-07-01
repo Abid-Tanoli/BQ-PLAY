@@ -51,7 +51,7 @@ async function freeGet(path, ttlSec = 30, retries = 1) {
       const response = await fetch(`${FREE_BASE}${path}`, {
         headers: {
           Accept: 'application/json',
-          'User-Agent': 'BQ-PLAY/1.0',
+          'User-Agent': 'CricAll/1.0',
         },
         signal: controller.signal,
       });

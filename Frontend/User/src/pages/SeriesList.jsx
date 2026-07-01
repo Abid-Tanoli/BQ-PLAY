@@ -85,7 +85,7 @@ export default function SeriesList() {
       <div className="bg-gradient-to-r from-cric-accent via-[#0a2d5e] to-cric-accent py-8 text-white">
         <div className="mx-auto max-w-7xl px-4">
           <h1 className="mb-2 text-3xl font-black uppercase tracking-tight">Series & Tournaments</h1>
-          <p className="text-sm text-blue-200">Live cricket series, tournaments, fixtures, and your local BQ-PLAY events.</p>
+          <p className="text-sm text-blue-200">Live cricket series, tournaments, fixtures, and your local CricAll events.</p>
         </div>
       </div>
 
@@ -104,7 +104,7 @@ export default function SeriesList() {
           <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
             <div>
               <h2 className="text-xl font-black uppercase tracking-tight text-cric-accent">Current Live Series & Tournaments</h2>
-              <p className="text-xs font-semibold text-cric-muted">Uses BQ-PLAY backend live cricket provider data.</p>
+              <p className="text-xs font-semibold text-cric-muted">Uses CricAll backend live cricket provider data.</p>
             </div>
             <button onClick={loadData} className="rounded-xl bg-cric-accent px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white">
               Refresh
@@ -132,7 +132,7 @@ export default function SeriesList() {
 
         <section>
           <div className="mb-4">
-            <h2 className="text-xl font-black uppercase tracking-tight text-cric-accent">BQ-PLAY Local Events</h2>
+            <h2 className="text-xl font-black uppercase tracking-tight text-cric-accent">CricAll Local Events</h2>
             <p className="text-xs font-semibold text-cric-muted">Your own app events, tournaments, leagues and created matches.</p>
           </div>
 

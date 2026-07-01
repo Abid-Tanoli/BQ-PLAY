@@ -18,12 +18,12 @@ export const SOCKET_URL = (
 
 if (import.meta.env.PROD && !configuredApiUrl) {
   console.warn(
-    "[BQ-PLAY] VITE_API_URL is not configured; API requests will use the frontend origin."
+    "[CricAll] VITE_API_URL is not configured; API requests will use the frontend origin."
   );
 }
 
 if (import.meta.env.PROD && !configuredSocketUrl) {
   console.warn(
-    "[BQ-PLAY] VITE_SOCKET_URL is not configured; Socket.IO will use the frontend origin."
+    "[CricAll] VITE_SOCKET_URL is not configured; Socket.IO will use the frontend origin."
   );
 }

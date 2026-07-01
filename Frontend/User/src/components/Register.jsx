@@ -101,10 +101,10 @@ export default function Register({ onSuccess, onCancel, embedded = false }) {
         <div className="bg-cric-accent px-6 py-5 text-white">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-white/70">Join BQ-PLAY</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-white/70">Join CricAll</p>
               <h3 className="mt-1 text-2xl font-black uppercase tracking-tight">Choose how you want to join</h3>
               <p className="mt-2 max-w-2xl text-sm font-semibold text-white/80">
-                BQ-PLAY provides the platform. Local cricket handlers manage their own teams, playing XI, squads, matches and tournaments.
+                CricAll provides the platform. Local cricket handlers manage their own teams, playing XI, squads, matches and tournaments.
               </p>
             </div>
             {onCancel && (

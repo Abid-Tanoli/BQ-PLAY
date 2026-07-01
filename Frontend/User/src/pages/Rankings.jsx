@@ -95,7 +95,7 @@ export default function Rankings() {
           <p className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-200">Step-wise Rankings</p>
           <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <h1 className="text-4xl font-black uppercase tracking-tight sm:text-5xl">BQ-PLAY Leaderboard</h1>
+              <h1 className="text-4xl font-black uppercase tracking-tight sm:text-5xl">CricAll Leaderboard</h1>
               <p className="mt-3 max-w-3xl text-sm font-semibold text-blue-100/80">
                 Rank teams and players by team, pre-town, town, district, city and country.
               </p>

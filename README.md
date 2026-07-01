@@ -1,6 +1,6 @@
-# BQ-PLAY
+# CricAll
 
-BQ-PLAY is a full-stack live cricket scoring and tournament platform with a public user app, an admin scoring console, and a Node/Express API.
+CricAll is a full-stack live cricket scoring and tournament platform with a public user app, an admin scoring console, and a Node/Express API.
 
 ## Tech Stack
 
@@ -18,7 +18,7 @@ BQ-PLAY is a full-stack live cricket scoring and tournament platform with a publ
 ## Project Structure
 
 ```
-BQ-PLAY/
+CricAll/
 ├── Frontend/
 │   ├── User/            # Public cricket experience (25 pages)
 │   ├── Admin/           # Admin scoring console (20 pages)
@@ -268,11 +268,11 @@ VITE_GOOGLE_CLIENT_ID=...                 # Google OAuth client ID (optional)
 npm run build
 ```
 
-The root build script installs Backend, User, and Admin dependencies, then builds all frontend dist folders. **Note**: production build has not been run or verified during the latest cleanup pass.
+The root build script installs Backend, User, and Admin dependencies, then builds all frontend dist folders.
 
 ## Deployment
 
-See [DEPLOYMENT.md](./DEPLOYMENT.md) for Vercel deployment guide.
+See [DEPLOYMENT_DOCKER_RENDER.md](./DEPLOYMENT_DOCKER_RENDER.md) for the Docker Hub and Render deployment guide. The existing [DEPLOYMENT.md](./DEPLOYMENT.md) covers the legacy Vercel deployment option.
 
 ## Socket.IO Architecture
 

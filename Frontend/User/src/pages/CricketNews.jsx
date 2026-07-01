@@ -34,7 +34,7 @@ export default function CricketNews() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl lg:text-4xl font-black text-cric-accent dark:text-white">Cricket News</h1>
-            <p className="text-sm text-cric-muted mt-1">Latest cricket updates curated for BQ-PLAY.</p>
+            <p className="text-sm text-cric-muted mt-1">Latest cricket updates curated for CricAll.</p>
           </div>
           <button
             onClick={fetchNews}

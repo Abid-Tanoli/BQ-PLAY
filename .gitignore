@@ -7,6 +7,7 @@ dist/
 **/dist/
 build/
 coverage/
+**/coverage/
 
 # Environment and secrets
 .env
@@ -15,6 +16,8 @@ coverage/
 
 # Logs
 *.log
+logs/
+**/logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

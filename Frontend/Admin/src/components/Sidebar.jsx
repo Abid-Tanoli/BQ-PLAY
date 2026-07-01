@@ -28,7 +28,7 @@ export default function Sidebar({ open, onClose }) {
       <div className="p-6 border-b border-cric-border">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-black font-raj text-cric-accent tracking-tight">BQ-PLAY</h1>
+            <h1 className="text-xl font-black font-raj text-cric-accent tracking-tight">CricAll</h1>
             <p className="text-xs text-cric-muted mt-1 uppercase tracking-widest font-bold">Admin Panel</p>
           </div>
           <button onClick={onClose} className="lg:hidden text-cric-muted hover:text-cric-accent p-1">

@@ -44,7 +44,7 @@ const LiveNavbar = () => {
     <div className="sticky top-0 z-50 bg-cric-card shadow-md">
       <div className="bg-cric-accent text-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
-          <Link to="/" className="text-2xl font-black tracking-tight text-white">BQ PLAY</Link>
+          <Link to="/" className="text-2xl font-black tracking-tight text-white">CricAll</Link>
           <input
             type="text"
             placeholder="Search matches, teams, players..."

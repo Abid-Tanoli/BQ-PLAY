@@ -1,6 +1,6 @@
-# BQ-PLAY Live Cricket API Guide
+# CricAll Live Cricket API Guide
 
-This guide explains how BQ-PLAY connects to external cricket data for international matches, series, scorecards, and match-center pages.
+This guide explains how CricAll connects to external cricket data for international matches, series, scorecards, and match-center pages.
 
 ## What The API Must Provide
 
@@ -21,7 +21,7 @@ For a full match-center experience, the provider should expose these feeds:
 - News
 - Videos
 
-If a provider does not include one of these endpoints, BQ-PLAY shows a clear empty state instead of fake data.
+If a provider does not include one of these endpoints, CricAll shows a clear empty state instead of fake data.
 
 ## Backend Environment
 
@@ -72,4 +72,4 @@ Expected success state:
 - Free plans often have small monthly quotas.
 - Some APIs expose series metadata but not all completed matches in that series.
 - A series page can only show all old fixtures/results if the provider has a real series-matches endpoint.
-- BQ-PLAY no longer falls back to demo international results unless `ENABLE_DEMO_CRICKET_DATA=true`.
+- CricAll no longer falls back to demo international results unless `ENABLE_DEMO_CRICKET_DATA=true`.

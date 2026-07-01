@@ -11,8 +11,8 @@ const api = axios.create({
 });
 
 function attachAuthInterceptors(client) {
-  if (client.__bqPlayAuthInterceptorsAttached) return;
-  client.__bqPlayAuthInterceptorsAttached = true;
+  if (client.__cricAllAuthInterceptorsAttached) return;
+  client.__cricAllAuthInterceptorsAttached = true;
 
   client.interceptors.request.use(
     (config) => {

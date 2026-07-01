@@ -1,4 +1,4 @@
-# Contributing to BQ-PLAY
+# Contributing to CricAll
 
 ## Prerequisites
 
@@ -32,7 +32,7 @@ npm --prefix Frontend/Admin run dev # Admin console on port 5174
 ## Project Structure
 
 ```
-BQ-PLAY/
+CricAll/
 ├── Backend/             # Express API (22 models, 20+ route groups)
 │   ├── src/
 │   │   ├── controllers/ # Route handlers

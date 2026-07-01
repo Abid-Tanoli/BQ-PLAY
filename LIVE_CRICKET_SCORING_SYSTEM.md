@@ -1,6 +1,6 @@
-# BQ-PLAY Live Cricket Scoring System
+# CricAll Live Cricket Scoring System
 
-BQ-PLAY is a full-stack cricket scoring and tournament platform for local matches, series, tournaments, live score views, and admin scoring workflows.
+CricAll is a full-stack cricket scoring and tournament platform for local matches, series, tournaments, live score views, and admin scoring workflows.
 
 ## Architecture
 
@@ -12,9 +12,9 @@ BQ-PLAY is a full-stack cricket scoring and tournament platform for local matche
 ## Core User Features
 
 - Live match center with score, scorecard, commentary, match info, stats, overs, playing XI, photos, news, and videos when the provider returns those feeds.
-- Series and tournament pages for local BQ-PLAY events.
+- Series and tournament pages for local CricAll events.
 - International pages backed by configured live cricket APIs.
-- Highlights and news sections with neutral BQ-PLAY presentation.
+- Highlights and news sections with neutral CricAll presentation.
 - Dark/light theme support.
 
 ## Admin Features
@@ -70,7 +70,7 @@ VITE_API_URL=/api/
 
 ## Live Data Rules
 
-- BQ-PLAY does not show demo international data unless `ENABLE_DEMO_CRICKET_DATA=true`.
+- CricAll does not show demo international data unless `ENABLE_DEMO_CRICKET_DATA=true`.
 - If the provider quota is exhausted, the UI shows a clear live-data notice instead of fake scores.
 - Old completed series matches require a provider endpoint that exposes historical fixtures/results for that series.
 - Photos, videos, commentary, playing XI, and live stats only appear when the configured provider returns them.

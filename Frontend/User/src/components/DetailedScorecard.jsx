@@ -2,7 +2,7 @@ import React, { useMemo, useState, Fragment, useRef } from 'react';
 import WagonWheel from './WagonWheel';
 import ScorecardExport from './ScorecardExport';
 
-// BQ-PLAY detailed scorecard
+// CricAll detailed scorecard
 // Full batting/bowling tables, extras, fall of wickets, yet to bat, match summary
 
 const DetailedScorecard = ({ match }) => {

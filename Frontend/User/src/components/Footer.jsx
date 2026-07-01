@@ -10,7 +10,7 @@ export default function Footer() {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-8">
           <div className="col-span-2 sm:col-span-1">
             <Link to="/" className="text-xl font-black font-raj italic text-cric-text tracking-tighter">
-              BQ-PLAY<span className="text-cric-accent">.</span>
+              CricAll<span className="text-cric-accent">.</span>
             </Link>
             <p className="mt-2 text-xs sm:text-sm text-cric-muted leading-relaxed">
               Live cricket scores, match coverage, player stats, and more.
@@ -43,10 +43,10 @@ export default function Footer() {
         </div>
         <div className="mt-8 sm:mt-10 pt-6 sm:pt-8 border-t border-cric-border flex flex-col sm:flex-row justify-between items-center gap-3">
           <p className="text-[10px] sm:text-xs font-bold text-cric-muted">
-            &copy; {year} BQ-PLAY. All rights reserved.
+            &copy; {year} CricAll. All rights reserved.
           </p>
           <p className="text-[9px] sm:text-[10px] font-bold text-cric-muted">
-            Powered by BQ-PLAY Scoring Engine
+            Powered by the CricAll Scoring Engine
           </p>
         </div>
       </div>

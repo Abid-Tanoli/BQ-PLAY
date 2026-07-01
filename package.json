@@ -1,5 +1,5 @@
 {
-  "name": "bq-play",
+  "name": "cricall",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -17,7 +17,11 @@
     "start": "npm --prefix Backend start",
     "dev:backend": "npm --prefix Backend run dev",
     "dev:user": "npm --prefix Frontend/User run dev",
-    "dev:admin": "npm --prefix Frontend/Admin run dev"
+    "dev:admin": "npm --prefix Frontend/Admin run dev",
+    "docker:build:backend": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/docker-build-backend.ps1",
+    "docker:build:user": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/docker-build-user.ps1",
+    "docker:build:admin": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/docker-build-admin.ps1",
+    "docker:push:all": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/docker-push-all.ps1"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.97.1",

@@ -1,15 +1,14 @@
-FROM node:20-alpine AS base
+FROM node:22-alpine AS production
+
 WORKDIR /app
+
+ENV NODE_ENV=production
+
 COPY package*.json ./
 RUN npm ci --omit=dev
 
-FROM base AS dev
-RUN npm install --include=dev
 COPY . .
-EXPOSE 5000
-CMD ["npm", "run", "dev"]
 
-FROM base AS production
-COPY . .
 EXPOSE 5000
-CMD ["node", "src/index.js"]
+
+CMD ["npm", "start"]

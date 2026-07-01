@@ -88,7 +88,7 @@ const MatchSummaryCard = ({ match }) => {
             Match Summary
           </div>
           <div style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "rgba(255,255,255,0.5)" }}>
-            BQ-PLAY
+            CricAll
           </div>
         </div>
 

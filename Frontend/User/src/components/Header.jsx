@@ -35,7 +35,7 @@ export default function Header({ user, onShowLogin, onShowRegister, onLogout }) 
       <div className="max-w-7xl mx-auto px-4 py-4 flex flex-wrap justify-between items-center gap-3">
         <div className="flex items-center gap-5 min-w-0">
           <Link to="/" className="text-2xl font-black font-raj italic text-cric-text tracking-tighter" onClick={closeMobile}>
-            BQ-PLAY
+            CricAll
             <span className="text-cric-accent">.</span>
           </Link>
         </div>

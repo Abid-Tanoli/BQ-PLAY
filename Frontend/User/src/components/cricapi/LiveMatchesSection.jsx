@@ -38,7 +38,7 @@ export default function LiveMatchesSection() {
         <div>
           <h2 className="flex items-center gap-2 text-xl font-black uppercase tracking-tight text-cric-accent">
             <span className="h-6 w-2 rounded-full bg-red-600" />
-            BQ-PLAY Live Matches
+            CricAll Live Matches
           </h2>
           <p className="text-xs font-semibold text-cric-muted">Live scores are cached briefly to protect API quota.</p>
         </div>

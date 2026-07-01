@@ -1,11 +1,17 @@
 logs
+logs/
 *.log
 
 node_modules
 dist
+build
+coverage
 .env
+.env.local
+.env.production
+.env.*
+!.env.example
 dist-ssr
 *.local
 
 !.vscode/extensions.json
-.

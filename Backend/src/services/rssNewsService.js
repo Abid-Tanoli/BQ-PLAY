@@ -15,11 +15,11 @@ let rssOfflineLogged = false;
 const FALLBACK_NEWS = [
   {
     title: 'International cricket updates are temporarily offline',
-    description: 'External RSS feeds could not be reached from this machine. Live scores and local BQ-PLAY content still work.',
+    description: 'External RSS feeds could not be reached from this machine. Live scores and local CricAll content still work.',
     link: '',
     pubDate: new Date().toISOString(),
     image: null,
-    source: 'BQ-PLAY',
+    source: 'CricAll',
     sourceLogo: null,
   },
   {
@@ -28,7 +28,7 @@ const FALLBACK_NEWS = [
     link: '',
     pubDate: new Date().toISOString(),
     image: null,
-    source: 'BQ-PLAY',
+    source: 'CricAll',
     sourceLogo: null,
   },
 ];
@@ -45,7 +45,7 @@ export async function getCricketNews(limit = 20) {
     try {
       const res = await fetch(feed.url, {
         timeout: 8000,
-        headers: { 'User-Agent': 'BQ-Play Cricket App/1.0' }
+        headers: { 'User-Agent': 'CricAll Cricket App/1.0' }
       });
       const text = await res.text();
       const parsed = await parseStringPromise(text, { explicitArray: false });

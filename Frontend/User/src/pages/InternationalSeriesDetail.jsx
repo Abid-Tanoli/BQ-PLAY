@@ -53,7 +53,7 @@ const seriesSummary = (matches = [], info = {}) => {
   if (results) parts.push(`${results} result${results === 1 ? '' : 's'}`);
   if (fixtures) parts.push(`${fixtures} fixture${fixtures === 1 ? '' : 's'}`);
   if (info.dates) parts.push(info.dates);
-  return parts.length ? parts.join(' - ') : 'Series details from BQ-PLAY live data provider';
+  return parts.length ? parts.join(' - ') : 'Series details from CricAll live data provider';
 };
 
 const providerMessage = (status) => {
@@ -212,7 +212,7 @@ function HeroVideo({ highlights }) {
       </div>
       <div className="p-5">
         <h2 className="text-2xl font-black leading-tight">{first.title || 'Series video'}</h2>
-        <p className="mt-2 text-sm font-semibold text-slate-200">{first.description || first.channelName || 'BQ-PLAY video'}</p>
+        <p className="mt-2 text-sm font-semibold text-slate-200">{first.description || first.channelName || 'CricAll video'}</p>
       </div>
     </a>
   );
@@ -405,7 +405,7 @@ export default function InternationalSeriesDetail() {
 
   if (!seriesInfo) {
     const title = liveProviderMessage ? 'Live data unavailable' : 'Series not found';
-    const body = liveProviderMessage || 'BQ-PLAY could not find this series from the current live data source.';
+    const body = liveProviderMessage || 'CricAll could not find this series from the current live data source.';
     return (
       <div className="min-h-screen bg-cric-bg">
         <Header />

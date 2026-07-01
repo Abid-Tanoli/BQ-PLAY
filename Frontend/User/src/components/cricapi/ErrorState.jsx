@@ -4,7 +4,7 @@ export default function ErrorState({ title = "Cricket API unavailable", message,
   const friendlyMessage =
     message?.includes("key missing")
       ? "Add VITE_CRICAPI_KEY to enable live series and match data."
-      : message || "The free cricket API may be rate limited right now. Cached or local BQ-PLAY data will still be used where available.";
+      : message || "The free cricket API may be rate limited right now. Cached or local CricAll data will still be used where available.";
 
   return (
     <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center">

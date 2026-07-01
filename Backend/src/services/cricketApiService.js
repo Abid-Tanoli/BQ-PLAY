@@ -702,7 +702,7 @@ function normalizeArticle(row = {}) {
     image: article.image || article.imageUrl || article.thumbnail || imageFromId(article.imageId),
     url: article.url || (id ? `https://www.cricbuzz.com/cricket-news/${id}` : ''),
     publishedAt: parseCricbuzzDate(article.pubTime || article.publishedAt || article.date || ''),
-    source: article.source || 'BQ-PLAY Live Provider',
+    source: article.source || 'CricAll Live Provider',
   };
 }
 
@@ -723,7 +723,7 @@ function normalizePhoto(row = {}) {
     image: photo.image || photo.imageUrl || photo.thumbnail || imageFromId(photo.imageId || id, 420, 280),
     url: photo.url || '',
     publishedAt: parseCricbuzzDate(photo.pubTime || photo.publishedAt || photo.date || ''),
-    source: photo.source || 'BQ-PLAY Live Provider',
+    source: photo.source || 'CricAll Live Provider',
   };
 }
 
@@ -744,7 +744,7 @@ function normalizeCricbuzzVideo(row = {}) {
     thumbnail: video.thumbnail || video.image || video.imageUrl || imageFromId(video.imageId),
     watchUrl: video.url || (id ? `https://www.cricbuzz.com/cricket-videos/${id}` : ''),
     publishedAt: parseCricbuzzDate(video.pubTime || video.publishedAt || video.date || ''),
-    source: video.source || 'BQ-PLAY Live Provider',
+    source: video.source || 'CricAll Live Provider',
   };
 }
 

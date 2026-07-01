@@ -66,7 +66,7 @@ export default function AdminLogin() {
       <div className="w-full max-w-md">
         <div className="bg-cric-card rounded-2xl shadow-xl p-6 sm:p-8 border border-cric-border">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-black text-cric-text">BQ-PLAY ADMIN</h1>
+            <h1 className="text-3xl font-black text-cric-text">CRICALL ADMIN</h1>
             <p className="text-cric-muted mt-2">Sign in to your account</p>
           </div>
 
@@ -110,7 +110,7 @@ export default function AdminLogin() {
                 {...register("email")}
                 type="email"
                 className="w-full px-4 py-3 bg-cric-bg border border-cric-border rounded-xl focus:ring-2 focus:ring-cric-accent outline-none font-bold text-cric-text"
-                placeholder="admin@bqplay.com"
+                placeholder="admin@cricall.com"
               />
               {errors.email && (
                 <p className="mt-2 text-xs text-red-500 font-bold">{errors.email.message}</p>

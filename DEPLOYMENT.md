@@ -1,9 +1,9 @@
-# BQ-PLAY Deployment Guide
+# CricAll Legacy Vercel Deployment Guide
 
 ## Recommended topology
 
-- Vercel project `bq-play-user` for `Frontend/User`
-- Vercel project `bq-play-admin` for `Frontend/Admin`
+- Vercel project `cricall-user` for `Frontend/User`
+- Vercel project `cricall-admin` for `Frontend/Admin`
 - One persistent Node service for `Backend` (Render, Railway, or Fly.io)
 
 The backend currently owns the Express server, Socket.IO rooms, and live-update
@@ -19,7 +19,7 @@ frontend project.
 ## User frontend
 
 ```text
-Project Name: bq-play-user
+Project Name: cricall-user
 Root Directory: Frontend/User
 Framework Preset: Vite
 Install Command: npm ci
@@ -47,7 +47,7 @@ VITE_CRICAPI_KEY=
 ## Admin frontend
 
 ```text
-Project Name: bq-play-admin
+Project Name: cricall-admin
 Root Directory: Frontend/Admin
 Framework Preset: Vite
 Install Command: npm ci

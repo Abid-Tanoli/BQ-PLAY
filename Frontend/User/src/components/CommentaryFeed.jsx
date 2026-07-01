@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 
-// Ball-by-Ball Commentary Feed - BQ-PLAY style
+// Ball-by-Ball Commentary Feed - CricAll style
 // Professional commentary display with live updates
 
 const CommentaryFeed = ({ match, live = true }) => {

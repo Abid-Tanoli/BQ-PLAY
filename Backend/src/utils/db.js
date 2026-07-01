@@ -5,9 +5,9 @@ mongoose.set("bufferCommands", false);
 
 const connectDB = async () => {
   try {
-    const mongoUrl = process.env.MONGO_URL || process.env.MONGO_URI;
+    const mongoUrl = process.env.MONGO_URL || process.env.MONGODB_URI || process.env.MONGO_URI;
     if (!mongoUrl) {
-      console.warn("Mongo URL not found. API will run in limited mode until MONGO_URL or MONGO_URI is configured.");
+      console.warn("Mongo URL not found. API will run in limited mode until MONGODB_URI, MONGO_URL, or MONGO_URI is configured.");
       return null;
     }
     assertMongoDatabaseName(mongoUrl);

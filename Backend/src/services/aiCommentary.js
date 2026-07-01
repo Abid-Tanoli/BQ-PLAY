@@ -397,7 +397,7 @@ class AICommentaryService {
       ? `Need ${matchContext.target - currentScore} from ${Math.max(0, ((matchContext.totalOvers || 1) - (overNumber + ballNumber / 6)) * 6 | 0)} balls`
       : `${currentScore}/${currentWickets}`;
 
-    const prompt = `You are a BQ-PLAY cricket commentator.
+    const prompt = `You are a CricAll cricket commentator.
 
 BASE COMMENTARY (keep the same factual info, make it sound more natural/expressive):
 "${baseVivid}"
@@ -453,7 +453,7 @@ VIVID:`;
         ).join("\n");
         const chaseInfo = target ? `Need ${remainingRuns} from ${remainingBalls} balls | RRR: ${rrr}` : "";
 
-        const prompt = `You are a professional BQ-PLAY cricket analyst.
+        const prompt = `You are a professional CricAll cricket analyst.
 
 Over ${overNumber + 1} just completed.
 Bowler: ${bowlerName}${bowlingStyle ? ` | Style: ${bowlingStyle}` : ""}
@@ -473,7 +473,7 @@ Write 2-3 sentences of over summary:
 - Comment on the bowling quality and tactical shifts
 - Highlight key wickets, big hits, or building pressure
 - Note the context (closing in on target, middle-over consolidation, etc.)
-BQ-PLAY analyst style. No emojis. Plain flowing text only.`;
+CricAll analyst style. No emojis. Plain flowing text only.`;
 
         const response = await fetch("https://api.anthropic.com/v1/messages", {
           method: "POST",
@@ -536,7 +536,7 @@ Write TWO lines of corrected commentary for this ball.
 SHORT: [broadcast summary]
 VIVID: [Highly technical description of delivery length, shot intent, and specific region] (2-3 sentences)
 
-BQ-PLAY professional style, no emojis.`;
+CricAll professional style, no emojis.`;
 
         const response = await fetch("https://api.anthropic.com/v1/messages", {
           method: "POST",

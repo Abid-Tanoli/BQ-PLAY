@@ -106,7 +106,7 @@ export default function International() {
     { id: 'news', label: 'News' },
   ];
 
-  const providerLabel = apiStatus?.configured ? 'BQ-PLAY live data provider' : 'Live data provider';
+  const providerLabel = apiStatus?.configured ? 'CricAll live data provider' : 'Live data provider';
   const apiWarning = apiStatus?.lastError
     ? apiStatus.lastError
     : (!loading && matches.length === 0 && series.length === 0 ? `${providerLabel} returned no cricket data.` : '');
@@ -317,7 +317,7 @@ export default function International() {
           <div className="mb-8 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-900">
             <p className="text-xs font-black uppercase tracking-widest">{providerLabel} unavailable</p>
             <p className="mt-2 text-sm font-bold">{apiWarning}</p>
-            <p className="mt-1 text-xs font-semibold">BQ-PLAY is not showing fallback/demo cricket data here.</p>
+            <p className="mt-1 text-xs font-semibold">CricAll is not showing fallback/demo cricket data here.</p>
           </div>
         )}
 
