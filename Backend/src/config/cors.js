@@ -18,8 +18,13 @@ const developmentOrigins = [
   "http://localhost:5174",
 ];
 
+const isProduction = process.env.NODE_ENV === "production";
+
 export const allowedCorsOrigins = [
-  ...new Set([...configuredOrigins, ...developmentOrigins]),
+  ...new Set([
+    ...configuredOrigins,
+    ...(isProduction ? [] : developmentOrigins),
+  ]),
 ];
 
 export const corsOrigin = (origin, callback) => {

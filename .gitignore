@@ -8,11 +8,13 @@ dist/
 build/
 coverage/
 **/coverage/
+.nyc_output/
 
 # Environment and secrets
 .env
 .env.*
 !.env.example
+Backend/config.yaml
 
 # Logs
 *.log
@@ -21,16 +23,62 @@ logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
 # OS and editor files
 .DS_Store
 Thumbs.db
 .vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
 
 # Local backend diagnostics/config with private values
-Backend/config.yaml
 Backend/check_data.js
 Backend/reset_match.js
 
+# Database backups (real data snapshots — never commit)
+Backend/backups/
+
 # Runtime uploads/cache
 Backend/src/Uploads/tmp/
+tmp/
+temp/
+.cache/
+
+# Docker archives
+*.tar
+
+# Local databases
+*.sqlite
+*.db
+
+# Certificates and keys
+*.pem
+*.key
+*.p12
+*.cert
+*.crt
+
+# AI/editor agent configs (personal, not project-wide)
+.agents/
+.agent
+.opencode.json
+.opencode.jsonc
+.cursor
+.cursorrules
+.clinerules
+.codex
+.prompt
+.prompts
+.instructions
+
+# Test output
+test-results/
+junit.xml

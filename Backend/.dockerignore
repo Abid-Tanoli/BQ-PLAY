@@ -11,3 +11,12 @@ coverage
 dist
 build
 *.log
+config.yaml
+backups/
+test/
+check_data.js
+reset_match.js
+scripts/
+src/Uploads/tmp/
+README.txt
+CRICKET_API_GUIDE.md

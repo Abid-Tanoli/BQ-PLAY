@@ -6,3 +6,9 @@ build
 .git
 coverage
 *.log
+test/
+.gitignore
+README.md
+eslint.config.js
+vitest.config.js
+vercel.json

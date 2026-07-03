@@ -10,3 +10,16 @@ logs/
 coverage/
 dist/
 build/
+config.yaml
+check_data.js
+reset_match.js
+backups/
+test-results/
+*.tar
+*.pem
+*.key
+*.db
+*.sqlite
+tmp/
+temp/
+.cache/

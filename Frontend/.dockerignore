@@ -6,3 +6,9 @@
 **/coverage
 .git
 *.log
+**/test/
+**/*.md
+**/vercel.json
+**/.gitignore
+**/eslint.config.js
+**/vitest.config.js

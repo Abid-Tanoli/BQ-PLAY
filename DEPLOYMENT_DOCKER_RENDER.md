@@ -96,11 +96,22 @@ Add these in the backend service's **Environment** page:
 NODE_ENV=production
 MONGODB_URI=<your Atlas URI including the existing database name>
 JWT_SECRET=<a long random secret>
-CLIENT_URL=https://your-user-service.onrender.com
-ADMIN_URL=https://your-admin-service.onrender.com
-FRONTEND_URL=https://your-user-service.onrender.com
 CORS_ORIGINS=https://your-user-service.onrender.com,https://your-admin-service.onrender.com
 ```
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `NODE_ENV` | Yes | `production` |
+| `MONGODB_URI` | Yes | Full Atlas URI including database path (`/bq-play`) |
+| `JWT_SECRET` | Yes | Long random secret for token signing |
+| `CORS_ORIGINS` | Yes | Comma-separated origin URLs — the only source of truth for allowed CORS origins |
+| `CLIENT_URL` | No | Optional alias for the user frontend origin (legacy compat) |
+| `ADMIN_URL` | No | Optional alias for the admin frontend origin (legacy compat) |
+| `FRONTEND_URL` | No | Optional alias for `CLIENT_URL` (legacy compat) |
+
+The CORS configuration in `Backend/src/config/cors.js` reads **only** `CORS_ORIGINS` plus the three optional aliases. Localhost development origins (`localhost:3000`, `localhost:3001`, `localhost:5173`, `localhost:5174`) are allowed automatically when `NODE_ENV` is not `production`. In production, `CORS_ORIGINS` alone controls access.
+
+`CLIENT_URL`, `ADMIN_URL`, and `FRONTEND_URL` are **optional aliases** accepted only in addition to `CORS_ORIGINS`. They exist for backward compatibility with previous deployments. If you set `CORS_ORIGINS` correctly, these three are unnecessary.
 
 Optional variables already documented in `Backend/.env.example` include Google OAuth, RapidAPI, CricAPI, YouTube, RSS, Sentry, and AI commentary settings. Add only the integrations you use.
 
@@ -199,9 +210,10 @@ Image-backed Render services do not automatically redeploy just because the imag
 After Render assigns the two frontend URLs:
 
 1. Open the backend service in Render.
-2. Update `CLIENT_URL`, `ADMIN_URL`, `FRONTEND_URL`, and `CORS_ORIGINS`.
-3. Save the changes and let Render redeploy the backend.
-4. Test API requests and live Socket.IO updates from both frontends.
+2. Update `CORS_ORIGINS` with both frontend origins, separated by a comma.
+3. Optionally set `CLIENT_URL` and `ADMIN_URL` as human-readable aliases — they are not required for CORS to work.
+4. Save the changes and let Render redeploy the backend.
+5. Test API requests and live Socket.IO updates from both frontends.
 
 Do not add a trailing slash to frontend origin values.
 
@@ -254,8 +266,8 @@ docker push abidtanoli/cricall-admin-frontend:v1
 ### CORS error
 
 - Use origins only, such as `https://cricall-user.onrender.com`; do not add `/api`.
-- Set both `CLIENT_URL` and `ADMIN_URL`.
-- Put both URLs in `CORS_ORIGINS`, separated by a comma.
+- The only required variable is `CORS_ORIGINS`. Put both frontend URLs there, separated by a comma.
+- `CLIENT_URL` and `ADMIN_URL` are optional aliases — they are not required if `CORS_ORIGINS` is set correctly.
 - Remove trailing slashes.
 - Redeploy the backend after changing environment variables.
 
